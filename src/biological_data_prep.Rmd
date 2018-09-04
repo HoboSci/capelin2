@@ -4,11 +4,11 @@ author: "Samantha Andrews"
 output: html_notebook
 ---
 
-#Overview
+# Overview
 Preperation of the capelin (*Mallotus villosus*) data obtained from [OBIS](www.iobis.org). This database shows the global occurance of capelin. 
 Built with 'r getRversion()'.
 
-#Package dependencies
+# Package dependencies
 You can load them using the following code which uses a function called [ipak](https://gist.github.com/stevenworthington/3178163). 
 Note this function checks to see if the packages are installed first.
 Th
@@ -19,7 +19,7 @@ ipak(packages)
 suppressMessages(ipak)
 ```
 
-#Raw Data Clean
+# Raw Data Clean
 Load the raw data, then check use head() to check it looks ok, then names() to see all the column names
 ```{r load raw data}
 rawdata <- read.csv("../data/bio/capelin_obis_raw.csv")
@@ -53,8 +53,165 @@ plot(map, xlim = c(-180, -44), ylim =c(0,80), asp = 1) #re-map - this is just at
 points(tidydata$decimalLongitude, tidydata$decimalLatitude)
 ```
 ok looks good...save what you have so far to a .csv
-```{r}
+```{r save tidydata to csv}
 write.csv(tidydata, file = "../data//bio/capelin_obis_tidy.csv", row.names = FALSE)
 ```
 
- 
+# Column removal
+So there are many columns that you don't need.. you want to keep
+id
+decimalLatitude
+decimalLongitude
+datecollected
+institutioncode
+individualcount
+resname
+originalscientificname
+
+```{r select colums needed}
+tidydata <- subset(tidydata, select = c(id, decimalLatitude, decimalLongitude, datecollected, institutioncode, individualcount, resname, originalscientificname))
+head(tidydata)
+```
+
+# remove data without month/year info
+
+count NAs in the dataset. Mainly you are interested in the datecollected column (ignore individual count - you know there is a lot missing)
+```{r}
+missingdata <- apply(tidydata, 2, function (x) sum(is.na(x)))
+missingdata
+```
+hmm interesting - you have 771 columns from year month and day with missing data, but datacollected has 0. There may be a formatting issue.
+To take a closer look, subset all rows where year == na
+
+```{r}
+missingdatarows <- tidydata[is.na(tidydata$year), ]
+head(missingdatarows)
+```
+so the NAs in the year column relate to no data (without a na value attached). Remove all rows where year == na
+```{r}
+tidydata <- tidydata[!is.na(tidydata$year), ]
+missingdata2 <- apply(tidydata, 2, function (x) sum(is.na(x)))
+missingdata2
+```
+
+# Month year column creation
+make columns for the years and month based on the datecollected column
+```{r new columns}
+tidydata$year <- format(as.Date(tidydata$datecollected), "%Y") #created a new column called year
+tidydata$month <- format(as.Date(tidydata$datecollected), "%m") #created a new column called month
+tidydata$day <- format(as.Date(tidydata$datecollected), "%d") #created a new column called day 
+head(tidydata)
+```
+
+the year, month, day columns are characters Change to numeric
+```{r new columns 2}
+tidydata$year <- as.numeric(tidydata$year)
+tidydata$month <- as.numeric(tidydata$month)
+tidydata$day <- as.numeric(tidydata$day)
+head(tidydata)
+```
+
+# Institutions
+Lets take a look at the institutioncode to make sure the names make sense...
+```{r}
+tidydata$institutioncode <- as.character(tidydata$institutioncode)
+whosampled <- unique(tidydata$institutioncode) #makes a variable of institutions
+whosampledordered <- sort(whosampled) #just puts the list in 
+whosampledordered
+```
+Ok so a number of these names actually represent the same insitiution (e.g. [DFO Regions](http://www.dfo-mpo.gc.ca/regions/index-eng.htm). Some details [here](ftp://ftp.aoml.noaa.gov/od/pub/library/methods-branton.pdf) and the first is no institution (you might be able to figure it out though). 
+The merges needed are as follows
+"Bedford Institute of Oceanography (BIO)" & "BIO" & "DFO-SF" == DFOMTMS 
+"DFO-IML" & "IML-MLI" & "IML_MLI" & "DFO-NG" == DFOQC 
+"DFO-NFLD" & "North Atlantic Fisheries Centre" == "DFONL" 
+"NMFS-NEFSC" & "NOAA, NMFS, Northeast Fisheries Science Center" == NEFSC
+"The Atlantic reference Centre" & "The Atlantic Reference Centre (ARC)" == ARC 
+"DFO-SG" & "DFO Gulf Fisheries Centre" == DFOGULF
+
+and some you can just make shorter
+"Northwest Atlantic Fisheries Organization (NAFO)" == NAFO
+"DFO-ISDM" == DFOISDM
+"Maine DMR" == MaineDMR
+```{r}
+tidydata$institutioncode <- replace(tidydata$institutioncode, tidydata$institutioncode == "Bedford Institute of Oceanography (BIO)", "DFOMTMS")
+tidydata$institutioncode <- replace(tidydata$institutioncode, tidydata$institutioncode == "BIO", "DFOMTMS")
+tidydata$institutioncode <- replace(tidydata$institutioncode, tidydata$institutioncode == "DFO-SF", "DFOMTMS")
+tidydata$institutioncode <- replace(tidydata$institutioncode, tidydata$institutioncode == "DFO-IML", "DFOQC")
+tidydata$institutioncode <- replace(tidydata$institutioncode, tidydata$institutioncode == "IML-MLI", "DFOQC")
+tidydata$institutioncode <- replace(tidydata$institutioncode, tidydata$institutioncode == "DFO-NG", "DFOQC")  
+tidydata$institutioncode <- replace(tidydata$institutioncode, tidydata$institutioncode == "IML_MLI", "DFOQC")
+tidydata$institutioncode <- replace(tidydata$institutioncode, tidydata$institutioncode == "DFO-NFLD", "DFONL")
+tidydata$institutioncode <- replace(tidydata$institutioncode, tidydata$institutioncode == "North Atlantic Fisheries Centre", "DFONL")
+tidydata$institutioncode <- replace(tidydata$institutioncode, tidydata$institutioncode == "NMFS-NEFSC", "NEFSC")
+tidydata$institutioncode <- replace(tidydata$institutioncode, tidydata$institutioncode == "NOAA, NMFS, Northeast Fisheries Science Center", "NEFSC")
+tidydata$institutioncode <- replace(tidydata$institutioncode, tidydata$institutioncode == "The Atlantic Reference Centre (ARC)", "ARC")
+tidydata$institutioncode <- replace(tidydata$institutioncode, tidydata$institutioncode == "The Atlantic reference Centre", "ARC")
+tidydata$institutioncode <- replace(tidydata$institutioncode, tidydata$institutioncode == "DFO-SG", "DFOGulf")
+tidydata$institutioncode <- replace(tidydata$institutioncode, tidydata$institutioncode == "DFO Gulf Fisheries Centre", "DFOGulf")
+tidydata$institutioncode <- replace(tidydata$institutioncode, tidydata$institutioncode == "Northwest Atlantic Fisheries Organization (NAFO)", "NAFO")
+tidydata$institutioncode <- replace(tidydata$institutioncode, tidydata$institutioncode == "DFO-Central and Arctic, Freshwater Institute (FWI)", "DFOCENARC")
+tidydata$institutioncode <- replace(tidydata$institutioncode, tidydata$institutioncode == "DFO-ISDM", "DFOISDM")
+tidydata$institutioncode <- replace(tidydata$institutioncode, tidydata$institutioncode == "Maine DMR", "MaineDMR")
+
+#recheck
+tidydata$institutioncode <- as.character(tidydata$institutioncode)
+whosampled <- unique(tidydata$institutioncode) #makes a variable of institutions
+whosampledordered <- sort(whosampled) #just puts the list in 
+whosampledordered
+```
+
+Now look at the missing institution. Use resname to see if it helps...
+```{r}
+missinginst <- subset(tidydata, institutioncode == "")
+missinginst
+```
+ok now check for unique resname...
+```{r}
+missinginst$resname <- as.character(missinginst$resname)
+missinginstunique <- unique(tidydata$resname) #makes a variable of institutions
+missinginstuniquedordered <- sort(missinginstunique) #just puts the list in 
+missinginstuniquedordered <- as.character(missinginstuniquedordered)
+missinginstuniquedordered
+```
+Ugh ok there are quite a few here....
+
+Ok soo looking at the OBIS metadata [e.g.](http://www.iobis.org/explore/#/dataset/2327), this is what they should be
+
+Arctic Species Trend Index (ASTI) : Marine == CAFF
+Atlantic Reference Centre Museum of Canadian Atlantic Organisms - Invertebrates and Fishes Data == ARC
+Atlantic Zone Monitoring Program Maritimes Region (AZMP) plankton datasets. In: Fisheries and Oceans Canada - BioChem archive == DFOMTMS
+BioChem zooplankton samples from the Gully, 2006-2007 == DFOMTMS
+BioChem:  Zooplankton of St. Margarets Bay 1968 to 1971. == DFOMTMS
+BioChem: DFO Atlantic Zone Monitoring Program plankton datasets - Newfoundland and Labrador Region (OBIS Canada) ==  DFONL
+BioChem: Fish, Eggs and Larvae in the Gulf of St. Lawrence == DFOQC
+BioChem: Sameoto zooplankton collection == DFOMTMS 
+DFO Central and Arctic Multi-species Stock Assessment Surveys == DFOCENARC
+DFO Gulf Region Groundfish Research Vessel Surveys == DFOGulf
+DFO Maritimes Research Vessel Trawl Surveys Fish Observations == DFOMTMS
+DFO Newfoundland and Labrador Region Ecosystem Trawl Surveys == DFOQC
+DFO Quebec Region MLI museum == DFOQC
+DFO Quebec Region Multispecies bottom trawl surveys == DFOQC
+ECNASAP - East Coast North America Strategic Assessment == DFOMTMS
+Electronic Atlas of Ichthyoplankton on the Scotian Shelf of North America == DFOMTMS
+Fish specimens == ROM
+ICES contaminants and biological effects == ICES
+Ichthyology Collection - Royal Ontario Museum == ROM
+IMR Macroplankton surveys == IMR
+Maine Department of Marine Resources Inshore Trawl Survey 2000â€“2009 == MaineDMR
+NAFO/ICNAF - Environmental Surveys - NORWESTLANT 1-3, 1963: Fish eggs and larvae == NAFO
+NMNH Vertebrate Zoology Fishes Collections == NMNH
+Northeast Fisheries Science Center Bottom Trawl Survey Data == NEFSC
+Northern Gulf of St. Lawrence Fishes == DFOMTMS
+
+ok so now you want to fill in the missing institutioncode with the correct data...
+
+maybe just populate the missing values with the same text as resname
+...
+if institutioncode == ""
+institutioncode == "resname"
+```{r}
+for i in (1:nrow)
+```
+
+
+
