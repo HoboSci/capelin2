@@ -1,0 +1,60 @@
+---
+title: "biological data preperation"
+author: "Samantha Andrews"
+output: html_notebook
+---
+
+#Overview
+Preperation of the capelin (*Mallotus villosus*) data obtained from [OBIS](www.iobis.org). This database shows the global occurance of capelin. 
+Built with 'r getRversion()'.
+
+#Package dependencies
+You can load them using the following code which uses a function called [ipak](https://gist.github.com/stevenworthington/3178163). 
+Note this function checks to see if the packages are installed first.
+Th
+```{r pre-install packages, message=FALSE}
+packages <- c("packrat", "rworldmap")
+source("../src/ipak.R")
+ipak(packages)
+suppressMessages(ipak)
+```
+
+#Raw Data Clean
+Load the raw data, then check use head() to check it looks ok, then names() to see all the column names
+```{r load raw data}
+rawdata <- read.csv("../data/bio/capelin_obis_raw.csv")
+head(rawdata) 
+names(rawdata)
+```
+
+following [Darwin Core](http://rs.tdwg.org/dwc/terms/) rename the latitude and longitude columns to decimalLatitude and decimalLongitude respectively
+```{r dawin core naming convention}
+tidydata <- rawdata
+names(tidydata)[names(tidydata)=="latitude"] <- "decimalLatitude"
+names(tidydata)[names(tidydata)=="longitude"] <- "decimalLongitude"
+head(tidydata)
+```
+
+The dataset is global and needs to be trimmed to contain just the area of interest. 
+Plot all the occurance points
+```{r map all occurrence points}
+library(rworldmap)
+map <- getMap(resolution = "low") #creates an object called map at medium resoultion
+plot(map, xlim = c(-180, -44), ylim =c(0,80), asp = 1) #the x and y lim are the long-lat bounds of the map
+points(tidydata$decimalLongitude, tidydata$decimalLatitude) #this adds points to the mapet", xlab = "Longitude", ylab = "Latitude")
+```
+now extract just the Atlantic Canada data.
+The lon-lat study area (which captures the whole Atlantic Canadian EEZ up to the north of Resolution Island in the Hudson Strait/ Davis Strait) is -71.0,-43.0,62.0,38.0 
+```{r map only atlantic canadian occurrences}
+tidydata <- tidydata[tidydata$decimalLongitude > -71, ]
+tidydata <- tidydata[tidydata$decimalLongitude < -43, ]
+tidydata <- tidydata[tidydata$decimalLatitude > 38, ]
+plot(map, xlim = c(-180, -44), ylim =c(0,80), asp = 1) #re-map - this is just atl. canada (after checked subsetting is good)
+points(tidydata$decimalLongitude, tidydata$decimalLatitude)
+```
+ok looks good...save what you have so far to a .csv
+```{r}
+write.csv(tidydata, file = "../data//bio/capelin_obis_tidy.csv", row.names = FALSE)
+```
+
+ 
