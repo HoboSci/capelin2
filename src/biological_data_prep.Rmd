@@ -13,7 +13,7 @@ You can load them using the following code which uses a function called [ipak](h
 Note this function checks to see if the packages are installed first.
 Th
 ```{r pre-install packages, message=FALSE}
-packages <- c("packrat", "rworldmap")
+packages <- c("packrat", "rworldmap", "dplyr" "plyr")
 source("../src/ipak.R")
 ipak(packages)
 suppressMessages(ipak)
@@ -39,7 +39,7 @@ The dataset is global and needs to be trimmed to contain just the area of intere
 Plot all the occurance points
 ```{r map all occurrence points}
 library(rworldmap)
-map <- getMap(resolution = "low") #creates an object called map at medium resoultion
+map <- getMap(resolution = "low") #creates an object called map at low resoultion
 plot(map, xlim = c(-180, -44), ylim =c(0,80), asp = 1) #the x and y lim are the long-lat bounds of the map
 points(tidydata$decimalLongitude, tidydata$decimalLatitude) #this adds points to the mapet", xlab = "Longitude", ylab = "Latitude")
 ```
@@ -49,12 +49,12 @@ The lon-lat study area (which captures the whole Atlantic Canadian EEZ up to the
 tidydata <- tidydata[tidydata$decimalLongitude > -71, ]
 tidydata <- tidydata[tidydata$decimalLongitude < -43, ]
 tidydata <- tidydata[tidydata$decimalLatitude > 38, ]
-plot(map, xlim = c(-180, -44), ylim =c(0,80), asp = 1) #re-map - this is just atl. canada (after checked subsetting is good)
+plot(map, xlim = c(-180, -44), ylim =c(0,80), asp = 1) 
 points(tidydata$decimalLongitude, tidydata$decimalLatitude)
 ```
 ok looks good...save what you have so far to a .csv
 ```{r save tidydata to csv}
-write.csv(tidydata, file = "../data//bio/capelin_obis_tidy.csv", row.names = FALSE)
+write.csv(tidydata, file = "../data/bio/capelin_obis_tidy.csv", row.names = FALSE)
 ```
 
 # Column removal
@@ -96,7 +96,7 @@ missingdata2
 
 # Month year column creation
 make columns for the years and month based on the datecollected column
-```{r new columns}
+```{r new yymmdd columns}
 tidydata$year <- format(as.Date(tidydata$datecollected), "%Y") #created a new column called year
 tidydata$month <- format(as.Date(tidydata$datecollected), "%m") #created a new column called month
 tidydata$day <- format(as.Date(tidydata$datecollected), "%d") #created a new column called day 
@@ -104,12 +104,21 @@ head(tidydata)
 ```
 
 the year, month, day columns are characters Change to numeric
-```{r new columns 2}
+```{r new yymmdd columns 2}
 tidydata$year <- as.numeric(tidydata$year)
 tidydata$month <- as.numeric(tidydata$month)
 tidydata$day <- as.numeric(tidydata$day)
 head(tidydata)
 ```
+
+# Remove any duplicate entries
+The dplyr package's distinct function removes any duplicate rows (based on all columns EXCEPT id as this is always going to be unique, and year month day as this is generated from datecollected)
+
+```{r}
+library("dplyr")
+tidydata <- distinct(tidydata, decimalLatitude, decimalLongitude, datecollected, institutioncode, institutioncode, individualcount, resname, originalscientificname)
+```
+
 
 # Institutions
 Lets take a look at the institutioncode to make sure the names make sense...
@@ -132,7 +141,7 @@ and some you can just make shorter
 "Northwest Atlantic Fisheries Organization (NAFO)" == NAFO
 "DFO-ISDM" == DFOISDM
 "Maine DMR" == MaineDMR
-```{r}
+```{r consistent institutioncodes}
 tidydata$institutioncode <- replace(tidydata$institutioncode, tidydata$institutioncode == "Bedford Institute of Oceanography (BIO)", "DFOMTMS")
 tidydata$institutioncode <- replace(tidydata$institutioncode, tidydata$institutioncode == "BIO", "DFOMTMS")
 tidydata$institutioncode <- replace(tidydata$institutioncode, tidydata$institutioncode == "DFO-SF", "DFOMTMS")
@@ -161,12 +170,12 @@ whosampledordered
 ```
 
 Now look at the missing institution. Use resname to see if it helps...
-```{r}
+```{r check missing institutioncode}
 missinginst <- subset(tidydata, institutioncode == "")
 missinginst
 ```
 ok now check for unique resname...
-```{r}
+```{r ID missing institutioncode}
 missinginst$resname <- as.character(missinginst$resname)
 missinginstunique <- unique(missinginst$resname) #makes a variable of institutions
 missinginstuniquedordered <- sort(missinginstunique) #just puts the list in 
@@ -175,12 +184,157 @@ missinginstuniquedordered
 ```
 
 Ok soo looking at the [OBIS metadata](http://www.iobis.org/explore/#/dataset/4356), the institution is the Conservation of Arctic Flora and Fauna (CAFF)
-```{r}
+```{r fix missing institutioncode}
 tidydata$institutioncode <- replace(tidydata$institutioncode, tidydata$institutioncode == "", "CAFF")
 whosampled <- unique(tidydata$institutioncode) #makes a variable of institutions
 whosampledordered <- sort(whosampled) #just puts the list in 
 whosampledordered
 ```
 
+Now lets check the number of records and spatial-temporal distribution of the observations by institution code to make sure none are dodgy
 
+first a table of how many observations each instituioncode has
+```{r institution code analysis - count}
+library(plyr) #to use the count function
+obs_by_ins <- count(tidydata, "institutioncode")
+obs_by_ins
+write.csv(obs_by_ins, file = "../output/bio/no_observations_institutioncode.csv")
+```
+ok so IMR, NAFO, ICES, & USM have very few entries (1, 1, 1, and 3 respectively)
+
+Lets take a look at the spatial breakdown of these institutions.First all points...
+
+```{r}
+map2 <- getMap(resolution = "low") #creates an object called map at low resoultion
+plot(map2, xlim = c(-71, -43), ylim =c(38, 62), asp = 1, main = "All Occurrences", col = "cornsilk") #the x and y lim are the long-lat bounds of the map
+points(tidydata$decimalLongitude, tidydata$decimalLatitude, col = "red") #this adds points to the mapet", xlab = "Longitude", ylab = "Latitude")
+dev.copy(png, "../output/bio/all_occurrences.png") #this prints a png of the plot
+dev.off() #this turns off the print command
+```
+Note there is one point up by iceland that you should get rid of (Icelandic population thought to be seperate from Labrador, but it is unclear if this is true or not).
+
+Map the institutioncode == ARC only data...
+```{r map obs by institutuion}
+ARC_obs <- tidydata[tidydata$institutioncode == "ARC", ]
+map2 <- getMap(resolution = "low") #creates an object called map at low resoultion
+plot(map2, xlim = c(-71, -43), ylim =c(39, 62), asp = 1, main = "Arc Occurrences", col = "cornsilk") #the x and y lim are the long-lat bounds of the map
+points(ARC_obs$decimalLongitude, ARC_obs$decimalLatitude, col = "red") #this adds points to the mapet", xlab = "Longitude", ylab = "Latitude")
+dev.copy(png, "../output/bio/ARC_occurrences_all.png") #this prints a png of the plot
+dev.off() #this turns off the print command
+
+CAFF_obs <- tidydata[tidydata$institutioncode == "CAFF", ]
+map2 <- getMap(resolution = "low") #creates an object called map at low resoultion
+plot(map2, xlim = c(-71, -43), ylim =c(39, 62), asp = 1, main = "CAFF Occurrences",  col = "cornsilk") #the x and y lim are the long-lat bounds of the map
+points(CAFF_obs$decimalLongitude, CAFF_obs$decimalLatitude, col = "red") #this adds points to the mapet", xlab = "Longitude", ylab = "Latitude")
+dev.copy(png, "../output/bio/CAFF_occurrences_all.png") #this prints a png of the plot
+dev.off() #this turns off the print command
+
+DFOCENARC_obs <- tidydata[tidydata$institutioncode == "DFOCENARC", ]
+map2 <- getMap(resolution = "low") #creates an object called map at low resoultion
+plot(map2, xlim = c(-71, -43), ylim =c(39, 62), asp = 1, main = "DFO Central & Arctic Occurrences",  col = "cornsilk") #the x and y lim are the long-lat bounds of the map
+points(DFOCENARC_obs$decimalLongitude, DFOCENARC_obs$decimalLatitude, col = "red") #this adds points to the mapet", xlab = "Longitude", ylab = "Latitude")
+dev.copy(png, "../output/bio/DFOCENARC_occurrences_all.png") #this prints a png of the plot
+dev.off() #this turns off the print command
+
+DFOGulf_obs <- tidydata[tidydata$institutioncode == "DFOGulf", ]
+map2 <- getMap(resolution = "low") #creates an object called map at low resoultion
+plot(map2, xlim = c(-71, -43), ylim =c(39, 62), asp = 1, main = "DFO Gulf Occurrences",  col = "cornsilk") #the x and y lim are the long-lat bounds of the map
+points(DFOGulf_obs$decimalLongitude, DFOGulf_obs$decimalLatitude, col = "red") #this adds points to the mapet", xlab = "Longitude", ylab = "Latitude")
+dev.copy(png, "../output/bio/DFOGulf_occurrences_all.png") #this prints a png of the plot
+dev.off() #this turns off the print command
+
+DFOISDM_obs <- tidydata[tidydata$institutioncode == "DFOISDM", ]
+map2 <- getMap(resolution = "low") #creates an object called map at low resoultion
+plot(map2, xlim = c(-71, -43), ylim =c(39, 62), asp = 1, main = "DFO ISDM Occurrences",  col = "cornsilk") #the x and y lim are the long-lat bounds of the map
+points(DFOISDM_obs$decimalLongitude, DFOISDM_obs$decimalLatitude, col = "red") #this adds points to the mapet", xlab = "Longitude", ylab = "Latitude")
+dev.copy(png, "../output/bio/DFOISDM_occurrences_all.png") #this prints a png of the plot
+dev.off() #this turns off the print command
+
+DFOMTMS_obs <- tidydata[tidydata$institutioncode == "DFOMTMS", ]
+map2 <- getMap(resolution = "low") #creates an object called map at low resoultion
+plot(map2, xlim = c(-71, -43), ylim =c(39, 62), asp = 1, main = "DFO Maritimes Occurrences",  col = "cornsilk") #the x and y lim are the long-lat bounds of the map
+points(DFOMTMS_obs$decimalLongitude, DFOMTMS_obs$decimalLatitude, col = "red") #this adds points to the mapet", xlab = "Longitude", ylab = "Latitude")
+dev.copy(png, "../output/bio/DFOMTMS_occurrences_all.png") #this prints a png of the plot
+dev.off() #this turns off the print command
+
+DFONL_obs <- tidydata[tidydata$institutioncode == "DFONL", ]
+map2 <- getMap(resolution = "low") #creates an object called map at low resoultion
+plot(map2, xlim = c(-71, -43), ylim =c(39, 62), asp = 1, main = "DFO Newfouundland & Labrador Occurrences",  col = "cornsilk") #the x and y lim are the long-lat bounds of the map
+points(DFONL_obs$decimalLongitude, DFONL_obs$decimalLatitude, col = "red") #this adds points to the mapet", xlab = "Longitude", ylab = "Latitude")
+dev.copy(png, "../output/bio/DFONL_occurrences_all.png") #this prints a png of the plot
+dev.off() #this turns off the print command
+
+DFOQC_obs <- tidydata[tidydata$institutioncode == "DFOQC", ]
+map2 <- getMap(resolution = "low") #creates an object called map at low resoultion
+plot(map2, xlim = c(-71, -43), ylim =c(39, 62), asp = 1, main = "DFO Quebec Occurrences",  col = "cornsilk") #the x and y lim are the long-lat bounds of the map
+points(DFOQC_obs$decimalLongitude, DFOQC_obs$decimalLatitude, col = "red") #this adds points to the mapet", xlab = "Longitude", ylab = "Latitude")
+dev.copy(png, "../output/bio/DFOQC_occurrences_all.png") #this prints a png of the plot
+dev.off() #this turns off the print command
+
+ICES_obs <- tidydata[tidydata$institutioncode == "ICES", ]
+map2 <- getMap(resolution = "low") #creates an object called map at low resoultion
+plot(map2, xlim = c(-71, -43), ylim =c(39, 62), asp = 1, main = "ICES Occurrences",  col = "cornsilk") #the x and y lim are the long-lat bounds of the map
+points(ICES_obs$decimalLongitude, ICES_obs$decimalLatitude, col = "red") #this adds points to the mapet", xlab = "Longitude", ylab = "Latitude")
+dev.copy(png, "../output/bio/ICES_occurrences_all.png") #this prints a png of the plot
+dev.off() #this turns off the print command
+
+IMR_obs <- tidydata[tidydata$institutioncode == "IMR", ]
+map2 <- getMap(resolution = "low") #creates an object called map at low resoultion
+plot(map2, xlim = c(-71, -43), ylim =c(39, 62), asp = 1, main = "IMR Occurrences",  col = "cornsilk") #the x and y lim are the long-lat bounds of the map
+points(IMR_obs$decimalLongitude, IMR_obs$decimalLatitude, col = "red") #this adds points to the mapet", xlab = "Longitude", ylab = "Latitude")
+dev.copy(png, "../output/bio/IMR_occurrences_all.png") #this prints a png of the plot
+dev.off() #this turns off the print command
+
+MaineDMR_obs <- tidydata[tidydata$institutioncode == "MaineDMR", ]
+map2 <- getMap(resolution = "low") #creates an object called map at low resoultion
+plot(map2, xlim = c(-71, -43), ylim =c(39, 62), asp = 1, main = "Maine DMR Occurrences",  col = "cornsilk") #the x and y lim are the long-lat bounds of the map
+points(MaineDMR_obs$decimalLongitude, MaineDMR_obs$decimalLatitude, col = "red") #this adds points to the mapet", xlab = "Longitude", ylab = "Latitude")
+dev.copy(png, "../output/bio/MaineDMR_occurrences_all.png") #this prints a png of the plot
+dev.off() #this turns off the print command
+
+NAFO_obs <- tidydata[tidydata$institutioncode == "NAFO", ]
+map2 <- getMap(resolution = "low") #creates an object called map at low resoultion
+plot(map2, xlim = c(-71, -43), ylim =c(39, 62), asp = 1, main = "NAFO Occurrences",  col = "cornsilk") #the x and y lim are the long-lat bounds of the map
+points(NAFO_obs$decimalLongitude, NAFO_obs$decimalLatitude, col = "red") #this adds points to the mapet", xlab = "Longitude", ylab = "Latitude")
+dev.copy(png, "../output/bio/NAFO_occurrences_all.png") #this prints a png of the plot
+dev.off() #this turns off the print command
+
+NEFSC_obs <- tidydata[tidydata$institutioncode == "NEFSC", ]
+map2 <- getMap(resolution = "low") #creates an object called map at low resoultion
+plot(map2, xlim = c(-71, -43), ylim =c(39, 62), asp = 1, main = "NEFSC Occurrences",  col = "cornsilk") #the x and y lim are the long-lat bounds of the map
+points(NEFSC_obs$decimalLongitude, NEFSC_obs$decimalLatitude, col = "red") #this adds points to the mapet", xlab = "Longitude", ylab = "Latitude")
+dev.copy(png, "../output/bio/NEFSC_occurrences_all.png") #this prints a png of the plot
+dev.off() #this turns off the print command
+
+ROM_obs <- tidydata[tidydata$institutioncode == "ROM", ]
+map2 <- getMap(resolution = "low") #creates an object called map at low resoultion
+plot(map2, xlim = c(-71, -43), ylim =c(39, 62), asp = 1, main = "Royal Ontario Museum Occurrences",  col = "cornsilk") #the x and y lim are the long-lat bounds of the map
+points(ROM_obs$decimalLongitude, ROM_obs$decimalLatitude, col = "red") #this adds points to the mapet", xlab = "Longitude", ylab = "Latitude")
+dev.copy(png, "../output/bio/ROM_occurrences_all.png") #this prints a png of the plot
+dev.off() #this turns off the print command
+
+USNM_obs <- tidydata[tidydata$institutioncode == "USNM", ]
+map2 <- getMap(resolution = "low") #creates an object called map at low resoultion
+plot(map2, xlim = c(-71, -43), ylim =c(39, 62), asp = 1, main = "National Museum of Natural History Occurrences",  col = "cornsilk") #the x and y lim are the long-lat bounds of the map
+points(USNM_obs$decimalLongitude, USNM_obs$decimalLatitude, col = "red") #this adds points to the mapet", xlab = "Longitude", ylab = "Latitude")
+dev.copy(png, "../output/bio/USNM_occurrences_all.png") #this prints a png of the plot
+dev.off() #this turns off the print command
+```
+
+
+Looking at the maps, the ROM, NAFO, IMR, ICES have data next to iceland.
+Since NAFO, IMR, and ICES only have one data point each, you can remove these observations easily from the record...
+```{r}
+tidydata <- tidydata[!tidydata$institutioncode == "NAFO", ]
+tidydata <- tidydata[!tidydata$institutioncode == "IMR", ]
+tidydata <- tidydata[!tidydata$institutioncode == "ICES", ]
+```
+Now for  ROM there are more data points...
+
+
+
+write what you have so far to a csv
+```{r}
+write.csv(tidydata, file = "../data/bio/capelin_obis_tidy.csv", row.names = FALSE)
+```
 
