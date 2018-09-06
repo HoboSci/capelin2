@@ -16,7 +16,7 @@ You can load them using the following code which uses a function called [ipak](h
 Note this function checks to see if the packages are installed first.
 Th
 ```{r pre-install packages, message=FALSE}
-packages <- c("packrat", "rworldmap", "dplyr","plyr", "rgdal")
+packages <- c("packrat", "rworldmap", "dplyr","plyr", "rgdal", "sp",)
 source("../src/ipak.R")
 ipak(packages)
 suppressMessages(ipak)
@@ -70,9 +70,10 @@ institutioncode
 individualcount
 resname
 originalscientificname
+collectioncode (this contains some info that might help with finding out gear used in the survey)
 
 ```{r select colums needed}
-tidydata <- subset(tidydata, select = c(id, decimalLatitude, decimalLongitude, datecollected, institutioncode, individualcount, resname, originalscientificname))
+tidydata <- subset(tidydata, select = c(id, decimalLatitude, decimalLongitude, datecollected, institutioncode, individualcount, resname, originalscientificname, collectioncode))
 head(tidydata)
 ```
 
@@ -366,8 +367,7 @@ write.csv(tidydata, file = "../data/bio/capelin_obis_tidy.csv", row.names = FALS
 The BIOMER dataset starts in 1998-01 (GLORYS 1993), so cut all occurrences prior to 1998-01
 
 ```{r remove occurrences prior to 98/01}
-tidytest <- tidydata
-tidytest <- tidytest[tidytest$year >= 1998, ]
+tidydata <- tidydata[tidydata$year >= 1998, ]
 ```
 
 and write to a csv...
@@ -397,11 +397,284 @@ head(adddata)
 # Add NAFO Region occurrence is from
 NAFO Zones shapefile obtained from [NAFO](https://www.nafo.int/Data/GIS)
 
-```{r}
+```{r NAFO shapefile extraction}
 library(rgdal)
-addtest <- adddata
-
+library(sp)
+coordinates(adddata) <- c("decimalLongitude", "decimalLatitude") 
+nafo_zones <- readOGR(dsn=path.expand("../data/bio/nafo_zones"), layer = "nafo_zones_wgs84") #this loads the shapefile
+proj4string(adddata) <- proj4string(nafo_zones) #tells R that the occurrence data is the same projection as the shapefile
+adddata$nafo_zone <- over(adddata, nafo_zones)$ZONE #ZONE is where the zone data is held in teh shapefiles' attributes
+head(adddata) #just to check it worked
 ```
+
+Great. Lets see if any are missing a NAFO Zone. But first, write to a csv and reload as the data is now some wierd 'spatial points dataframe'...
+```{r}
+write.csv(adddata, "../data/bio/capelin_additional_tidy.csv", row.names=FALSE)
+adddata <- read.csv("../data/bio/capelin_additional_tidy.csv")
+nafo_na <- subset(adddata, is.na(adddata$nafo_zone))
+nafo_na
+```
+
+Uh oh there is a lot. A bet a bunch of them are in the Hudson Strait (which is outside the NAFO Zone).Map the nafo_na points...
+```{r}
+plot(map2, xlim = c(-71, -43), ylim =c(38, 62), asp = 1, main = "Occurences missing a NAFO Zone", col = "cornsilk") #the x and y lim are the long-lat bounds of the map
+points(nafo_na$decimalLongitude, nafo_na$decimalLatitude, col = "red") #this adds points to the mapet", xlab = "Longitude", ylab = "Latitude")
+```
+ok yes - Hudson Strait has many, but there are some near the coast that are probably just missed out due to minor differences in the point location/shapefile boundaries.
+Start with the Hudson Strait ones as this is easy - anything above 56N, nafo_zone == "HudsonStrait"
+
+```{r}
+adddata$nafo_zone <- as.character(adddata$nafo_zone)
+adddata[is.na(adddata)] <- "xx"
+adddata$nafo_zone[adddata$nafo_zone == "xx" & adddata$decimalLatitude > 56] <- "HudsonStrait"
+```
+and map to check
+```{r}
+nafo_na <- subset(adddata, nafo_zone == "xx")
+plot(map2, xlim = c(-71, -43), ylim =c(38, 62), asp = 1, main = "Occurences missing a NAFO Zone", col = "cornsilk") #the x and y lim are the long-lat bounds of the map
+points(nafo_na$decimalLongitude, nafo_na$decimalLatitude, col = "red") #this adds points to the mapet", xlab = "Longitude", ylab = "Latitude")
+```
+so now i need to account for the others (either as occuring on land or just in an area that is missing a NAFO Zone tag) which is more tricky... i might just do this bit in ArcGIS quickly.
+```{r}
+write.csv(adddata, file = "../data/bio/capelin_additional_tidy.csv", row.names = FALSE)
+```
+So in ArcGIS I saw that these points fall on land. Some are extremely close to the coast, some further inland. There are only 132 of thesepoints, so I will just delete them from the database.
+```{r}
+adddata$nafo_zone[adddata$nafo_zone == "xx"] <- NA #make all xx values NA
+adddata <- adddata[!is.na(adddata$nafo_zone), ]
+write.csv(adddata, file = "../data/bio/capelin_additional_tidy.csv", row.names = FALSE)
+```
+
+#Gear type
+To get this information, I need to look at the collectioncode details and the OBIS metadata for each resname and then add.
+```{r}
+adddata$gear <- "x" #create a new column called gear and populate with x
+#now give a list of the resnames...
+whichres <- unique(adddata$resname) #makes a variable of institutions
+whichresordered <- sort(whichres) #just puts the list in 
+whichresordered
+```
+[Arctic Species Trend Index (ASTI) : Marine](http://www.iobis.org/explore/#/dataset/4356). No gear details available
+```{r}
+asti <- subset(adddata, resname == "Arctic Species Trend Index (ASTI) : Marine")
+asti$collectioncode <- as.character(asti$collectioncode)
+asti_col <- unique(asti$collectioncode) #makes a variable of institutions
+asti_colordered <- sort(asti_col) #just puts the list in 
+asti_colordered
+```
+there is no information in the collection code. The Metadata on OBIS also gives no details. gear = NA
+```{r}
+adddata$gear[adddata$resname == "Arctic Species Trend Index (ASTI) : Marine"] <- "NA"
+```
+
+[Atlantic Reference Centre Museum of Canadian Atlantic Organisms - Invertebrates and Fishes Data](http://www.iobis.org/explore/#/dataset/29).
+```{r}
+arcm <- subset(adddata, resname == "Atlantic Reference Centre Museum of Canadian Atlantic Organisms - Invertebrates and Fishes Data")
+arcm$collectioncode <- as.character(arcm$collectioncode)
+arcm_col <- unique(arcm$collectioncode) #makes a variable of institutions
+arcm_colordered <- sort(arcm_col) #just puts the list in 
+arcm_colordered
+```
+No gear details in collectioncode. The Metadata on OBIS also gives no details. gear = NA 
+```{r}
+adddata$gear[adddata$resname == "Atlantic Reference Centre Museum of Canadian Atlantic Organisms - Invertebrates and Fishes Data"] <- "NA"
+```
+
+[Atlantic Zone Monitoring Program Maritimes Region (AZMP) plankton datasets. In: Fisheries and Oceans Canada - BioChem archive](http://iobis.org/explore/#/dataset/2328). 
+```{r}
+azmpmar <- subset(adddata, resname == "Atlantic Zone Monitoring Program Maritimes Region (AZMP) plankton datasets. In: Fisheries and Oceans Canada - BioChem archive")
+azmpmar$collectioncode <- as.character(azmpmar$collectioncode)
+azmpmar_col <- unique(azmpmar$collectioncode) #makes a variable of institutions
+azmpmar_colordered <- sort(azmpmar_col) #just puts the list in 
+azmpmar_colordered
+```
+No gear details in collectioncode. The metadata on OBIS indicates vertical plankton tow 
+```{r}
+adddata$gear[adddata$resname == "Atlantic Zone Monitoring Program Maritimes Region (AZMP) plankton datasets. In: Fisheries and Oceans Canada - BioChem archive"] <- "vertical_plankton_tow"
+```
+
+[BioChem zooplankton samples from the Gully, 2006-2007](http://iobis.org/explore/#/dataset/2327). 
+```{r}
+biogul <- subset(adddata, resname == "BioChem zooplankton samples from the Gully, 2006-2007")
+biogul$collectioncode <- as.character(biogul$collectioncode)
+biogul_col <- unique(biogul$collectioncode) #makes a variable of institutions
+biogul_colordered <- sort(biogul_col) #just puts the list in 
+biogul_colordered
+```
+Along with the OBIS metadata, indicates gear = vertical plankton tow
+```{r}
+adddata$gear[adddata$resname == "BioChem zooplankton samples from the Gully, 2006-2007"] <- "vertical_plankton_tow"
+```
+
+[BioChem: DFO Atlantic Zone Monitoring Program plankton datasets - Newfoundland and Labrador Region (OBIS Canada)](http://iobis.org/explore/#/dataset/2666). 
+```{r}
+azmpnl <- subset(adddata, resname == "BioChem: DFO Atlantic Zone Monitoring Program plankton datasets - Newfoundland and Labrador Region (OBIS Canada")
+azmpnl$collectioncode <- as.character(azmpnl$collectioncode)
+azmpnl_col <- unique(azmpnl$collectioncode) #makes a variable of institutions
+azmpnl_colordered <- sort(azmpnl_col) #just puts the list in 
+azmpnl_colordered
+```
+No details in collectioncode. Obis metadata indicates gear = vertical plankton tow
+```{r}
+adddata$gear[adddata$resname == "BioChem: DFO Atlantic Zone Monitoring Program plankton datasets - Newfoundland and Labrador Region (OBIS Canada)"] <- "vertical_plankton_tow"
+```
+
+[BioChem: Sameoto zooplankton collection](http://iobis.org/explore/#/dataset/2670).Vertical plankton tow
+```{r}
+biosam <- subset(adddata, resname == "BioChem: Sameoto zooplankton collection")
+biosam$collectioncode <- as.character(biosam$collectioncode)
+biosam_col <- unique(biosam$collectioncode) #makes a variable of institutions
+biosam_colordered <- sort(biosam_col) #just puts the list in 
+biosam_colordered
+```
+Insufficient details in collectioncode. Obis metadata indicates gear = vertical plankton tow
+```{r}
+adddata$gear[adddata$resname == "BioChem: Sameoto zooplankton collection"] <- "vertical_plankton_tow"
+```
+
+[DFO Central and Arctic Multi-species Stock Assessment Surveys](http://iobis.org/explore/#/dataset/2293). A
+```{r}
+dfocas <- subset(adddata, resname == "DFO Central and Arctic Multi-species Stock Assessment Surveys")
+dfocas$collectioncode <- as.character(dfocas$collectioncode)
+dfocas_col <- unique(dfocas$collectioncode) #makes a variable of institutions
+dfocas_colordered <- sort(dfocas_col) #just puts the list in 
+dfocas_colordered
+```
+ok these are all types of bottom trawl.
+```{r}
+adddata$gear[adddata$resname == "DFO Central and Arctic Multi-species Stock Assessment Surveys" & adddata$collectioncode == "DFOSurvey_Modified Alfredo-03"] <- "bottom_trawl_alfredo_03"
+adddata$gear[adddata$resname == "DFO Central and Arctic Multi-species Stock Assessment Surveys" & adddata$collectioncode == "DFOSurvey_Modified Cosmos 2600"] <- "bottom_trawl_cosmos_2600"
+adddata$gear[adddata$resname == "DFO Central and Arctic Multi-species Stock Assessment Surveys" & adddata$collectioncode == "DFOSurvey_Modified Modified (21\") Campelen"] <- "bottom_trawl_campelen_21"
+adddata$gear[adddata$resname == "DFO Central and Arctic Multi-species Stock Assessment Surveys" & adddata$collectioncode == "DFOSurvey_Modified Standard (14\") Campelen"] <- "bottom_trawl_campelen_14"
+```
+
+[DFO Gulf Region Groundfish Research Vessel Surveys](bottom trawl).  
+```{r}
+dfogulfas <- subset(adddata, resname == "DFO Gulf Region Groundfish Research Vessel Surveys")
+dfogulfas$collectioncode <- as.character(dfogulfas$collectioncode)
+dfogulfas_col <- unique(dfogulfas$collectioncode) #makes a variable of institutions
+dfogulfas_colordered <- sort(dfogulfas_col) #just puts the list in 
+dfogulfas_colordered
+```
+no gear details in collection code. OBIS metadata indicates Three survey vessels and two types of bottom-trawls were used prior to 2003: the E. E. Prince from 1971-1985 using a Yankee 36 trawl, the Lady Hammond from 1985-1991 and the Alfred Needler from 1992-2002, both using a Western IIA trawl. Due to a fire on the Needler, the 2003 survey was conducted by its sister-ship, the Templeman using the Western IIA trawl. This survey started late and was incomplete. The survey was conducted by both the Needler and the Teleost in 2004 and 2005 and by the Teleost since then, using the Western IIA trawl. 
+Note you have not captured ship information above so leave it out here. Your data is 1998 onwards to the gear for all = bottom_trawl_western_IIA
+```{r}
+adddata$gear[adddata$resname == "DFO Gulf Region Groundfish Research Vessel Surveys"] <- "bottom_trawl_western_IIA"
+```
+
+[DFO Maritimes Research Vessel Trawl Surveys Fish Observations](http://iobis.org/explore/#/dataset/237).
+```{r}
+dfomas <- subset(adddata, resname == "DFO Maritimes Research Vessel Trawl Surveys Fish Observations")
+dfomas$collectioncode <- as.character(dfomas$collectioncode)
+dfomas_col <- unique(dfomas$collectioncode) #makes a variable of institutions
+dfomas_colordered <- sort(dfomas_col) #just puts the list in 
+dfomas_colordered
+```
+insuffient information. OBIS metadata just indicates "a variety of trawl gear". gear = "bottom_trawl"
+```{r}
+adddata$gear[adddata$resname == "DFO Maritimes Research Vessel Trawl Surveys Fish Observations"] <- "bottom_trawl"
+```
+
+[DFO Newfoundland and Labrador Region Ecosystem Trawl Surveys](http://iobis.org/explore/#/dataset/2814)
+```{r}
+dfonas <- subset(adddata, resname == "DFO Newfoundland and Labrador Region Ecosystem Trawl Surveys")
+dfonas$collectioncode <- as.character(dfonas$collectioncode)
+dfonas_col <- unique(dfonas$collectioncode) #makes a variable of institutions
+dfonas_colordered <- sort(dfonas_col) #just puts the list in 
+dfonas_colordered
+```
+More useful, OBIS metadata indicates "Starting in the fall of 1995 surveys have been conducted using a Campelen 1800 trawl fitted with rock-hopper foot gear." gear = bottom_trawl_campelen_1800
+```{r}
+adddata$gear[adddata$resname == "DFO Newfoundland and Labrador Region Ecosystem Trawl Surveys"] <- "bottom_trawl_campelen_1800"
+```
+
+[DFO Quebec Region Multispecies bottom trawl surveys](http://iobis.org/explore/#/dataset/2542)
+```{r}
+dfoqas <- subset(adddata, resname == "DFO Quebec Region Multispecies bottom trawl surveys")
+dfoqas$collectioncode <- as.character(dfoqas$collectioncode)
+dfoqas_col <- unique(dfoqas$collectioncode) #makes a variable of institutions
+dfoqas_colordered <- sort(dfoqas_col) #just puts the list in 
+dfoqas_colordered
+```
+no gear details in collectioncode. OBIS metadata indicates Campelen 1800. gear = bottom_trawl_campelen_1800
+```{r}
+adddata$gear[adddata$resname == "DFO Quebec Region Multispecies bottom trawl surveys"] <- "bottom_trawl_campelen_1800"
+```
+
+[Fish specimens](http://iobis.org/explore/#/dataset/2417)
+```{r}
+fishsp <- subset(adddata, resname == "Fish specimens")
+fishsp$collectioncode <- as.character(fishsp$collectioncode)
+fishsp_col <- unique(fishsp$collectioncode) #makes a variable of institutions
+fishsp_colordered <- sort(fishsp_col) #just puts the list in 
+fishsp_colordered
+```
+no gear detail in collectioncode. OBIS metadata indicates these are museum records. gear = NA
+```{r}
+adddata$gear[adddata$resname == "Fish specimens"] <- "NA"
+```
+
+[Ichthyology Collection - Royal Ontario Museum](http://iobis.org/explore/#/dataset/3511)
+```{r}
+iccol <- subset(adddata, resname == "Ichthyology Collection - Royal Ontario Museum")
+iccol$collectioncode <- as.character(iccol$collectioncode)
+iccol_col <- unique(iccol$collectioncode) #makes a variable of institutions
+iccol_colordered <- sort(iccol_col) #just puts the list in 
+iccol_colordered
+```
+no gear details in collectioncode. OBIS metadata indicates museum records. gear = NA
+```{r}
+adddata$gear[adddata$resname == "Ichthyology Collection - Royal Ontario Museum"] <- "NA"
+```
+
+[Maine Department of Marine Resources Inshore Trawl Survey 2000â€“2009](http://iobis.org/explore/#/dataset/1693)
+```{r}
+mdmr <- subset(adddata, resname == "Maine Department of Marine Resources Inshore Trawl Survey 2000â€“2009")
+mdmr$collectioncode <- as.character(mdmr$collectioncode)
+mdmr_col <- unique(mdmr$collectioncode) #makes a variable of institutions
+mdmr_colordered <- sort(mdmr_col) #just puts the list in 
+mdmr_colordered
+```
+Insufficient infomation in collectioncode. OBIS metadata indicates "a modified version of the shrimp net used in Maine waters. It was designed by the vessel owner and net designer Jeff Flagg to fish for a variety of near-bottom dwelling species without targeting any specific component" gear-type = "bottom_trawl"
+```{r}
+adddata$gear[adddata$resname == "Maine Department of Marine Resources Inshore Trawl Survey 2000â€“2009"] <- "bottom_trawl"
+```
+
+[Northeast Fisheries Science Center Bottom Trawl Survey Data](http://iobis.org/explore/#/dataset/1435)
+```{r}
+nefsu <- subset(adddata, resname == "Northeast Fisheries Science Center Bottom Trawl Survey Data")
+nefsu$collectioncode <- as.character(nefsu$collectioncode)
+nefsu_col <- unique(nefsu$collectioncode) #makes a variable of institutions
+nefsu_colordered <- sort(nefsu_col) #just puts the list in 
+nefsu_colordered
+```
+insufficient detail in collection code. OBIS metadata indicates "bottom trawl gear". gear = "bottom_trawl"
+```{r}
+adddata$gear[adddata$resname == "Northeast Fisheries Science Center Bottom Trawl Survey Data"] <- "bottom_trawl"
+```
+
+[Northern Gulf of St. Lawrence Fishes](http://iobis.org/explore/#/dataset/2671)
+```{r}
+ngsl <- subset(adddata, resname == "Northern Gulf of St. Lawrence Fishes")
+ngsl$collectioncode <- as.character(ngsl$collectioncode)
+ngsl_col <- unique(ngsl$collectioncode) #makes a variable of institutions
+ngsl_colordered <- sort(ngsl_col) #just puts the list in 
+ngsl_colordered
+```
+no gear details in collectioncode. OBIS metadata indicates "Sampling methods used ranged from fish traps and seine nets on the coasts to offshore trawling". gear = NA
+```{r}
+adddata$gear[adddata$resname == "Northern Gulf of St. Lawrence Fishes"] <- "NA"
+```
+
+ok check to see if all of gear is done (ie if there are any x left)
+```{r}
+gearcheck <- subset(adddata, gear == "x")
+gearcheck
+```
+yay - all done.
+
+# createa unique cell ID
+
 
 
 
