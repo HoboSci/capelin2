@@ -6,6 +6,9 @@ output: html_notebook
 
 # Overview
 Preperation of the capelin (*Mallotus villosus*) data obtained from [OBIS](www.iobis.org). This database shows the global occurance of capelin. 
+
+A note to anyone who might happen to stumble across this... I am a beginner in R and have had no exposure to similar languages. The code herein is unlikely to be elegant and there is likely more efficient ways of running the code.
+
 Built with 'r getRversion()'.
 
 # Package dependencies
@@ -13,7 +16,7 @@ You can load them using the following code which uses a function called [ipak](h
 Note this function checks to see if the packages are installed first.
 Th
 ```{r pre-install packages, message=FALSE}
-packages <- c("packrat", "rworldmap", "dplyr" "plyr")
+packages <- c("packrat", "rworldmap", "dplyr","plyr", "rgdal")
 source("../src/ipak.R")
 ipak(packages)
 suppressMessages(ipak)
@@ -73,6 +76,23 @@ tidydata <- subset(tidydata, select = c(id, decimalLatitude, decimalLongitude, d
 head(tidydata)
 ```
 
+# Month year column creation
+make columns for the years and month based on the datecollected column
+```{r new yymmdd columns}
+tidydata$year <- format(as.Date(tidydata$datecollected), "%Y") #created a new column called year
+tidydata$month <- format(as.Date(tidydata$datecollected), "%m") #created a new column called month
+tidydata$day <- format(as.Date(tidydata$datecollected), "%d") #created a new column called day 
+head(tidydata)
+```
+
+the year, month, day columns are characters Change to numeric
+```{r new yymmdd columns 2}
+tidydata$year <- as.numeric(tidydata$year)
+tidydata$month <- as.numeric(tidydata$month)
+tidydata$day <- as.numeric(tidydata$day)
+head(tidydata)
+```
+
 # remove data without month/year info
 
 count NAs in the dataset. Mainly you are interested in the datecollected column (ignore individual count - you know there is a lot missing)
@@ -94,29 +114,14 @@ missingdata2 <- apply(tidydata, 2, function (x) sum(is.na(x)))
 missingdata2
 ```
 
-# Month year column creation
-make columns for the years and month based on the datecollected column
-```{r new yymmdd columns}
-tidydata$year <- format(as.Date(tidydata$datecollected), "%Y") #created a new column called year
-tidydata$month <- format(as.Date(tidydata$datecollected), "%m") #created a new column called month
-tidydata$day <- format(as.Date(tidydata$datecollected), "%d") #created a new column called day 
-head(tidydata)
-```
-
-the year, month, day columns are characters Change to numeric
-```{r new yymmdd columns 2}
-tidydata$year <- as.numeric(tidydata$year)
-tidydata$month <- as.numeric(tidydata$month)
-tidydata$day <- as.numeric(tidydata$day)
-head(tidydata)
-```
 
 # Remove any duplicate entries
 The dplyr package's distinct function removes any duplicate rows (based on all columns EXCEPT id as this is always going to be unique, and year month day as this is generated from datecollected)
 
 ```{r}
 library("dplyr")
-tidydata <- distinct(tidydata, decimalLatitude, decimalLongitude, datecollected, institutioncode, institutioncode, individualcount, resname, originalscientificname)
+tidydata <- distinct(tidydata, decimalLatitude, decimalLongitude, datecollected, institutioncode, institutioncode, individualcount, resname, originalscientificname, .keep_all = T) #the .keep_all means that id isn't excluded from the output
+head(tidydata)
 ```
 
 
@@ -324,17 +329,79 @@ dev.off() #this turns off the print command
 
 Looking at the maps, the ROM, NAFO, IMR, ICES have data next to iceland.
 Since NAFO, IMR, and ICES only have one data point each, you can remove these observations easily from the record...
-```{r}
+```{r remove iceland data}
 tidydata <- tidydata[!tidydata$institutioncode == "NAFO", ]
 tidydata <- tidydata[!tidydata$institutioncode == "IMR", ]
 tidydata <- tidydata[!tidydata$institutioncode == "ICES", ]
 ```
+
 Now for  ROM there are more data points...
+Use indentify function which lets you click on a point on the plot
+```{r locate coordinates of iceland point}
+x11() #this opens the plot i a window you can interact with
+plot(map2, xlim = c(-71, -43), ylim =c(39, 62), asp = 1, main = "Royal Ontario Museum Occurrences",  col = "cornsilk") #the x and y lim are the long-lat bounds of the map
+points(ROM_obs$decimalLongitude, ROM_obs$decimalLatitude, col = "red") #this adds points to the mapet", xlab = "Longitude", ylab = "Latitude"))
+identify(ROM_obs$decimalLongitude, ROM_obs$decimalLatitude, labels=ROM_obs$decimalLongitude) #decimalLongitude chosen as plot identifier as the values are unique
+```
+The point that needs to be removed is located at -44.96667. Note this is not the full value so use some other locators to remove the row (you could just used id, but pick multiple others just to learn)
 
+```{r remove iceland point}
+tidydata <- tidydata[!(tidydata$resname == "Fish specimens" & tidydata$datecollected == "1965-08-13 12:00:00+01"), ]
+```
 
+now replot all data just to check...
 
-write what you have so far to a csv
+```{r map occurrences less iceland}
+plot(map2, xlim = c(-71, -43), ylim =c(38, 62), asp = 1, main = "All Occurrences without Iceland", col = "cornsilk") #the x and y lim are the long-lat bounds of the map
+points(tidydata$decimalLongitude, tidydata$decimalLatitude, col = "red") #this adds points to the mapet", xlab = "Longitude", ylab = "Latitude")
+dev.copy(png, "../output/bio/all_occurrences_less_iceland.png") #this prints a png of the plot
+dev.off() #this turns off the print command
+```
+great! write what you have so far to a csv
 ```{r}
 write.csv(tidydata, file = "../data/bio/capelin_obis_tidy.csv", row.names = FALSE)
 ```
+
+# Remove dates you don't have environmental data for
+The BIOMER dataset starts in 1998-01 (GLORYS 1993), so cut all occurrences prior to 1998-01
+
+```{r remove occurrences prior to 98/01}
+tidytest <- tidydata
+tidytest <- tidytest[tidytest$year >= 1998, ]
+```
+
+and write to a csv...
+```{r}
+write.csv(tidydata, file = "../data/bio/capelin_obis_tidy.csv", row.names = FALSE)
+```
+
+# Adding new (non-environmental) data to the file
+There are some more columns you want to add...
+- Occurrence - presence/background (1/0)
+- NAFO region
+- Gear type
+- Unique Cell ID (based on the environmental data)
+
+so not to mess with tidydata, create a new variable and write a new .csv
+```{r create new variable/csv for adding data}
+adddata <- tidydata
+write.csv(adddata, file = "../data/bio/capelin_additional_tidy.csv", row.names = FALSE)
+```
+
+first create a new column for Occurence, and populate with "1" (because these are all presences)
+```{r}
+adddata$occurrence <- "1"
+head(adddata)
+```
+
+# Add NAFO Region occurrence is from
+NAFO Zones shapefile obtained from [NAFO](https://www.nafo.int/Data/GIS)
+
+```{r}
+library(rgdal)
+addtest <- adddata
+
+```
+
+
 
