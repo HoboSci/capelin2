@@ -189,35 +189,12 @@ $(document).ready(function () {
 <p>You can load them using the following code which uses a function called <a href="https://gist.github.com/stevenworthington/3178163">ipak</a>. Note this function checks to see if the packages are installed first. Th</p>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxucGFja2FnZXMgPC0gYyhcIm5jZGY0XCIpXG5zb3VyY2UoXCIuL3NyYy9pcGFrLlJcIilcbmlwYWsocGFja2FnZXMpXG5gYGAifQ== -->
-<pre class="r"><code>packages &lt;- c(&quot;ncdf4&quot;)
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxucGFja2FnZXMgPC0gYyhcIlJOZXRDREZcIiwgXCJyYXN0ZXJcIiwgXCJyZ2RhbFwiKVxuc291cmNlKFwiLi9zcmMvaXBhay5SXCIpXG5pcGFrKHBhY2thZ2VzKVxuc3VwcHJlc3NNZXNzYWdlcyhpcGFrKVxuYGBgIn0= -->
+<pre class="r"><code>packages &lt;- c(&quot;RNetCDF&quot;, &quot;raster&quot;, &quot;rgdal&quot;)
 source(&quot;./src/ipak.R&quot;)
-ipak(packages)</code></pre>
+ipak(packages)
+suppressMessages(ipak)</code></pre>
 <!-- rnb-source-end -->
-<!-- rnb-output-begin eyJkYXRhIjoidHJ5aW5nIFVSTCAnaHR0cHM6Ly9jcmFuLnJzdHVkaW8uY29tL2Jpbi93aW5kb3dzL2NvbnRyaWIvMy41L25jZGY0XzEuMTYuemlwJ1xuQ29udGVudCB0eXBlICdhcHBsaWNhdGlvbi96aXAnIGxlbmd0aCAyNTk3MDM1IGJ5dGVzICgyLjUgTUIpXG5kb3dubG9hZGVkIDIuNSBNQlxuIn0= -->
-<pre><code>trying URL 'https://cran.rstudio.com/bin/windows/contrib/3.5/ncdf4_1.16.zip'
-Content type 'application/zip' length 2597035 bytes (2.5 MB)
-downloaded 2.5 MB</code></pre>
-<!-- rnb-output-end -->
-<!-- rnb-output-begin eyJkYXRhIjoicGFja2FnZSDigJhuY2RmNOKAmSBzdWNjZXNzZnVsbHkgdW5wYWNrZWQgYW5kIE1ENSBzdW1zIGNoZWNrZWRcblxuVGhlIGRvd25sb2FkZWQgYmluYXJ5IHBhY2thZ2VzIGFyZSBpblxuXHRDOlxcVXNlcnNcXGJ1bm55XFxBcHBEYXRhXFxMb2NhbFxcVGVtcFxcUnRtcHFTWWtDYVxcZG93bmxvYWRlZF9wYWNrYWdlc1xubmNkZjQgXG4gVFJVRSBcbiJ9 -->
-<pre><code>package ‘ncdf4’ successfully unpacked and MD5 sums checked
-
-The downloaded binary packages are in
-    C:\Users\bunny\AppData\Local\Temp\RtmpqSYkCa\downloaded_packages
-ncdf4 
- TRUE </code></pre>
-<!-- rnb-output-end -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuc3VwcHJlc3NNZXNzYWdlcyhpcGFrKVxuYGBgIn0= -->
-<pre class="r"><code>suppressMessages(ipak)</code></pre>
-<!-- rnb-source-end -->
-<!-- rnb-output-begin eyJkYXRhIjoiZnVuY3Rpb24ocGtnKXtcbiAgbmV3LnBrZyA8LSBwa2dbIShwa2cgJWluJSBpbnN0YWxsZWQucGFja2FnZXMoKVssIFwiUGFja2FnZVwiXSldXG4gIGlmIChsZW5ndGgobmV3LnBrZykpIFxuICAgIGluc3RhbGwucGFja2FnZXMobmV3LnBrZywgZGVwZW5kZW5jaWVzID0gVFJVRSlcbiAgc2FwcGx5KHBrZywgcmVxdWlyZSwgY2hhcmFjdGVyLm9ubHkgPSBUUlVFKVxufVxuIn0= -->
-<pre><code>function(pkg){
-  new.pkg &lt;- pkg[!(pkg %in% installed.packages()[, &quot;Package&quot;])]
-  if (length(new.pkg)) 
-    install.packages(new.pkg, dependencies = TRUE)
-  sapply(pkg, require, character.only = TRUE)
-}</code></pre>
-<!-- rnb-output-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 </div>
@@ -225,35 +202,23 @@ ncdf4
 <h1>read in a netcdf</h1>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxubmNiclxuXG5gYGAifQ== -->
-<pre class="r"><code>ncbr
-</code></pre>
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxubGlicmFyeShcIlJOZXRDREZcIikgI3RoaXMgd2lsbCByZWFkIHRoZSBuZXRjZGYgdmVyc2lvbiAxIGZvcm1hdHMgXG5saWJyYXJ5KFwibmNkZjRcIilcbm5jYnIgPC0gYnJpY2soXCIuLi9kYXRhL2Vudi9DTUVNU19HTE9CQUxfUkVBTkFMWVNJU19QSFlfMDAxXzAyNV9zYWxpbml0eV9tb250aGx5X21lYW5fMTk5My0wMS5uY2xvbmxhdC5uY2RlcHRodHJpbS5uY1wiKVxubmNiclxuYGBgIn0= -->
+<pre class="r"><code>library(&quot;RNetCDF&quot;) #this will read the netcdf version 1 formats 
+library(&quot;ncdf4&quot;)
+ncbr &lt;- brick(&quot;../data/env/CMEMS_GLOBAL_REANALYSIS_PHY_001_025_salinity_monthly_mean_1993-01.nclonlat.ncdepthtrim.nc&quot;)
+ncbr</code></pre>
 <!-- rnb-source-end -->
-<!-- rnb-output-begin eyJkYXRhIjoiY2xhc3MgICAgICAgOiBSYXN0ZXJCcmljayBcbmRpbWVuc2lvbnMgIDogOTcsIDExMywgMTA5NjEsIDEgIChucm93LCBuY29sLCBuY2VsbCwgbmxheWVycylcbnJlc29sdXRpb24gIDogMC4yNSwgMC4yNSAgKHgsIHkpXG5leHRlbnQgICAgICA6IC03MS4xMjUsIC00Mi44NzUsIDM3Ljg3NSwgNjIuMTI1ICAoeG1pbiwgeG1heCwgeW1pbiwgeW1heClcbmNvb3JkLiByZWYuIDogK3Byb2o9bG9uZ2xhdCArZGF0dW09V0dTODQgK2VsbHBzPVdHUzg0ICt0b3dnczg0PTAsMCwwIFxuZGF0YSBzb3VyY2UgOiBDOlxcVXNlcnNcXGJ1bm55XFxEb2N1bWVudHNcXEdpdEh1YlxcQ2hhcHRlcl8xXFxkYXRhXFxlbnZcXENNRU1TX0dMT0JBTF9SRUFOQUxZU0lTX1BIWV8wMDFfMDI1X3NhbGluaXR5X21vbnRobHlfbWVhbl8xOTkzLTAxLm5jbG9ubGF0Lm5jZGVwdGh0cmltLm5jIFxubmFtZXMgICAgICAgOiBYMzc3MzE2IFxuei12YWx1ZSAgICAgOiAzNzczMTYgXG52YXJuYW1lICAgICA6IHNhbGluaXR5IFxubGV2ZWwgICAgICAgOiAxIFxuIn0= -->
-<pre><code>class       : RasterBrick 
-dimensions  : 97, 113, 10961, 1  (nrow, ncol, ncell, nlayers)
-resolution  : 0.25, 0.25  (x, y)
-extent      : -71.125, -42.875, 37.875, 62.125  (xmin, xmax, ymin, ymax)
-coord. ref. : +proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0 
-data source : C:\Users\bunny\Documents\GitHub\Chapter_1\data\env\CMEMS_GLOBAL_REANALYSIS_PHY_001_025_salinity_monthly_mean_1993-01.nclonlat.ncdepthtrim.nc 
-names       : X377316 
-z-value     : 377316 
-varname     : salinity 
-level       : 1 </code></pre>
-<!-- rnb-output-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 <p>reproject…</p>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxucnAgPC0gcHJvamVjdFJhc3RlcihuY2JyLCBjcnMgPSBjYW5hZGFfZXFfYXJfcHJvailcblxuYGBgIn0= -->
-<pre class="r"><code>rp &lt;- projectRaster(ncbr, crs = canada_eq_ar_proj)
-</code></pre>
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuY2FuYWRhX2VxX2FyX3Byb2ogPC0gXCIrcHJvaj1hZWEgK2xhdF8xPTUwICtsYXRfMj03MCArbGF0XzA9NDAgK2xvbl8wPS05NiAreF8wPTAgK3lfMD0wICtlbGxwcz1HUlM4MCArZGF0dW09TkFEODMgK3VuaXRzPW0gK25vX2RlZnNcIlxubGlicmFyeShcInJnZGFsXCIpXG5ycCA8LSBwcm9qZWN0UmFzdGVyKG5jYnIsIGNycyA9IGNhbmFkYV9lcV9hcl9wcm9qKVxucnBcbmBgYCJ9 -->
+<pre class="r"><code>canada_eq_ar_proj &lt;- &quot;+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-96 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs&quot;
+library(&quot;rgdal&quot;)
+rp &lt;- projectRaster(ncbr, crs = canada_eq_ar_proj)
+rp</code></pre>
 <!-- rnb-source-end -->
-<!-- rnb-output-begin eyJkYXRhIjoiRXJyb3IgaW4gLnJlYWRSb3dzTmV0Q0RGKHggPSB4LCByb3cgPSByb3csIG5yb3dzID0gbnJvd3MsIGNvbCA9IGNvbCwgbmNvbHMgPSBuY29scykgOiBcbiAgbm8gc2xvdCBvZiBuYW1lIFwiYmFuZFwiIGZvciB0aGlzIG9iamVjdCBvZiBjbGFzcyBcIi5NdWx0aXBsZVJhc3RlckRhdGFcIlxuIn0= -->
-<pre><code>Error in .readRowsNetCDF(x = x, row = row, nrows = nrows, col = col, ncols = ncols) : 
-  no slot of name &quot;band&quot; for this object of class &quot;.MultipleRasterData&quot;</code></pre>
-<!-- rnb-output-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 <!-- rnb-text-end -->
