@@ -1,0 +1,47 @@
+---
+title: "environmental_data_preperation"
+author: "Samantha Andrews"
+output: html_notebook
+---
+
+# Overview
+Preperation of GLORYS and BIOMER netCDFs obtained from [Copernicus](www.marine.copernicus.eu/services-portfolio/access-to-products/). These databases give global oceanographic conditions.
+The BIOMER datasets are in netCDF version 3, and the GLORYS in netCDF version 1
+
+A note to anyone who might happen to stumble across this... I am a beginner in R and have had no exposure to similar languages. The code herein is unlikely to be elegant and there is likely more efficient ways of running the code.
+
+Built with 'r getRversion()'.
+
+# Package dependencies
+You can load them using the following code which uses a function called [ipak](https://gist.github.com/stevenworthington/3178163). 
+Note this function checks to see if the packages are installed first.
+Th
+```{r pre-install packages, message=FALSE}
+packages <- c("RNetCDF", "raster")
+source("./src/ipak.R")
+ipak(packages)
+suppressMessages(ipak)
+```
+
+
+# read in a netcdf
+```{r}
+library("RNetCDF") #this will read the netcdf version 1 formats 
+ncpath <- "../data/env/"
+ncname <- "CMEMS_GLOBAL_REANALYSIS_PHY_001_025_salinity_monthly_mean_1993-01.nclonlat.ncdepthtrim"  
+ncfname <- paste(ncpath, ncname, ".nc", sep="")
+dname <- "salinity"  
+ncin <- nc_open(ncfname)
+ncin
+```
+# convert netCDF into a raster brick
+
+```{r}
+library(raster)
+rp <- projectRaster(ncin,crs="+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-96 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m no_defs")
+```
+
+```{r}
+ncbrick <- brick(ncin)
+```
+
