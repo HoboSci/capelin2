@@ -27,21 +27,16 @@ suppressMessages(ipak)
 # read in a netcdf
 ```{r}
 library("RNetCDF") #this will read the netcdf version 1 formats 
-ncpath <- "../data/env/"
-ncname <- "CMEMS_GLOBAL_REANALYSIS_PHY_001_025_salinity_monthly_mean_1993-01.nclonlat.ncdepthtrim"  
-ncfname <- paste(ncpath, ncname, ".nc", sep="")
-dname <- "salinity"  
-ncin <- nc_open(ncfname)
-ncin
-```
-# convert netCDF into a raster brick
-
-```{r}
-library(raster)
-rp <- projectRaster(ncin,crs="+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-96 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m no_defs")
+library(ncdf4)
+ncbr <- brick("../data/env/CMEMS_GLOBAL_REANALYSIS_PHY_001_025_salinity_monthly_mean_1993-01.nclonlat.ncdepthtrim.nc")
+ncbr
 ```
 
+reproject...
 ```{r}
-ncbrick <- brick(ncin)
+canada_eq_ar_proj <- "+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-96 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs"
+library(rgdal)
+rp <- projectRaster(ncbr, crs = canada_eq_ar_proj)
+rp
 ```
 
