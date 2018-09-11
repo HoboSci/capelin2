@@ -673,6 +673,14 @@ gearcheck
 ```
 yay - all done.
 
+# see who sampled in which year
+
+```{r}
+with(adddata, table(year, institutioncode))
+write.csv(obs_by_ins, file = "../output/bio/institutioncode_by_yr.csv")
+```
+
+
 # createa unique cell ID
 
 
