@@ -673,13 +673,19 @@ gearcheck
 ```
 yay - all done.
 
-# see who sampled in which year
+# see who sampled in which year and month
 
+year
 ```{r}
-with(adddata, table(year, institutioncode))
-write.csv(obs_by_ins, file = "../output/bio/institutioncode_by_yr.csv")
+inst_by_yr <- with(adddata, table(year, institutioncode))
+write.csv(inst_by_yr, file = "../output/bio/institutioncode_by_yr.csv")
 ```
 
+month
+```{r}
+inst_by_mt <- with(adddata, table(month, institutioncode))
+write.csv(inst_by_mt, file = "../output/bio/institutioncode_by_mth.csv")
+```
 
 # createa unique cell ID
 
