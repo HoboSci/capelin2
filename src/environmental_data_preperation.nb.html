@@ -202,49 +202,30 @@ suppressMessages(ipak)</code></pre>
 <h1>read in a netcdf</h1>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxubGlicmFyeShcIlJOZXRDREZcIikgI3RoaXMgd2lsbCByZWFkIHRoZSBuZXRjZGYgdmVyc2lvbiAxIGZvcm1hdHMgXG5saWJyYXJ5KFwibmNkZjRcIilcbm5jYnIgPC0gYnJpY2soXCIuLi9kYXRhL2Vudi9DTUVNU19HTE9CQUxfUkVBTkFMWVNJU19QSFlfMDAxXzAyNV9zYWxpbml0eV9tb250aGx5X21lYW5fMTk5My0wMS5uY2xvbmxhdC5uY2RlcHRodHJpbS5uY1wiKVxuYGBgIn0= -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxubGlicmFyeShcIlJOZXRDREZcIikgI3RoaXMgd2lsbCByZWFkIHRoZSBuZXRjZGYgdmVyc2lvbiAxIGZvcm1hdHMgXG5saWJyYXJ5KFwibmNkZjRcIilcbm5jYnIgPC0gYnJpY2soXCIuLi9kYXRhL2Vudi9DTUVNU19HTE9CQUxfUkVBTkFMWVNJU19QSFlfMDAxXzAyNV9zYWxpbml0eV9tb250aGx5X21lYW5fMTk5My0wMS5uY2xvbmxhdC5uY2RlcHRodHJpbS5uY1wiKVxubmNiclxuYGBgIn0= -->
 <pre class="r"><code>library(&quot;RNetCDF&quot;) #this will read the netcdf version 1 formats 
 library(&quot;ncdf4&quot;)
-ncbr &lt;- brick(&quot;../data/env/CMEMS_GLOBAL_REANALYSIS_PHY_001_025_salinity_monthly_mean_1993-01.nclonlat.ncdepthtrim.nc&quot;)</code></pre>
+ncbr &lt;- brick(&quot;../data/env/CMEMS_GLOBAL_REANALYSIS_PHY_001_025_salinity_monthly_mean_1993-01.nclonlat.ncdepthtrim.nc&quot;)
+ncbr</code></pre>
 <!-- rnb-source-end -->
-<!-- rnb-output-begin eyJkYXRhIjoiXCJsZXZlbFwiIHNldCB0byAxICh0aGVyZSBhcmUgNDcgbGV2ZWxzKVxuIn0= -->
-<pre><code>&quot;level&quot; set to 1 (there are 47 levels)</code></pre>
-<!-- rnb-output-end -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxubmNiclxuYGBgIn0= -->
-<pre class="r"><code>ncbr</code></pre>
-<!-- rnb-source-end -->
-<!-- rnb-output-begin eyJkYXRhIjoiY2xhc3MgICAgICAgOiBSYXN0ZXJCcmljayBcbmRpbWVuc2lvbnMgIDogOTcsIDExMywgMTA5NjEsIDEgIChucm93LCBuY29sLCBuY2VsbCwgbmxheWVycylcbnJlc29sdXRpb24gIDogMC4yNSwgMC4yNSAgKHgsIHkpXG5leHRlbnQgICAgICA6IC03MS4xMjUsIC00Mi44NzUsIDM3Ljg3NSwgNjIuMTI1ICAoeG1pbiwgeG1heCwgeW1pbiwgeW1heClcbmNvb3JkLiByZWYuIDogK3Byb2o9bG9uZ2xhdCArZGF0dW09V0dTODQgK2VsbHBzPVdHUzg0ICt0b3dnczg0PTAsMCwwIFxuZGF0YSBzb3VyY2UgOiBDOlxcVXNlcnNcXGJ1bm55XFxEb2N1bWVudHNcXEdpdEh1YlxcQ2hhcHRlcl8xXFxkYXRhXFxlbnZcXENNRU1TX0dMT0JBTF9SRUFOQUxZU0lTX1BIWV8wMDFfMDI1X3NhbGluaXR5X21vbnRobHlfbWVhbl8xOTkzLTAxLm5jbG9ubGF0Lm5jZGVwdGh0cmltLm5jIFxubmFtZXMgICAgICAgOiBYMzc3MzE2IFxuei12YWx1ZSAgICAgOiAzNzczMTYgXG52YXJuYW1lICAgICA6IHNhbGluaXR5IFxubGV2ZWwgICAgICAgOiAxIFxuIn0= -->
-<pre><code>class       : RasterBrick 
-dimensions  : 97, 113, 10961, 1  (nrow, ncol, ncell, nlayers)
-resolution  : 0.25, 0.25  (x, y)
-extent      : -71.125, -42.875, 37.875, 62.125  (xmin, xmax, ymin, ymax)
-coord. ref. : +proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0 
-data source : C:\Users\bunny\Documents\GitHub\Chapter_1\data\env\CMEMS_GLOBAL_REANALYSIS_PHY_001_025_salinity_monthly_mean_1993-01.nclonlat.ncdepthtrim.nc 
-names       : X377316 
-z-value     : 377316 
-varname     : salinity 
-level       : 1 </code></pre>
-<!-- rnb-output-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 <p>reproject…</p>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuY2FuYWRhX2VxX2FyX3Byb2ogPC0gXCIrcHJvaj1hZWEgK2xhdF8xPTUwICtsYXRfMj03MCArbGF0XzA9NDAgK2xvbl8wPS05NiAreF8wPTAgK3lfMD0wICtlbGxwcz1HUlM4MCArZGF0dW09TkFEODMgK3VuaXRzPW0gK25vX2RlZnNcIlxubGlicmFyeShcInJnZGFsXCIpXG5ycCA8LSBwcm9qZWN0UmFzdGVyKG5jYnIsIGNycyA9IGNhbmFkYV9lcV9hcl9wcm9qKVxuYGBgIn0= -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuY2FuYWRhX2VxX2FyX3Byb2ogPC0gXCIrcHJvaj1hZWEgK2xhdF8xPTUwICtsYXRfMj03MCArbGF0XzA9NDAgK2xvbl8wPS05NiAreF8wPTAgK3lfMD0wICtlbGxwcz1HUlM4MCArZGF0dW09TkFEODMgK3VuaXRzPW0gK25vX2RlZnNcIlxubGlicmFyeShcInJnZGFsXCIpXG5ycCA8LSBwcm9qZWN0UmFzdGVyKG5jYnIsIGNycyA9IGNhbmFkYV9lcV9hcl9wcm9qKVxucnBcbmBgYCJ9 -->
 <pre class="r"><code>canada_eq_ar_proj &lt;- &quot;+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-96 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs&quot;
 library(&quot;rgdal&quot;)
-rp &lt;- projectRaster(ncbr, crs = canada_eq_ar_proj)</code></pre>
+rp &lt;- projectRaster(ncbr, crs = canada_eq_ar_proj)
+rp</code></pre>
 <!-- rnb-source-end -->
-<!-- rnb-output-begin eyJkYXRhIjoiRXJyb3IgaW4gLnJlYWRSb3dzTmV0Q0RGKHggPSB4LCByb3cgPSByb3csIG5yb3dzID0gbnJvd3MsIGNvbCA9IGNvbCwgbmNvbHMgPSBuY29scykgOiBcbiAgbm8gc2xvdCBvZiBuYW1lIFwiYmFuZFwiIGZvciB0aGlzIG9iamVjdCBvZiBjbGFzcyBcIi5NdWx0aXBsZVJhc3RlckRhdGFcIlxuIn0= -->
-<pre><code>Error in .readRowsNetCDF(x = x, row = row, nrows = nrows, col = col, ncols = ncols) : 
-  no slot of name &quot;band&quot; for this object of class &quot;.MultipleRasterData&quot;</code></pre>
-<!-- rnb-output-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
+<p>um…</p>
 <!-- rnb-text-end -->
 </div>
 
-<div id="rmd-source-code">LS0tDQp0aXRsZTogImVudmlyb25tZW50YWxfZGF0YV9wcmVwZXJhdGlvbiINCmF1dGhvcjogIlNhbWFudGhhIEFuZHJld3MiDQpvdXRwdXQ6IGh0bWxfbm90ZWJvb2sNCi0tLQ0KDQojIE92ZXJ2aWV3DQpQcmVwZXJhdGlvbiBvZiBHTE9SWVMgYW5kIEJJT01FUiBuZXRDREZzIG9idGFpbmVkIGZyb20gW0NvcGVybmljdXNdKHd3dy5tYXJpbmUuY29wZXJuaWN1cy5ldS9zZXJ2aWNlcy1wb3J0Zm9saW8vYWNjZXNzLXRvLXByb2R1Y3RzLykuIFRoZXNlIGRhdGFiYXNlcyBnaXZlIGdsb2JhbCBvY2Vhbm9ncmFwaGljIGNvbmRpdGlvbnMuDQpUaGUgQklPTUVSIGRhdGFzZXRzIGFyZSBpbiBuZXRDREYgdmVyc2lvbiAzLCBhbmQgdGhlIEdMT1JZUyBpbiBuZXRDREYgdmVyc2lvbiAxDQoNCkEgbm90ZSB0byBhbnlvbmUgd2hvIG1pZ2h0IGhhcHBlbiB0byBzdHVtYmxlIGFjcm9zcyB0aGlzLi4uIEkgYW0gYSBiZWdpbm5lciBpbiBSIGFuZCBoYXZlIGhhZCBubyBleHBvc3VyZSB0byBzaW1pbGFyIGxhbmd1YWdlcy4gVGhlIGNvZGUgaGVyZWluIGlzIHVubGlrZWx5IHRvIGJlIGVsZWdhbnQgYW5kIHRoZXJlIGlzIGxpa2VseSBtb3JlIGVmZmljaWVudCB3YXlzIG9mIHJ1bm5pbmcgdGhlIGNvZGUuDQoNCkJ1aWx0IHdpdGggJ3IgZ2V0UnZlcnNpb24oKScuDQoNCiMgUGFja2FnZSBkZXBlbmRlbmNpZXMNCllvdSBjYW4gbG9hZCB0aGVtIHVzaW5nIHRoZSBmb2xsb3dpbmcgY29kZSB3aGljaCB1c2VzIGEgZnVuY3Rpb24gY2FsbGVkIFtpcGFrXShodHRwczovL2dpc3QuZ2l0aHViLmNvbS9zdGV2ZW53b3J0aGluZ3Rvbi8zMTc4MTYzKS4gDQpOb3RlIHRoaXMgZnVuY3Rpb24gY2hlY2tzIHRvIHNlZSBpZiB0aGUgcGFja2FnZXMgYXJlIGluc3RhbGxlZCBmaXJzdC4NClRoDQpgYGB7ciBwcmUtaW5zdGFsbCBwYWNrYWdlcywgbWVzc2FnZT1GQUxTRX0NCnBhY2thZ2VzIDwtIGMoIlJOZXRDREYiLCAicmFzdGVyIiwgInJnZGFsIikNCnNvdXJjZSgiLi9zcmMvaXBhay5SIikNCmlwYWsocGFja2FnZXMpDQpzdXBwcmVzc01lc3NhZ2VzKGlwYWspDQpgYGANCg0KDQojIHJlYWQgaW4gYSBuZXRjZGYNCmBgYHtyfQ0KbGlicmFyeSgiUk5ldENERiIpICN0aGlzIHdpbGwgcmVhZCB0aGUgbmV0Y2RmIHZlcnNpb24gMSBmb3JtYXRzIA0KbGlicmFyeSgibmNkZjQiKQ0KbmNiciA8LSBicmljaygiLi4vZGF0YS9lbnYvQ01FTVNfR0xPQkFMX1JFQU5BTFlTSVNfUEhZXzAwMV8wMjVfc2FsaW5pdHlfbW9udGhseV9tZWFuXzE5OTMtMDEubmNsb25sYXQubmNkZXB0aHRyaW0ubmMiKQ0KbmNicg0KYGBgDQoNCnJlcHJvamVjdC4uLg0KYGBge3J9DQpjYW5hZGFfZXFfYXJfcHJvaiA8LSAiK3Byb2o9YWVhICtsYXRfMT01MCArbGF0XzI9NzAgK2xhdF8wPTQwICtsb25fMD0tOTYgK3hfMD0wICt5XzA9MCArZWxscHM9R1JTODAgK2RhdHVtPU5BRDgzICt1bml0cz1tICtub19kZWZzIg0KbGlicmFyeSgicmdkYWwiKQ0KcnAgPC0gcHJvamVjdFJhc3RlcihuY2JyLCBjcnMgPSBjYW5hZGFfZXFfYXJfcHJvaikNCnJwDQpgYGANCg0K</div>
+<div id="rmd-source-code">LS0tDQp0aXRsZTogImVudmlyb25tZW50YWxfZGF0YV9wcmVwZXJhdGlvbiINCmF1dGhvcjogIlNhbWFudGhhIEFuZHJld3MiDQpvdXRwdXQ6IGh0bWxfbm90ZWJvb2sNCi0tLQ0KDQojIE92ZXJ2aWV3DQpQcmVwZXJhdGlvbiBvZiBHTE9SWVMgYW5kIEJJT01FUiBuZXRDREZzIG9idGFpbmVkIGZyb20gW0NvcGVybmljdXNdKHd3dy5tYXJpbmUuY29wZXJuaWN1cy5ldS9zZXJ2aWNlcy1wb3J0Zm9saW8vYWNjZXNzLXRvLXByb2R1Y3RzLykuIFRoZXNlIGRhdGFiYXNlcyBnaXZlIGdsb2JhbCBvY2Vhbm9ncmFwaGljIGNvbmRpdGlvbnMuDQpUaGUgQklPTUVSIGRhdGFzZXRzIGFyZSBpbiBuZXRDREYgdmVyc2lvbiAzLCBhbmQgdGhlIEdMT1JZUyBpbiBuZXRDREYgdmVyc2lvbiAxDQoNCkEgbm90ZSB0byBhbnlvbmUgd2hvIG1pZ2h0IGhhcHBlbiB0byBzdHVtYmxlIGFjcm9zcyB0aGlzLi4uIEkgYW0gYSBiZWdpbm5lciBpbiBSIGFuZCBoYXZlIGhhZCBubyBleHBvc3VyZSB0byBzaW1pbGFyIGxhbmd1YWdlcy4gVGhlIGNvZGUgaGVyZWluIGlzIHVubGlrZWx5IHRvIGJlIGVsZWdhbnQgYW5kIHRoZXJlIGlzIGxpa2VseSBtb3JlIGVmZmljaWVudCB3YXlzIG9mIHJ1bm5pbmcgdGhlIGNvZGUuDQoNCkJ1aWx0IHdpdGggJ3IgZ2V0UnZlcnNpb24oKScuDQoNCiMgUGFja2FnZSBkZXBlbmRlbmNpZXMNCllvdSBjYW4gbG9hZCB0aGVtIHVzaW5nIHRoZSBmb2xsb3dpbmcgY29kZSB3aGljaCB1c2VzIGEgZnVuY3Rpb24gY2FsbGVkIFtpcGFrXShodHRwczovL2dpc3QuZ2l0aHViLmNvbS9zdGV2ZW53b3J0aGluZ3Rvbi8zMTc4MTYzKS4gDQpOb3RlIHRoaXMgZnVuY3Rpb24gY2hlY2tzIHRvIHNlZSBpZiB0aGUgcGFja2FnZXMgYXJlIGluc3RhbGxlZCBmaXJzdC4NClRoDQpgYGB7ciBwcmUtaW5zdGFsbCBwYWNrYWdlcywgbWVzc2FnZT1GQUxTRX0NCnBhY2thZ2VzIDwtIGMoIlJOZXRDREYiLCAicmFzdGVyIiwgInJnZGFsIikNCnNvdXJjZSgiLi9zcmMvaXBhay5SIikNCmlwYWsocGFja2FnZXMpDQpzdXBwcmVzc01lc3NhZ2VzKGlwYWspDQpgYGANCg0KDQojIHJlYWQgaW4gYSBuZXRjZGYNCmBgYHtyfQ0KbGlicmFyeSgiUk5ldENERiIpICN0aGlzIHdpbGwgcmVhZCB0aGUgbmV0Y2RmIHZlcnNpb24gMSBmb3JtYXRzIA0KbGlicmFyeSgibmNkZjQiKQ0KbmNiciA8LSBicmljaygiLi4vZGF0YS9lbnYvQ01FTVNfR0xPQkFMX1JFQU5BTFlTSVNfUEhZXzAwMV8wMjVfc2FsaW5pdHlfbW9udGhseV9tZWFuXzE5OTMtMDEubmNsb25sYXQubmNkZXB0aHRyaW0ubmMiKQ0KbmNicg0KYGBgDQoNCnJlcHJvamVjdC4uLg0KYGBge3J9DQpjYW5hZGFfZXFfYXJfcHJvaiA8LSAiK3Byb2o9YWVhICtsYXRfMT01MCArbGF0XzI9NzAgK2xhdF8wPTQwICtsb25fMD0tOTYgK3hfMD0wICt5XzA9MCArZWxscHM9R1JTODAgK2RhdHVtPU5BRDgzICt1bml0cz1tICtub19kZWZzIg0KbGlicmFyeSgicmdkYWwiKQ0KcnAgPC0gcHJvamVjdFJhc3RlcihuY2JyLCBjcnMgPSBjYW5hZGFfZXFfYXJfcHJvaikNCnJwDQpgYGANCnVtLi4uDQo=</div>
 
 
 

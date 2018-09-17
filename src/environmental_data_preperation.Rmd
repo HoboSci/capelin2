@@ -39,4 +39,4 @@ library("rgdal")
 rp <- projectRaster(ncbr, crs = canada_eq_ar_proj)
 rp
 ```
-
+um...
