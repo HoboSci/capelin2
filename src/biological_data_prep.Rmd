@@ -16,7 +16,7 @@ You can load them using the following code which uses a function called [ipak](h
 Note this function checks to see if the packages are installed first.
 Th
 ```{r pre-install packages, message=FALSE}
-packages <- c("packrat", "rworldmap", "dplyr","plyr", "rgdal", "sp",)
+packages <- c("packrat", "rworldmap", "dplyr","plyr", "rgdal", "sp", "raster")
 source("../src/ipak.R")
 ipak(packages)
 suppressMessages(ipak)
@@ -687,8 +687,32 @@ inst_by_mt <- with(adddata, table(month, institutioncode))
 write.csv(inst_by_mt, file = "../output/bio/institutioncode_by_mth.csv")
 ```
 
-# createa unique cell ID
+# create a unique cell ID
 
+A unique cell ID layer has been created in the environmental_data_preperation.Rmd. Now you want to extract the value of that layer to the .csv you are creating...
 
-
+Load the env. data
+```{r}
+library(raster)
+cell_layer <- raster("../output/env/unique_cell.tif") #this is loading the cell layer that was created and saved as a tif
+plot(cell_layer)
+```
+The occurrence data needs to be converted into s spatialpoints dataframe
+```{r}
+library(sp)
+xy <- adddata[ ,c(2,3)]
+spatial_data <- SpatialPointsDataFrame(coords = xy, data = adddata, proj4string = CRS("+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"))
+spatial_data
+```
+ok now you should probably reproject the data into the same projection as the env. data
+```{r}
+spatial_data_aea <- spTransform(spatial_data, CRS = "+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-60 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs") #note -60 used to be -91. Changed to 'straighten up'
+```
+Ok now plot the env. and point data...
+```{r}
+plot(cell_layer)
+plot(spatial_data_aea$decimalLatitude, spatial_data_aea$decimalLongitude)
+plot(spatial_data$decimalLongitude,spatial_data$decimalLatitude)
+```
+oh it doesn;t work... it should be in meters now?
 
