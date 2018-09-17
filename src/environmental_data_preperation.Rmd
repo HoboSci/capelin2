@@ -18,7 +18,7 @@ Note this function checks to see if the packages are installed first.
 Th
 ```{r pre-install packages, message=FALSE}
 packages <- c("RNetCDF", "raster", "rgdal")
-source("./src/ipak.R")
+source("../src/ipak.R")
 ipak(packages)
 suppressMessages(ipak)
 ```
@@ -39,4 +39,36 @@ library("rgdal")
 rp <- projectRaster(ncbr, crs = canada_eq_ar_proj)
 rp
 ```
+<<<<<<< HEAD
 um...
+=======
+
+# michael code
+```{r}
+## use ncdf4 directly
+library(ncdf4)
+## connection to the file
+nc <- nc_open("../data/env/CMEMS_GLOBAL_REANALYSIS_PHY_001_025_salinity_monthly_mean_1993-01.nclonlat.ncdepthtrim.nc")
+## desired variable 
+v <- ncvar_get(nc, "salinity")
+## dimension coordinates
+lon <- ncvar_get(nc, "longitude")
+lat <- ncvar_get(nc, "latitude")
+## a template, one map from the lon, lat, and v[,,1]
+template <- raster(list(x = lon, y = lat, z = v[,,1]), crs = "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0 ")
+
+## apply template to brick, and set values to v (but flipped in Y because that's how raster works - lat is increasing in the NetCDF, so we go upside down)
+diy <- setValues(brick(template), v[, ncol(v):1, ])
+
+## target
+prj <- "+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-96 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs"
+target <- projectExtent(diy, prj)  ## get a target extent, and we'll set the exact resolution we want
+res(target) <- c(25000, 25000)
+aea <- projectRaster(diy, target)
+writeRaster(aea,'../data/env/aea.tif',options=c('TFW=YES'))
+plot(aea[[36]]) #the number in brackets refers to the depth number
+
+m <- spTransform(rnaturalearth::ne_countries(), prj)
+```
+
+>>>>>>> 70371c3f9a3e5693038dc7cfecc846d17e51933f
