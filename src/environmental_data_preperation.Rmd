@@ -15,35 +15,22 @@ Built with 'r getRversion()'.
 # Package dependencies
 You can load them using the following code which uses a function called [ipak](https://gist.github.com/stevenworthington/3178163). 
 Note this function checks to see if the packages are installed first.
-Th
 ```{r pre-install packages, message=FALSE}
-packages <- c("RNetCDF", "raster", "rgdal")
+packages <- c("raster", "rgdal") 
 source("../src/ipak.R")
 ipak(packages)
-suppressMessages(ipak)
 ```
 
 
 # read in a netcdf
 ```{r}
-library("RNetCDF") #this will read the netcdf version 1 formats 
 library("ncdf4")
 ncbr <- brick("../data/env/CMEMS_GLOBAL_REANALYSIS_PHY_001_025_salinity_monthly_mean_1993-01.nclonlat.ncdepthtrim.nc")
 ncbr
 ```
 
-reproject...
-```{r}
-canada_eq_ar_proj <- "+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-96 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs"
-library("rgdal")
-rp <- projectRaster(ncbr, crs = canada_eq_ar_proj)
-rp
-```
-<<<<<<< HEAD
-um...
-=======
-
-# michael code
+# reproject 
+There is currently an issue with the projectRaster command in the raster package. Michael Sumners kindly offered a [temporary solution](https://twitter.com/mdsumner/status/1040500830539935744)
 ```{r}
 ## use ncdf4 directly
 library(ncdf4)
@@ -61,14 +48,52 @@ template <- raster(list(x = lon, y = lat, z = v[,,1]), crs = "+proj=longlat +dat
 diy <- setValues(brick(template), v[, ncol(v):1, ])
 
 ## target
-prj <- "+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-96 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs"
+prj <- "+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-60 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs" #note -60 used to be -91. Changed to 'straighten up'.
 target <- projectExtent(diy, prj)  ## get a target extent, and we'll set the exact resolution we want
 res(target) <- c(25000, 25000)
 aea <- projectRaster(diy, target)
-writeRaster(aea,'../data/env/aea.tif',options=c('TFW=YES'))
-plot(aea[[36]]) #the number in brackets refers to the depth number
-
-m <- spTransform(rnaturalearth::ne_countries(), prj)
+plot(aea[[1]]) #the number in brackets refers to the depth number
+aea
+writeRaster(aea[[1]],'../data/env/aea.tif',overwrite=TRUE,options=c('TFW=YES'))
 ```
 
->>>>>>> 70371c3f9a3e5693038dc7cfecc846d17e51933f
+
+#if projectRaster woudl work properly...
+
+library(raster)
+canada_eq_ar_proj <- "+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=- +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs"
+library("rgdal")
+rp <- projectRaster(ncbr, crs = canada_eq_ar_proj)
+rp
+writeRaster(rp,'../data/env/rp.tif',options=c('TFW=YES')) #this last line jsut saves as a tiff...don't really nead this
+
+----------
+
+#create unique id layer
+ok now you want to create a duplicate of the top layer and then give each cell an unique ID
+
+First 
+```{r}
+aea[[1]]
+unique_cell <- (aea[[1]])
+```
+
+Because the NA values are currently attributed with some other number and not NA in R (NA is set to -32767 in this particular layer), you need to make sure to exclude the cells which represent NA... so anything under 0.
+the cell id will be a count of the cells with data. First calculate how many cells to remove from ncell (11,425)
+```{r}
+cell_val_freq <- freq(unique_cell, value=NULL)
+cell_val_freq
+```
+ok so we have 4693 cells that have NA (or in reality a negative number that represents NA). so remove 4693 from ncell. We know that there are 11424 cells, soo... 11424-4693 = 6732 cells have data.
+
+now give a unique ID to each cell
+```{r}
+unique_cell[unique_cell > 0] <- 1:6731
+writeRaster(unique_cell,'../output/env/unique_cell1.tif',overwrite=TRUE, options=c('TFW=YES')) #this is just to test it in ArcGIS
+```
+
+
+
+
+
+
