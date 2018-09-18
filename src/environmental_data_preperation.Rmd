@@ -16,7 +16,7 @@ Built with 'r getRversion()'.
 You can load them using the following code which uses a function called [ipak](https://gist.github.com/stevenworthington/3178163). 
 Note this function checks to see if the packages are installed first.
 ```{r pre-install packages, message=FALSE}
-packages <- c("raster", "rgdal") 
+packages <- c("raster", "rgdal", "dplyr") 
 source("../src/ipak.R")
 ipak(packages)
 ```
@@ -157,3 +157,83 @@ bio_unique_cell
 ```
 
 and done (again)
+
+
+-------------------------------------------
+
+#AMO data 
+Downloaded from [NOAA](https://www.esrl.noaa.gov/psd/data/timeseries/AMO/) (AMO, unsmoothed, short) as a txt and then converted to a .csv
+
+load raw data
+```{r}
+amoraw <- read.csv("../data/env/amon.us.data.csv", header = FALSE) 
+head(amoraw)
+```
+ok first col = year, the others represent the month. Give the columns some proper names
+```{r}
+colnames(amoraw) <- c("year","Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+head(amoraw)
+```
+
+The data downloaded from the site indidcated that NA values are represented by -99.99. Lets replace those values with NA 
+```{r}
+amoraw <- replace(amoraw,amoraw==-99.99, NA)
+```
+
+Now subset the dataset to start in 1998 (this is when the capelin dataset for the region starts)
+```{r}
+amoraw <- amoraw[amoraw$year >= 1998, ]
+head(amoraw)
+```
+
+And just for fun, plot the AMO... follow the tutorial [here](http://www.stat.pitt.edu/stoffer/tsa4/R_toot.htm)
+```{r}
+amocolumn <- matrix(t(amoraw[ ,2:13]), ncol=1) #month data is in col 2 - 13
+amocolumn1 <- as.vector(amocolumn)
+amotimeseries <- ts(amocolumn1, frequency = 12, start = c(1998,1))
+plot.ts(amotimeseries)
+abline(h = 0)
+dev.copy(png, "../output/env/amo.png") #this prints a png of the plot
+dev.off() #this turns off the print command
+```
+
+ok lets try a different plot, lets try see which years were on average positive (above 0) and which were negative (below 0)
+
+First I will create a matrix that takes all of the raw data and then appends some extra columns - year average value, year phase (warm or cold) and then seasonal values (spring, summer, autum, winter) + seasonal phase (warm cold)
+
+Spring:	1 March - 31 May (col 4:6) Summer: 1 June - 31 August (col 7:9) Autumn: 1 Sept - 31 Nov (col 10:12) Winter: 1 Dec - 28 Feb (col 13, 1:2)
+```{r}
+amophases <- amoraw 
+amophases$YearAvg <- rowMeans(amophases[2:13], na.rm = TRUE) #the month data is in col 2-13
+amophases$SpringAvg <-  rowMeans(amophases[4:6], na.rm = TRUE)
+amophases$SummerAvg <-  rowMeans(amophases[7:9], na.rm = TRUE)
+amophases$AutumnAvg <-  rowMeans(amophases[10:12], na.rm = TRUE)
+# winter has a different format - the columns are in 1, 2 & 3 which means the rowmeans function needs a bit of tweaking
+amophases$WinterAvg <- rowMeans(amophases[, c(13, 2, 3)], na.rm = TRUE) #selects just cols 12, 2, & 3
+```
+
+Now label the phases positive, negative (or avg if any happen to be at 0)
+```{r}
+amophases$YearPhase[amophases$YearAvg ==0] <- "avg"
+amophases$YearPhase[amophases$YearAvg >0] <- "positive"
+amophases$YearPhase[amophases$YearAvg <0] <- "negative"
+amophases$SpringPhase[amophases$SpringAvg ==0] <- "avg"
+amophases$SpringPhase[amophases$SpringAvg >0] <- "positive"
+amophases$SpringPhase[amophases$SpringAvg <0] <- "negative"
+amophases$SummerPhase[amophases$SummerAvg ==0] <- "avg"
+amophases$SummerPhase[amophases$SummerAvg >0] <- "positive"
+amophases$SummerPhase[amophases$SummerAvg <0] <- "negative"
+amophases$AutumnPhase[amophases$AutumnAvg ==0] <- "avg"
+amophases$AutumnPhase[amophases$AutumnAvg >0] <- "positive"
+amophases$AutumnPhase[amophases$AutumnAvg <0] <- "negative"
+amophases$WinterPhase[amophases$WinterAvg ==0] <- "avg"
+amophases$WinterPhase[amophases$WinterAvg >0] <- "positive"
+amophases$WinterPhase[amophases$WinterAvg <0] <- "negative"
+```
+
+now save this as a new csv
+```{r}
+write.csv(amophases, file = "../output/env/amo.csv", row.names = FALSE)
+```
+
+
