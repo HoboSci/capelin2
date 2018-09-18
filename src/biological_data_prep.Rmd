@@ -16,7 +16,7 @@ You can load them using the following code which uses a function called [ipak](h
 Note this function checks to see if the packages are installed first.
 Th
 ```{r pre-install packages, message=FALSE}
-packages <- c("packrat", "rworldmap", "dplyr","plyr", "rgdal", "sp", "raster")
+packages <- c("packrat", "rworldmap", "dplyr","plyr", "rgdal", "sp", "raster", "tibble")
 source("../src/ipak.R")
 ipak(packages)
 suppressMessages(ipak)
@@ -697,31 +697,58 @@ library(raster)
 cell_layer <- raster("../output/env/unique_cell.tif") #this is loading the cell layer that was created and saved as a tif
 plot(cell_layer)
 ```
-The occurrence data needs to be converted into s spatialpoints dataframe
+and just grab the attributes of the cell_layer
+```{r}
+cell_layer
+```
+
+
+The occurrence data needs to be converted into spatialpoints dataframe
 ```{r}
 library(sp)
 xy <- adddata[ ,c(3,2)] #3 = decimalLongitude, 2 = decimalLatitude
-spatial_data <- SpatialPointsDataFrame(coords = xy, data = adddata, proj4string = CRS("+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"))
-spatial_data
+adddata_aea <- SpatialPointsDataFrame(coords = xy, data = adddata, proj4string = CRS("+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"))
+adddata_aea
 ```
-ok now you should probably reproject the data into the same projection as the env. data
-```{r}
-spatial_data_aea <- spTransform(spatial_data, CRS = "+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-60 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs") #note -60 used to be -91. Changed to 'straighten up'
-spatial_data_aea
-```
-```{r}
-plot(spatial_data_aea, axes=TRUE, cex.axis=.95)
-write.csv(spatial_data_aea, file = "../output/bio/aea_data.csv", row.names = FALSE)
 
+
+
+
+```{r}
+adddata_aea <- spTransform(adddata_aea, CRS = "+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-60 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs") #note -60 used to be -91. Changed to 'straighten up'
+adddata_aea
+```
+
+and plot and Write the transformed species data to a new csv (this will also have the coordinates in meters - note meters are under decimalLongitude1 and decimalLatitude1)...
+```{r}
+plot(adddata_aea, axes=TRUE, cex.axis=.95)
+write.csv(adddata_aea, file = "../output/bio/data_aea.csv", row.names = FALSE)
 ```
 
 Ok now plot the env. and point data...
 ```{r}
 plot(cell_layer)
-points(spatial_data_aea$decimalLongitude, spatial_data_aea$decimalLatitude)
+points(adddata_aea$decimalLongitude, adddata_aea$decimalLatitude)
 ```
-Write the transformed species data to a new csv (this will also have the coordinates in meters - note meters are under decimalLongitude1 and decimalLatitude1)
+
+ok now the next step is to extract the unique cell value and add to each of the points
+then write a .csv
+then convert back to a normal dataframe
 ```{r}
-write.csv(spatial_data_aea, file = "../output/bio/adddata_aea.csv", row.names = FALSE)
+adddata_aea$cell_id <- extract(x=cell_layer, y = adddata_aea)
+write.csv(adddata_aea, file = "../output/bio/data_aea_cell.csv", row.names = FALSE)
+data_aea <- as.data.frame(adddata_aea)
+head(data_aea)
 ```
+looking at the header data, there seems to be some new columns created on the way...
+```{r}
+colnames(data_aea)
+```
+I don't want "optional" - get rid of it!
+```{r}
+data_aea <- subset(data_aea, select = -c(optional))
+colnames(data_aea)
+write.csv(adddata_aea, file = "../output/bio/data_aea_cell.csv", row.names = FALSE)
+```
+
 
