@@ -6,7 +6,7 @@ output: html_notebook
 
 # Overview
 Preperation of GLORYS and BIOMER netCDFs obtained from [Copernicus](www.marine.copernicus.eu/services-portfolio/access-to-products/). These databases give global oceanographic conditions.
-The BIOMER datasets are in netCDF version 3, and the GLORYS in netCDF version 1
+
 
 A note to anyone who might happen to stumble across this... I am a beginner in R and have had no exposure to similar languages. The code herein is unlikely to be elegant and there is likely more efficient ways of running the code.
 
@@ -23,6 +23,7 @@ ipak(packages)
 
 
 # read in a netcdf
+note this is a GLORYS dataset
 ```{r}
 library("ncdf4")
 ncbr <- brick("../data/env/CMEMS_GLOBAL_REANALYSIS_PHY_001_025_salinity_monthly_mean_1993-01.nclonlat.ncdepthtrim.nc")
@@ -54,7 +55,7 @@ res(target) <- c(25000, 25000)
 aea <- projectRaster(diy, target)
 plot(aea[[1]]) #the number in brackets refers to the depth number
 aea
-writeRaster(aea[[1]],'../data/env/aea.tif',overwrite=TRUE,options=c('TFW=YES'))
+writeRaster(aea[[1]],'../output/env/aea.tif',overwrite=TRUE,options=c('TFW=YES'))
 ```
 
 
@@ -65,7 +66,7 @@ canada_eq_ar_proj <- "+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=- +x_0=0 +y
 library("rgdal")
 rp <- projectRaster(ncbr, crs = canada_eq_ar_proj)
 rp
-writeRaster(rp,'../data/env/rp.tif',options=c('TFW=YES')) #this last line jsut saves as a tiff...don't really nead this
+writeRaster(rp,'../data/env/rp.tif',options=c('TFW=YES')) 
 
 ----------
 
@@ -79,25 +80,80 @@ unique_cell <- (aea[[1]])
 ```
 
 Because the NA values are currently attributed with some other number and not NA in R (NA is set to -32767 in this particular layer), you need to make sure to exclude the cells which represent NA... so anything under 0.
-the cell id will be a count of the cells with data. First calculate how many cells to remove from ncell (11,425)
+the cell id will be a count of the cells with data. First calculate how many cells to remove from ncell (11,424)
 ```{r}
 cell_val_freq <- freq(unique_cell, value=NULL)
 cell_val_freq
 ```
-ok so we have 4693 cells that have NA (or in reality a negative number that represents NA). so remove 4693 from ncell. We know that there are 11424 cells, soo... 11424-4693 = 6732 cells have data.
+ok so we have 4693 cells that have NA (or in reality a negative number that represents NA). so remove 4693 from ncell. We know that there are 11424 cells, soo... 11424-4693 = 6731 cells have data.
 
 now give a unique ID to each cell
 ```{r}
-unique_cell[unique_cell > 0] <- 1:6731
+unique_cell[unique_cell > 0] <- 1:6731 
 writeRaster(unique_cell,'../output/env/unique_cell.tif',overwrite=TRUE, options=c('TFW=YES')) #so you can access it again
 ```
 
 Done!
 
 -----------------------------------------
+#The Biomer Layers...
 
+ok so that unique cell layer was built from a GLORYS layer... in the biomer layer needs to match to this layer (and i have reason to think that it does not - the biomer layer was converted by me from an ORCA025 grid, and IIRC when I looked at the layers in ArcGIS there were some differences in the cell boundaries)
 
+#read in a biomer netcdf
+```{r}
+library("ncdf4")
+biobrick <- brick("../data/env/CMEMS_GLOBAL_REANALYSIS_BIO_001_018_chl_monthly_mean_1998-01.ncwgs.nc_lonlat.ncdepthtrim.nc")
+biobrick
+```
 
+#Project the biomer file to match the glorys layer
+```{r}
+bio_aea <- projectRaster(biobrick, aea) #note this only projects the top layer
+bio_aea
+writeRaster(bio_aea,'../output/env/bio_aea.tif',overwrite=TRUE, options=c('TFW=YES')) #so you can access it again
+```
 
+plot
+```{r}
+plot(bio_aea)
+```
+ok now lets do the same "create unique cell ID" process for the biomer layer as you did for GLORYS. You want to check they match
 
+Because the NA values are currently attributed with some other number and not NA in R (NA is set to -32767 in this particular layer), you need to make sure to exclude the cells which represent NA... so anything under 0.
+the cell id will be a count of the cells with data. First calculate how many cells to remove from ncell (11,424) 
+```{r}
+bio_unique_cell <- bio_aea
+bio_cell_val_freq <- freq(bio_unique_cell, value=NULL)
+bio_cell_val_freq
+```
+ok so we have 4695 cells that have NA. Note that the GLORYS layer has 4693 NA cells....  a quick visual inspection with ArcGIS reveals one cell likes off the coast of the USA south of Nova Scotia (unique cell ID 4840) and one off the north tip of Nova Scotia (unique cell ID 3438)
+so remove 4840 from ncell. We know that there are 11424 cells, soo... 11424-4695 = 6729 cells have data.
 
+you need to remove cell 3438 and 4695 from the Glorys unique cell layer....
+```{r}
+values(unique_cell)[values(unique_cell) == 3438] = NA
+values(unique_cell)[values(unique_cell) == 4840] = NA
+```
+
+look at the number of NAs again...
+```{r}
+uc_na <- freq(unique_cell,value=NA)
+uc_na
+```
+
+ok great. ok so now give a unique ID to each BIOMER cell
+```{r}
+bio_unique_cell[bio_unique_cell > -1] <- 1:6729 
+writeRaster(bio_unique_cell,'../output/env/bio_unique_cell.tif',overwrite=TRUE, options=c('TFW=YES')) #so you can access it again
+bio_unique_cell
+```
+now give a unique ID to the GLORYS layer with the cells removed...
+```{r}
+glo_unique_cell <- unique_cell
+glo_unique_cell[glo_unique_cell > -1] <- 1:6729 
+writeRaster(glo_unique_cell,'../output/env/glo_unique_cell.tif',overwrite=TRUE, options=c('TFW=YES')) #so you can access it again
+bio_unique_cell
+```
+
+and done (again)
