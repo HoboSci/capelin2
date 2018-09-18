@@ -694,7 +694,7 @@ A unique cell ID layer has been created in the environmental_data_preperation.Rm
 Load the env. data
 ```{r}
 library(raster)
-cell_layer <- raster("../output/env/unique_cell.tif") #this is loading the cell layer that was created and saved as a tif
+cell_layer <- raster("../output/env/glo_unique_cell.tif") #this is loading the cell layer that was created and saved as a tif
 plot(cell_layer)
 ```
 and just grab the attributes of the cell_layer
