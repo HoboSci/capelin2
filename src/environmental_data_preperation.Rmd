@@ -92,6 +92,10 @@ unique_cell[unique_cell > 0] <- 1:6731
 writeRaster(unique_cell,'../output/env/unique_cell.tif',overwrite=TRUE, options=c('TFW=YES')) #so you can access it again
 ```
 
+Done!
+
+-----------------------------------------
+
 
 
 

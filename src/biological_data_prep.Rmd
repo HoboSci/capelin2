@@ -700,19 +700,28 @@ plot(cell_layer)
 The occurrence data needs to be converted into s spatialpoints dataframe
 ```{r}
 library(sp)
-xy <- adddata[ ,c(2,3)]
+xy <- adddata[ ,c(3,2)] #3 = decimalLongitude, 2 = decimalLatitude
 spatial_data <- SpatialPointsDataFrame(coords = xy, data = adddata, proj4string = CRS("+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"))
 spatial_data
 ```
 ok now you should probably reproject the data into the same projection as the env. data
 ```{r}
 spatial_data_aea <- spTransform(spatial_data, CRS = "+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-60 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs") #note -60 used to be -91. Changed to 'straighten up'
+spatial_data_aea
 ```
+```{r}
+plot(spatial_data_aea, axes=TRUE, cex.axis=.95)
+write.csv(spatial_data_aea, file = "../output/bio/aea_data.csv", row.names = FALSE)
+
+```
+
 Ok now plot the env. and point data...
 ```{r}
 plot(cell_layer)
-plot(spatial_data_aea$decimalLatitude, spatial_data_aea$decimalLongitude)
-plot(spatial_data$decimalLongitude,spatial_data$decimalLatitude)
+points(spatial_data_aea$decimalLongitude, spatial_data_aea$decimalLatitude)
 ```
-oh it doesn;t work... it should be in meters now?
+Write the transformed species data to a new csv (this will also have the coordinates in meters - note meters are under decimalLongitude1 and decimalLatitude1)
+```{r}
+write.csv(spatial_data_aea, file = "../output/bio/adddata_aea.csv", row.names = FALSE)
+```
 
