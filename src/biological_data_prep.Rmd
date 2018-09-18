@@ -751,4 +751,50 @@ colnames(data_aea)
 write.csv(adddata_aea, file = "../output/bio/data_aea_cell.csv", row.names = FALSE)
 ```
 
+# Add AMO Data
+The data has been prepared as per the environmental_data_preperation.Rmd
 
+```{r}
+amo <- read.csv("../output/env/amo.csv", header=TRUE)
+head(amo)
+```
+
+So you want..
+- AMO value at sampling month/year
+- AMO value at previous sampling month/year
+- AMO phase at previous winter (because the winter values are thought to be a major driver of ocean conditions in the following spring, summer, and autumn)
+
+change month col names to numeric
+
+```{r}
+names(amo)[2:13] = c("1", "2","3", "4", "5", "6", "7", "8", "9", "10", "11", "12")
+head(amo)
+```
+
+to test this just subset some of your species data...
+```{r}
+test <- data_aea <- data_aea[data_aea$year < 2000,  ]
+```
+
+ok now do something...
+
+subset cols 1:13
+```{r}
+testamo <- amo <- amo[ ,1:13]
+testamo
+```
+
+```{r}
+testamo <- reshape(testamo, 
+  varying = c("1", "2","3", "4", "5", "6", "7", "8", "9", "10", "11", "12"),
+  v.names = "value",
+  direction = "long")
+
+testamo.sort <- testamo[order(testamo$year),]
+testamo
+```
+
+ok... soo now something like
+where test$year = testamo$year AND test$month = testamo$time
+  extract value
+    add to new test$amo_sample

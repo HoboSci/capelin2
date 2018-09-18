@@ -16,7 +16,7 @@ Built with 'r getRversion()'.
 You can load them using the following code which uses a function called [ipak](https://gist.github.com/stevenworthington/3178163). 
 Note this function checks to see if the packages are installed first.
 ```{r pre-install packages, message=FALSE}
-packages <- c("raster", "rgdal", "dplyr") 
+packages <- c("raster", "rgdal") 
 source("../src/ipak.R")
 ipak(packages)
 ```
