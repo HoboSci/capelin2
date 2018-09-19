@@ -855,4 +855,120 @@ ok and write a csv
 write.csv(data_aea,"../output/bio/data_aea_cell_amo.csv", row.names = FALSE)
 ```
 
+#NAO values
+
+The data has been prepared as per the environmental_data_preperation.Rmd
+
+```{r}
+nao <- read.csv("../output/env/nao.csv", header=TRUE)
+head(nao)
+```
+
+So you want..
+- AMO value at sampling month/year
+- AMO value at previous sampling month/year
+- AMO phase at previous winter (because the winter values are thought to be a major driver of ocean conditions in the following spring, summer, and autumn)
+
+change month col names to just numeric
+```{r}
+names(nao)[2:13] = c("1", "2","3", "4", "5", "6", "7", "8", "9", "10", "11", "12")
+head(nao)
+```
+
+Start with the month data first...subset cols 1:13 (where the year and month data are held)
+
+```{r}
+nao_yrmt <- nao[ ,1:13]
+nao_yrmt
+```
+
+```{r}
+nao_yrmt <- reshape(nao_yrmt, 
+  varying = c("1", "2","3", "4", "5", "6", "7", "8", "9", "10", "11", "12"),
+  v.names = "value",
+  direction = "long")
+
+nao_yrmt <- nao_yrmt[order(amo_yrmt$year),]
+nao_yrmt
+```
+
+rename time to month.. and value to nao_sample
+
+```{r}
+colnames(nao_yrmt)[2] <- "month"
+colnames(nao_yrmt)[3] <- "nao_sample"
+nao_yrmt
+```
+
+now match the year and the month in the two dataframes, and populate the species dataset (data_aea) with nao_sample
+
+```{r}
+data_aea <- merge(x = data_aea, y = nao_yrmt[ , c("year", "month", "nao_sample")], by = c("year", "month"), all.x = TRUE)
+data_aea
+```
+
+ok next - NAO value at previous sampling month/year
+
+shift the nao_sample column down by 1...
+
+```{r}
+library(useful)
+nao_yrmt <- shift.column(data = nao_yrmt, columns = "nao_sample", up = FALSE)
+nao_yrmt
+```
+
+Note the shifted values are in a new column called amo_sample.Shifted. rename to amo_prev
+
+```{r}
+colnames(nao_yrmt)[colnames(nao_yrmt)=="nao_sample.Shifted"] <- "nao_prev"
+nao_yrmt
+write.csv(nao_yrmt, "../output/env/nao_prev.csv", row.names = FALSE) #for some reason i need to write to a csv and reload for the next step to work properly
+```
+
+now grab the data...
+
+```{r}
+nao_prev <- read.csv("../output/env/nao_prev.csv")
+data_aea <- merge(x = data_aea, y = nao_prev[ , c("year", "month", "nao_prev")], by = c("year", "month"), all.x = TRUE)
+data_aea
+```
+
+and now - NAO phase at previous winter (because the winter values are thought to be a major driver of ocean conditions in the following spring, summer, and autumn)
+
+same process as before - shift row then match
+
+But first!
+
+You need to extract the seasonal values from the NAO dataset
+
+```{r}
+nao_winter <- subset(nao, select = c("year", "WinterAvg"))
+nao_winter
+```
+
+now shift the winter average data
+
+```{r}
+nao_winter <- shift.column(data = nao_winter, columns = "WinterAvg", up = FALSE)
+nao_winter
+write.csv(nao_winter, "../output/env/nao_winter.csv", row.names = FALSE) #for some reason need to save to csv then reload in the next step...
+
+```
+
+remember your shifted column is called WinterAvg.Shifted
+
+now extract the WinterAvg.Shifted values to the species dataset
+
+```{r}
+nao_winter <- read.csv("../output/env/nao_winter.csv")
+data_aea <- merge(x = data_aea, y = nao_winter[ , c("year", "WinterAvg.Shifted")], by = c("year"), all.x = TRUE)
+colnames(data_aea)[colnames(data_aea)=="WinterAvg.Shifted"] <- "nao_winter" #change the colname
+data_aea
+```
+
+ok and write a csv
+
+```{r}
+write.csv(data_aea,"../output/bio/data_aea_cell_amo_nao.csv", row.names = FALSE)
+```
 
