@@ -16,7 +16,7 @@ You can load them using the following code which uses a function called [ipak](h
 Note this function checks to see if the packages are installed first.
 Th
 ```{r pre-install packages, message=FALSE}
-packages <- c("packrat", "rworldmap", "dplyr","plyr", "rgdal", "sp", "raster", "tibble")
+packages <- c("packrat", "rworldmap", "dplyr","plyr", "rgdal", "sp", "raster", "tibble", "useful")
 source("../src/ipak.R")
 ipak(packages)
 suppressMessages(ipak)
@@ -784,7 +784,7 @@ amo_yrmt <- reshape(amo_yrmt,
   v.names = "value",
   direction = "long")
 
-amo_yrmt.sort <- amo_yrmt[order(amo_yrmt$year),]
+amo_yrmt <- amo_yrmt[order(amo_yrmt$year),]
 amo_yrmt
 ```
 rename time to month.. and value to amo_sample
@@ -800,4 +800,42 @@ data_aea <- merge(x = data_aea, y = amo_yrmt[ , c("year", "month", "amo_sample")
 data_aea
 ```
 
-ok 
+ok next - AMO value at previous sampling month/year
+
+shift the amo_sample column down by 1...
+```{r}
+library(useful)
+amo_yrmt <- shift.column(data = amo_yrmt, columns = "amo_sample", len = 1)
+amo_yrmt
+```
+
+Note the shifted values are in a new column called amo_sample.Shifted. rename to amo_prev
+```{r}
+colnames(amo_yrmt)[colnames(amo_yrmt)=="amo_sample.Shifted"] <- "amo_prev"
+amo_yrmt
+```
+
+```{r}
+data_aea <- merge(x = data_aea, y = amoshift[ , c("year", "month", "amo_prev")], by = c("year", "month"), all.x = TRUE)
+data_aea
+```
+
+and now - AMO phase at previous winter (because the winter values are thought to be a major driver of ocean conditions in the following spring, summer, and autumn)
+
+same process as before - shift row then match
+
+But first!
+
+You need to extract the seasonal values from the amo dataset
+```{r}
+
+```
+
+
+
+```{r}
+amo_yrmt <- shift.column(data = amo_yrmt, columns = "amo_sample", len = 1)
+amo_yrmt
+```
+
+
