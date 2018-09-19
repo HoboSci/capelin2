@@ -5,7 +5,8 @@ output: html_notebook
 ---
 
 # Overview
-Preperation of GLORYS and BIOMER netCDFs obtained from [Copernicus](www.marine.copernicus.eu/services-portfolio/access-to-products/). These databases give global oceanographic conditions.
+Preperation of GLORYS and BIOMER netCDFs obtained from [Copernicus](www.marine.copernicus.eu/services-portfolio/access-to-products/). These databases give global oceanographic condition.
+UPDATE: also includes prep of the AMO and NAO data...
 
 
 A note to anyone who might happen to stumble across this... I am a beginner in R and have had no exposure to similar languages. The code herein is unlikely to be elegant and there is likely more efficient ways of running the code.
@@ -21,8 +22,8 @@ source("../src/ipak.R")
 ipak(packages)
 ```
 
-
-# read in a netcdf
+# NetCDFs (Biomer and GLORYS)
+read in a netcdf
 note this is a GLORYS dataset
 ```{r}
 library("ncdf4")
@@ -30,7 +31,7 @@ ncbr <- brick("../data/env/CMEMS_GLOBAL_REANALYSIS_PHY_001_025_salinity_monthly_
 ncbr
 ```
 
-# reproject 
+reproject ...
 There is currently an issue with the projectRaster command in the raster package. Michael Sumners kindly offered a [temporary solution](https://twitter.com/mdsumner/status/1040500830539935744)
 ```{r}
 ## use ncdf4 directly
@@ -59,7 +60,7 @@ writeRaster(aea[[1]],'../output/env/aea.tif',overwrite=TRUE,options=c('TFW=YES')
 ```
 
 
-#if projectRaster would work properly...
+if projectRaster would work properly...
 
 
 library(raster)
@@ -73,7 +74,7 @@ writeRaster(rp,'../data/env/rp.tif',options=c('TFW=YES'))
 
 ----------
 
-#create unique id layer
+# create unique id layer
 ok now you want to create a duplicate of the top layer and then give each cell an unique ID
 
 First 
@@ -99,18 +100,18 @@ writeRaster(unique_cell,'../output/env/unique_cell.tif',overwrite=TRUE, options=
 Done!
 
 -----------------------------------------
-#The Biomer Layers...
+# The Biomer Layers...
 
 ok so that unique cell layer was built from a GLORYS layer... in the biomer layer needs to match to this layer (and i have reason to think that it does not - the biomer layer was converted by me from an ORCA025 grid, and IIRC when I looked at the layers in ArcGIS there were some differences in the cell boundaries)
 
-#read in a biomer netcdf
+read in a biomer netcdf
 ```{r}
 library("ncdf4")
 biobrick <- brick("../data/env/CMEMS_GLOBAL_REANALYSIS_BIO_001_018_chl_monthly_mean_1998-01.ncwgs.nc_lonlat.ncdepthtrim.nc")
 biobrick
 ```
 
-#Project the biomer file to match the glorys layer
+Project the biomer file to match the glorys layer
 ```{r}
 bio_aea <- projectRaster(biobrick, aea) #note this only projects the top layer
 bio_aea
@@ -164,7 +165,8 @@ and done (again)
 
 -------------------------------------------
 
-#AMO data 
+# AMO data 
+
 Downloaded from [NOAA](https://www.esrl.noaa.gov/psd/data/timeseries/AMO/) (AMO, unsmoothed, short) as a txt and then converted to a .csv
 
 load raw data
@@ -193,7 +195,7 @@ And just for fun, plot the AMO... follow the tutorial [here](http://www.stat.pit
 ```{r}
 amocolumn <- matrix(t(amoraw[ ,2:13]), ncol=1) #month data is in col 2 - 13
 amocolumn1 <- as.vector(amocolumn)
-amotimeseries <- ts(amocolumn1, frequency = 12, start = c(1998,1))
+amotimeseries <- ts(amocolumn1, frequency = 12, start = c(1996,1))
 plot.ts(amotimeseries)
 abline(h = 0)
 dev.copy(png, "../output/env/amo.png") #this prints a png of the plot
@@ -253,4 +255,98 @@ now save this as a new csv
 write.csv(amophases, file = "../output/env/amo.csv", row.names = FALSE)
 ```
 
+# NAO
+
+Dataset mes from [NCAR](https://climatedataguide.ucar.edu/climate-data/hurrell-north-atlantic-oscillation-nao-index-pc-based). Note I am using the monthly principal component (PC)-based indices of the North Atlantic Oscillation [(NAO)](https://climatedataguide.ucar.edu/sites/default/files/nao_pc_monthly.txt). I have already converted this file into a csv and removed unncesessary text. Note there are no headers...
+
+```{r}
+naoraw <- read.csv("../data/env/amon.us.data.csv", header = FALSE) 
+head(naoraw)
+```
+
+lets give some column names. col 1  year, 2:13 are the months
+```{r}
+colnames(naoraw) <- c("year","1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12")
+head(naoraw)
+```
+ 
+ NA values are represented by -99.99. Change these to NA
+```{r}
+naoraw <- replace(naoraw,naoraw==-99.99, NA)
+```
+ 
+Now subset the dataset to start in 1996 (the capelin data starts in 1998, but you want some previous time period stuff)
+
+```{r}
+nao <- naoraw[naoraw$year >= 1996, ]
+head(nao) 
+```
+
+And just for fun, plot the NAO follow the tutorial here
+
+```{r}
+naocolumn <- matrix(t(amoraw[ ,2:13]), ncol=1) #month data is in col 2 - 13
+naocolumn1 <- as.vector(naocolumn)
+naotimeseries <- ts(naocolumn1, frequency = 12, start = c(1996,1))
+plot.ts(naotimeseries)
+abline(h = 0)
+dev.copy(png, "../output/env/nao.png") #this prints a png of the plot
+dev.off() #this turns off the print command
+```
+
+First I will create a matrix that takes all of the raw data and then appends some extra columns - year average value, year phase (warm or cold) and then seasonal values (spring, summer, autum, winter) + seasonal phase (warm cold)
+
+Spring:	1 March - 31 May (col 4:6) Summer: 1 June - 31 August (col 7:9) Autumn: 1 Sept - 31 Nov (col 10:12) Winter: 1 Dec - 28 Feb (col 13 from prev year, 1:2)
+
+```{r}
+naophases <- nao 
+naophases$YearAvg <- rowMeans(naophases[2:13], na.rm = TRUE) #the month data is in col 2-13
+naophases$SpringAvg <- rowMeans(naophases[4:6], na.rm = TRUE)
+naophases$SummerAvg <- rowMeans(naophases[7:9], na.rm = TRUE)
+naophases$AutumnAvg <- rowMeans(naophases[10:12], na.rm = TRUE)
+```
+
+winter has a different format - the columns are in 1 & 2, & 13 from the previous column, which means the rowmeans function needs a bit of tweaking...
+
+shift the dec column you created down by 1
+```{r}
+library(useful)
+naophases <- shift.column(data = naophases, columns = "12", len = 1, up = FALSE)
+naophases
+write.csv(naophases, file = "../output/env/nao.csv", row.names = FALSE) #for some reason you need to write to a csv and then reload for the next step to work properly...
+
+```
+
+he shifted data is in 12.Shifted...
+```{r}
+naophases <- read.csv("../output/env/nao.csv")
+naophases$WinterAvg <- rowMeans(naophases[ , c("X12.Shifted", "X1", "X2")], na.rm = TRUE)  #x because apparently all the col names start with x for some reason...
+naophases
+```
+
+Now label the phases positive, negative (or avg if any happen to be at 0)
+
+```{r}
+naophases$YearPhase[naophases$YearAvg ==0] <- "avg"
+naophases$YearPhase[naophases$YearAvg >0] <- "positive"
+naophases$YearPhase[naophases$YearAvg <0] <- "negative"
+naophases$SpringPhase[naophases$SpringAvg ==0] <- "avg"
+naophases$SpringPhase[naophases$SpringAvg >0] <- "positive"
+naophases$SpringPhase[naophases$SpringAvg <0] <- "negative"
+naophases$SummerPhase[naophases$SummerAvg ==0] <- "avg"
+naophases$SummerPhase[naophases$SummerAvg >0] <- "positive"
+naophases$SummerPhase[naophases$SummerAvg <0] <- "negative"
+naophases$AutumnPhase[naophases$AutumnAvg ==0] <- "avg"
+naophases$AutumnPhase[naophases$AutumnAvg >0] <- "positive"
+naophases$AutumnPhase[naophases$AutumnAvg <0] <- "negative"
+naophases$WinterPhase[naophases$WinterAvg ==0] <- "avg"
+naophases$WinterPhase[naophases$WinterAvg >0] <- "positive"
+naophases$WinterPhase[naophases$WinterAvg <0] <- "negative"
+```
+
+now save this as a new csv
+
+```{r}
+write.csv(naophases, file = "../output/env/nao.csv", row.names = FALSE)
+```
 
