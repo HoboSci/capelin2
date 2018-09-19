@@ -183,9 +183,9 @@ The data downloaded from the site indidcated that NA values are represented by -
 amoraw <- replace(amoraw,amoraw==-99.99, NA)
 ```
 
-Now subset the dataset to start in 1998 (this is when the capelin dataset for the region starts)
+Now subset the dataset to start in 1997 (the capelin data starts in 1998, but you want some previous time period stuff)
 ```{r}
-amoraw <- amoraw[amoraw$year >= 1998, ]
+amoraw <- amoraw[amoraw$year >= 1997, ]
 head(amoraw)
 ```
 
@@ -200,7 +200,6 @@ dev.copy(png, "../output/env/amo.png") #this prints a png of the plot
 dev.off() #this turns off the print command
 ```
 
-ok lets try a different plot, lets try see which years were on average positive (above 0) and which were negative (below 0)
 
 First I will create a matrix that takes all of the raw data and then appends some extra columns - year average value, year phase (warm or cold) and then seasonal values (spring, summer, autum, winter) + seasonal phase (warm cold)
 
