@@ -16,7 +16,7 @@ Built with 'r getRversion()'.
 You can load them using the following code which uses a function called [ipak](https://gist.github.com/stevenworthington/3178163). 
 Note this function checks to see if the packages are installed first.
 ```{r pre-install packages, message=FALSE}
-packages <- c("raster", "rgdal") 
+packages <- c("ncdf4", "raster", "rgdal", "useful") 
 source("../src/ipak.R")
 ipak(packages)
 ```
@@ -203,15 +203,30 @@ dev.off() #this turns off the print command
 
 First I will create a matrix that takes all of the raw data and then appends some extra columns - year average value, year phase (warm or cold) and then seasonal values (spring, summer, autum, winter) + seasonal phase (warm cold)
 
-Spring:	1 March - 31 May (col 4:6) Summer: 1 June - 31 August (col 7:9) Autumn: 1 Sept - 31 Nov (col 10:12) Winter: 1 Dec - 28 Feb (col 13, 1:2)
+Spring:	1 March - 31 May (col 4:6) Summer: 1 June - 31 August (col 7:9) Autumn: 1 Sept - 31 Nov (col 10:12) Winter: 1 Dec - 28 Feb (col 13 from prev year, 1:2)
 ```{r}
 amophases <- amoraw 
 amophases$YearAvg <- rowMeans(amophases[2:13], na.rm = TRUE) #the month data is in col 2-13
 amophases$SpringAvg <-  rowMeans(amophases[4:6], na.rm = TRUE)
 amophases$SummerAvg <-  rowMeans(amophases[7:9], na.rm = TRUE)
 amophases$AutumnAvg <-  rowMeans(amophases[10:12], na.rm = TRUE)
-# winter has a different format - the columns are in 1, 2 & 3 which means the rowmeans function needs a bit of tweaking
-amophases$WinterAvg <- rowMeans(amophases[, c(13, 2, 3)], na.rm = TRUE) #selects just cols 12, 2, & 3
+```
+winter has a different format - the columns are in 1 & 2, & 13 from the previous column, which means the rowmeans function needs a bit of tweaking...
+
+
+1) shift the dec column you created down by 1
+```{r}
+library(useful)
+amophases <- shift.column(data = amophases, columns = "Dec", len = 1, up = FALSE)
+amophases
+write.csv(amophases, file = "../output/env/amo.csv", row.names = FALSE) #for some reason you need to write to a csv and then reload for the next step to work properly...
+```
+
+the shifted data is in Dec.Shifted...
+```{r}
+amophases <- read.csv("../output/env/amo.csv")
+amophases$WinterAvg <- rowMeans(amophases[, c("Dec.Shifted", "Jan", "Feb")], na.rm = TRUE) 
+amophases
 ```
 
 Now label the phases positive, negative (or avg if any happen to be at 0)
