@@ -771,30 +771,33 @@ names(amo)[2:13] = c("1", "2","3", "4", "5", "6", "7", "8", "9", "10", "11", "12
 head(amo)
 ```
 
-to test this just subset some of your species data...
-```{r}
-test <- data_aea <- data_aea[data_aea$year < 2000,  ]
-```
 
-ok now do something...
-
-subset cols 1:13
+Start with the month data first...subset cols 1:13 (where the year and month data are held)
 ```{r}
-testamo <- amo <- amo[ ,1:13]
-testamo
+amo_yrmt <- amo[ ,1:13]
+amo_yrmt
 ```
 
 ```{r}
-testamo <- reshape(testamo, 
+amo_yrmt <- reshape(amo_yrmt, 
   varying = c("1", "2","3", "4", "5", "6", "7", "8", "9", "10", "11", "12"),
   v.names = "value",
   direction = "long")
 
-testamo.sort <- testamo[order(testamo$year),]
-testamo
+amo_yrmt.sort <- amo_yrmt[order(amo_yrmt$year),]
+amo_yrmt
+```
+rename time to month.. and value to amo_sample
+```{r}
+colnames(amo_yrmt)[2] <- "month"
+colnames(amo_yrmt)[3] <- "amo_sample"
+amo_yrmt
 ```
 
-ok... soo now something like
-where test$year = testamo$year AND test$month = testamo$time
-  extract value
-    add to new test$amo_sample
+now match the year and the month in the two dataframes, and populate the species dataset (data_aea) with amo_sample
+```{r}
+data_aea <- merge(x = data_aea, y = amo_yrmt[ , c("year", "month", "amo_sample")], by = c("year", "month"), all.x = TRUE)
+data_aea
+```
+
+ok 
