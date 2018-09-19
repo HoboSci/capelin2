@@ -805,7 +805,7 @@ ok next - AMO value at previous sampling month/year
 shift the amo_sample column down by 1...
 ```{r}
 library(useful)
-amo_yrmt <- shift.column(data = amo_yrmt, columns = "amo_sample", len = 1)
+amo_yrmt <- shift.column(data = amo_yrmt, columns = "amo_sample", up = FALSE)
 amo_yrmt
 ```
 
@@ -813,10 +813,13 @@ Note the shifted values are in a new column called amo_sample.Shifted. rename to
 ```{r}
 colnames(amo_yrmt)[colnames(amo_yrmt)=="amo_sample.Shifted"] <- "amo_prev"
 amo_yrmt
+write.csv(amo_yrmt, "../output/env/amo_prev.csv", row.names = FALSE) #for some reason i need to write to a csv and reload for the next step to work properly
 ```
 
+now grab the data...
 ```{r}
-data_aea <- merge(x = data_aea, y = amoshift[ , c("year", "month", "amo_prev")], by = c("year", "month"), all.x = TRUE)
+amo_prev <- read.csv("../output/env/amo_prev.csv")
+data_aea <- merge(x = data_aea, y = amo_prev[ , c("year", "month", "amo_prev")], by = c("year", "month"), all.x = TRUE)
 data_aea
 ```
 
@@ -828,14 +831,28 @@ But first!
 
 You need to extract the seasonal values from the amo dataset
 ```{r}
-
+amo_winter <- subset(amo, select = c("year", "WinterAvg"))
+amo_winter
 ```
 
-
-
+now shift the winter average data 
 ```{r}
-amo_yrmt <- shift.column(data = amo_yrmt, columns = "amo_sample", len = 1)
-amo_yrmt
+amo_winter <- shift.column(data = amo_winter, columns = "WinterAvg", up = FALSE)
+amo_winter
+write.csv(amo_winter, "../output/env/amo_winter.csv", row.names = FALSE) #for some reason need to save to csv then reload in the next step...
+```
+remember your shifted column is called WinterAvg.Shifted
+
+now extract the WinterAvg.Shifted values to the species dataset
+```{r}
+amo_winter <- read.csv("../output/env/amo_winter.csv")
+data_aea <- merge(x = data_aea, y = amo_winter[ , c("year", "WinterAvg.Shifted")], by = c("year"), all.x = TRUE)
+colnames(data_aea)[colnames(data_aea)=="WinterAvg.Shifted"] <- "amo_winter" #change the colname
+data_aea
+```
+ok and write a csv
+```{r}
+write.csv(data_aea,"../output/bio/data_aea_cell_amo.csv", row.names = FALSE)
 ```
 
 

@@ -183,9 +183,9 @@ The data downloaded from the site indidcated that NA values are represented by -
 amoraw <- replace(amoraw,amoraw==-99.99, NA)
 ```
 
-Now subset the dataset to start in 1997 (the capelin data starts in 1998, but you want some previous time period stuff)
+Now subset the dataset to start in 1996 (the capelin data starts in 1998, but you want some previous time period stuff)
 ```{r}
-amoraw <- amoraw[amoraw$year >= 1997, ]
+amoraw <- amoraw[amoraw$year >= 1996, ]
 head(amoraw)
 ```
 
