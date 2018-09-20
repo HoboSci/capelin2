@@ -95,6 +95,10 @@ now give a unique ID to each cell
 ```{r}
 unique_cell[unique_cell > 0] <- 1:6731 
 writeRaster(unique_cell,'../output/env/unique_cell.tif',overwrite=TRUE, options=c('TFW=YES')) #so you can access it again
+uniquecell_poly <- rasterToPolygons(aea[[1]], fun=NULL, n=4, na.rm=TRUE, digits=12, dissolve=FALSE)
+
+writeOGR(uniquecell_poly, dsn = '.', layer = '../output/env/poly', driver = "ESRI Shapefile")
+
 ```
 
 Done!
