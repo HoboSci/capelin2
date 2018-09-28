@@ -186,7 +186,7 @@ $(document).ready(function () {
 </div>
 <div id="package-dependencies" class="section level1">
 <h1>Package dependencies</h1>
-<p>You can load them using the following code which uses a function called <a href="https://gist.github.com/stevenworthington/3178163">ipak</a>. Note this function checks to see if the packages are installed first.</p>
+<p>You can install and load them using the following code which uses a function called <a href="https://gist.github.com/stevenworthington/3178163">ipak</a>. Note this function checks to see if the packages are installed first. If they are not installed, it will do so before loading</p>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
 <!-- rnb-source-begin eyJkYXRhIjoiYGBgclxucGFja2FnZXMgPC0gYyhcInJnZGFsXCIsIFwicmFzdGVyXCIsIFwibmNkZjRcIiwgXCJSTmV0Q0RGXCIsIFwic3BcIiwgXCJwYXJhbGxlbFwiLCBcIm1hZ3JpdHRyXCIsIFwiZGF0YS50YWJsZVwiKSBcbnNvdXJjZShcIi4uL3NyYy9pcGFrLlJcIilcbmlwYWsocGFja2FnZXMpXG5gYGAifQ== -->
@@ -196,7 +196,7 @@ ipak(packages)</code></pre>
 <!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
-<p>For the parallel computing, detect cores automatically (leave one free though).</p>
+<p>For the parallel computing (this will make things faster), detect cores automatically (leave one free though).</p>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
 <!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuY29yZXMgPC0gZGV0ZWN0Q29yZXMoKSAtIDFcbmBgYCJ9 -->
@@ -205,19 +205,20 @@ ipak(packages)</code></pre>
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 <p>Anne is the best - really the best. She is the best that ever was. No Anne bester.</p>
+<p>Tell R where to find your data and where to spit out the output</p>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxubGlicmFyeShcIm5jZGY0XCIpXG5zb3VyY2UoXCIuLi9zcmMvbmV0Y2RmX3RvX3Jhc3RlcmJyaWNrLlJcIilcblxuYGBgIn0= -->
-<pre class="r"><code>library(&quot;ncdf4&quot;)
-source(&quot;../src/netcdf_to_rasterbrick.R&quot;)
-</code></pre>
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuZW52ZGF0YV9wYXRoIDwtIFwiLi4vZGF0YS9lbnYvbmV0Y2RmXCJcbnByb2plY3RlZF9wYXRoIDwtIFwiLi4vZGF0YS9lbnZcIlxub3V0cHV0X3BhdGggPC0gXCIuLi9vdXRwdXQvZW52XCJcbmBgYCJ9 -->
+<pre class="r"><code>envdata_path &lt;- &quot;../data/env/netcdf&quot;
+projected_path &lt;- &quot;../data/env&quot;
+output_path &lt;- &quot;../output/env&quot;</code></pre>
 <!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 <!-- rnb-text-end -->
 </div>
 
-<div id="rmd-source-code">LS0tDQp0aXRsZTogInJhc3Rlcl9icmlja19zdHVmZiINCmF1dGhvcjogIlNhbWFudGhhIEFuZHJld3MiDQpvdXRwdXQ6IGh0bWxfbm90ZWJvb2sNCi0tLQ0KDQojIE92ZXJ2aWV3DQpDcmVhdGluZyBhIHdheSB0byBhdXRvbWF0ZSBtYXNzIHJhc3Rlcl9icmljayBjcmVhdGlvbiwgd2l0aCB1bmlxdWUgbmFtZXMuLi4NCg0KDQpBIG5vdGUgdG8gYW55b25lIHdobyBtaWdodCBoYXBwZW4gdG8gc3R1bWJsZSBhY3Jvc3MgdGhpcy4uLiBJIGFtIGEgYmVnaW5uZXIgaW4gUiBhbmQgaGF2ZSBoYWQgbm8gZXhwb3N1cmUgdG8gc2ltaWxhciBsYW5ndWFnZXMuIFRoZSBjb2RlIGhlcmVpbiBpcyB1bmxpa2VseSB0byBiZSBlbGVnYW50IGFuZCB0aGVyZSBpcyBsaWtlbHkgbW9yZSBlZmZpY2llbnQgd2F5cyBvZiBydW5uaW5nIHRoZSBjb2RlLg0KDQpCdWlsdCB3aXRoICdyIGdldFJ2ZXJzaW9uKCknLg0KDQojIFBhY2thZ2UgZGVwZW5kZW5jaWVzDQpZb3UgY2FuIGxvYWQgdGhlbSB1c2luZyB0aGUgZm9sbG93aW5nIGNvZGUgd2hpY2ggdXNlcyBhIGZ1bmN0aW9uIGNhbGxlZCBbaXBha10oaHR0cHM6Ly9naXN0LmdpdGh1Yi5jb20vc3RldmVud29ydGhpbmd0b24vMzE3ODE2MykuIA0KTm90ZSB0aGlzIGZ1bmN0aW9uIGNoZWNrcyB0byBzZWUgaWYgdGhlIHBhY2thZ2VzIGFyZSBpbnN0YWxsZWQgZmlyc3QuDQpgYGB7ciBwcmUtaW5zdGFsbCBwYWNrYWdlcywgc3VwcHJlc3NNZXNzYWdlcyhleHByKX0NCnBhY2thZ2VzIDwtIGMoInJnZGFsIiwgInJhc3RlciIsICJuY2RmNCIsICJSTmV0Q0RGIiwgInNwIiwgInBhcmFsbGVsIiwgIm1hZ3JpdHRyIiwgImRhdGEudGFibGUiKSANCnNvdXJjZSgiLi4vc3JjL2lwYWsuUiIpDQppcGFrKHBhY2thZ2VzKQ0KYGBgDQoNCkZvciB0aGUgcGFyYWxsZWwgY29tcHV0aW5nLCBkZXRlY3QgY29yZXMgYXV0b21hdGljYWxseSAobGVhdmUgb25lIGZyZWUgdGhvdWdoKS4NCmBgYHtyfQ0KY29yZXMgPC0gZGV0ZWN0Q29yZXMoKSAtIDENCmBgYA0KDQpBbm5lIGlzIHRoZSBiZXN0IC0gcmVhbGx5IHRoZSBiZXN0LiBTaGUgaXMgdGhlIGJlc3QgdGhhdCBldmVyIHdhcy4gTm8gQW5uZSBiZXN0ZXIuDQoNCmBgYHtyfQ0KbGlicmFyeSgibmNkZjQiKQ0Kc291cmNlKCIuLi9zcmMvbmV0Y2RmX3RvX3Jhc3RlcmJyaWNrLlIiKQ0KDQpgYGANCg0K</div>
+<div id="rmd-source-code">LS0tDQp0aXRsZTogInJhc3Rlcl9icmlja19zdHVmZiINCmF1dGhvcjogIlNhbWFudGhhIEFuZHJld3MiDQpvdXRwdXQ6IGh0bWxfbm90ZWJvb2sNCi0tLQ0KDQojIE92ZXJ2aWV3DQpDcmVhdGluZyBhIHdheSB0byBhdXRvbWF0ZSBtYXNzIHJhc3Rlcl9icmljayBjcmVhdGlvbiwgd2l0aCB1bmlxdWUgbmFtZXMuLi4NCg0KDQpBIG5vdGUgdG8gYW55b25lIHdobyBtaWdodCBoYXBwZW4gdG8gc3R1bWJsZSBhY3Jvc3MgdGhpcy4uLiBJIGFtIGEgYmVnaW5uZXIgaW4gUiBhbmQgaGF2ZSBoYWQgbm8gZXhwb3N1cmUgdG8gc2ltaWxhciBsYW5ndWFnZXMuIFRoZSBjb2RlIGhlcmVpbiBpcyB1bmxpa2VseSB0byBiZSBlbGVnYW50IGFuZCB0aGVyZSBpcyBsaWtlbHkgbW9yZSBlZmZpY2llbnQgd2F5cyBvZiBydW5uaW5nIHRoZSBjb2RlLg0KDQpCdWlsdCB3aXRoICdyIGdldFJ2ZXJzaW9uKCknLg0KDQojIFBhY2thZ2UgZGVwZW5kZW5jaWVzDQpZb3UgY2FuIGluc3RhbGwgYW5kIGxvYWQgdGhlbSB1c2luZyB0aGUgZm9sbG93aW5nIGNvZGUgd2hpY2ggdXNlcyBhIGZ1bmN0aW9uIGNhbGxlZCBbaXBha10oaHR0cHM6Ly9naXN0LmdpdGh1Yi5jb20vc3RldmVud29ydGhpbmd0b24vMzE3ODE2MykuIA0KTm90ZSB0aGlzIGZ1bmN0aW9uIGNoZWNrcyB0byBzZWUgaWYgdGhlIHBhY2thZ2VzIGFyZSBpbnN0YWxsZWQgZmlyc3QuIElmIHRoZXkgYXJlIG5vdCBpbnN0YWxsZWQsIGl0IHdpbGwgZG8gc28gYmVmb3JlIGxvYWRpbmcNCmBgYHtyIHByZS1pbnN0YWxsIHBhY2thZ2VzLCBzdXBwcmVzc01lc3NhZ2VzKGV4cHIpfQ0KcGFja2FnZXMgPC0gYygicmdkYWwiLCAicmFzdGVyIiwgIm5jZGY0IiwgIlJOZXRDREYiLCAic3AiLCAicGFyYWxsZWwiLCAibWFncml0dHIiLCAiZGF0YS50YWJsZSIpIA0Kc291cmNlKCIuLi9zcmMvaXBhay5SIikNCmlwYWsocGFja2FnZXMpDQpgYGANCg0KDQoNCkZvciB0aGUgcGFyYWxsZWwgY29tcHV0aW5nICh0aGlzIHdpbGwgbWFrZSB0aGluZ3MgZmFzdGVyKSwgZGV0ZWN0IGNvcmVzIGF1dG9tYXRpY2FsbHkgKGxlYXZlIG9uZSBmcmVlIHRob3VnaCkuDQpgYGB7cn0NCmNvcmVzIDwtIGRldGVjdENvcmVzKCkgLSAxDQpgYGANCg0KQW5uZSBpcyB0aGUgYmVzdCAtIHJlYWxseSB0aGUgYmVzdC4gU2hlIGlzIHRoZSBiZXN0IHRoYXQgZXZlciB3YXMuIE5vIEFubmUgYmVzdGVyLg0KDQpUZWxsIFIgd2hlcmUgdG8gZmluZCB5b3VyIGRhdGEgYW5kIHdoZXJlIHRvIHNwaXQgb3V0IHRoZSBvdXRwdXQNCmBgYHtyIGRhdGFfcGF0aHN9DQplbnZkYXRhX3BhdGggPC0gIi4uL2RhdGEvZW52L25ldGNkZiINCnByb2plY3RlZF9wYXRoIDwtICIuLi9kYXRhL2VudiINCm91dHB1dF9wYXRoIDwtICIuLi9vdXRwdXQvZW52Ig0KYGBgDQoNCg==</div>
 
 
 

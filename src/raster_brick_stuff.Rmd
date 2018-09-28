@@ -13,24 +13,27 @@ A note to anyone who might happen to stumble across this... I am a beginner in R
 Built with 'r getRversion()'.
 
 # Package dependencies
-You can load them using the following code which uses a function called [ipak](https://gist.github.com/stevenworthington/3178163). 
-Note this function checks to see if the packages are installed first.
+You can install and load them using the following code which uses a function called [ipak](https://gist.github.com/stevenworthington/3178163). 
+Note this function checks to see if the packages are installed first. If they are not installed, it will do so before loading
 ```{r pre-install packages, suppressMessages(expr)}
 packages <- c("rgdal", "raster", "ncdf4", "RNetCDF", "sp", "parallel", "magrittr", "data.table") 
 source("../src/ipak.R")
 ipak(packages)
 ```
 
-For the parallel computing, detect cores automatically (leave one free though).
+
+
+For the parallel computing (this will make things faster), detect cores automatically (leave one free though).
 ```{r}
 cores <- detectCores() - 1
 ```
 
 Anne is the best - really the best. She is the best that ever was. No Anne bester.
 
-```{r}
-library("ncdf4")
-source("../src/netcdf_to_rasterbrick.R")
-
+Tell R where to find your data and where to spit out the output
+```{r data_paths}
+envdata_path <- "../data/env/netcdf"
+projected_path <- "../data/env"
+output_path <- "../output/env"
 ```
 
