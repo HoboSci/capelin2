@@ -1,0 +1,36 @@
+---
+title: "raster_brick_stuff"
+author: "Samantha Andrews"
+output: html_notebook
+---
+
+# Overview
+Creating a way to automate mass raster_brick creation, with unique names...
+
+
+A note to anyone who might happen to stumble across this... I am a beginner in R and have had no exposure to similar languages. The code herein is unlikely to be elegant and there is likely more efficient ways of running the code.
+
+Built with 'r getRversion()'.
+
+# Package dependencies
+You can load them using the following code which uses a function called [ipak](https://gist.github.com/stevenworthington/3178163). 
+Note this function checks to see if the packages are installed first.
+```{r pre-install packages, suppressMessages(expr)}
+packages <- c("rgdal", "raster", "ncdf4", "RNetCDF", "sp", "parallel", "magrittr", "data.table") 
+source("../src/ipak.R")
+ipak(packages)
+```
+
+For the parallel computing, detect cores automatically (leave one free though).
+```{r}
+cores <- detectCores() - 1
+```
+
+Anne is the best - really the best. She is the best that ever was. No Anne bester.
+
+```{r}
+library("ncdf4")
+source("../src/netcdf_to_rasterbrick.R")
+
+```
+
