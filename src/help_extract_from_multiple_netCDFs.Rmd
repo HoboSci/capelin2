@@ -1,12 +1,8 @@
 ---
-title: "raster_brick_stuff"
+title: "help_extract_from_multiple_netCDFs"
 author: "Samantha Andrews"
 output: html_notebook
 ---
-
-# Overview
-Creating a way to automate mass raster_brick creation, with unique names...
-
 
 A note to anyone who might happen to stumble across this... I am a beginner in R and have had no exposure to similar languages. I don't know what I'm doing. The code herein is unlikely to be elegant and there area probably more efficient ways of running the code.
 
@@ -21,24 +17,21 @@ source("../src/ipak.R")
 ipak(packages)
 ```
 
-Note that the original files have been renamed using Windows Powershell. See OneNote document for coding details. All files are now in the following format:
 
-yyyy_mm_variablename.nc 
+# Initial setup
 
-where variablename is all alpha characters, but varies in length. E.G. 1993_01_mlp.nc
-
-For the parallel computing (this will make things faster), detect cores automatically (leave one free though).
+Detect cores automatically, I usually free one up.
 ```{r}
 cores <- detectCores() - 1
 ```
 
-
-Tell R where to find your data and where to spit out the output
-```{r data_paths}
-weatherraster_path <- "../data/env/netcdftest"
-countryshape_path <- "./output/env"
-output_path <- "../output/env/nctest"
+Define your file paths here.
+```{r}
+weatherraster_path <- "/path/to/weatherrasterfiles"
+countryshape_path <- "/path/to/countryshapefile"
+output_path <- "/path/to/outputfiles"
 ```
+
 
 # ---- 1. Define Functions.
 
@@ -49,19 +42,20 @@ Small function 1) Reads filename & explicitly opens it as a NetCDF file.
 open_netcdf_as_rasterbrick <- function( ncdf_filename_input ) {
   ncdf_filename_input %>%
   file.path( weatherraster_path , . ) %>%
-  nc_open( . )  %>%  # Open path as NetCDF file.
-  ncvar_get( . ) %>%  # Get NetCDF file.
-  brick( . ) %>%
+  nc_open( . )  %>%  
+  ncvar_get( . ) %>%   
+  brick( . ) %>% # original code: brick( . ,ymn = -0, ymx = 360, xmn = -90, xmx = 90, crs = "the string for your CRS" ) %>%
   return( . )
 }
 ```
 
-# Small function 2) Transforms the raster brick to our country shapefile.
+
+Small function 2) Transforms the raster brick to our country shapefile.
 ```{r}
 match_rainbrick_to_countryshape <- function( brick_input ) {
   brick_input %>%
-  # Reproject raster brick to the shapefile's coordinate system.
-  projectRaster( . , crs = proj4string( country_shapefile ), method = "ngb" ) %>%
+  projectRaster( . , aea) %>% #aea represents an existing rasterbrick that is in the albers equal area   projection
+  # Original code included a crop option here - my files are already cropped to the region I need
   return( . )
 }
 ```
@@ -71,82 +65,82 @@ match_rainbrick_to_countryshape <- function( brick_input ) {
 ```{r}
 generate_data_from_rasterandshape <- function( brick_input ) {
 	brick_input %>%
-    raster::extract( . , countryshape , TRUE, fun = mean, na.rm = TRUE  )
+	# Take means according to the countryshape.
+	# Make sure df = TRUE , so that output is a dataframe.
+    raster::extract( . , countryshape ,
+    				f=TRUE, fun = mean, na.rm = TRUE  )
     return( . )
 }
 ```
 
+
 # Small function 4) Grab 4-digit year from input filename.
-```{r}
 grab_year_from_inputfile <- function( ncdf_filename_input ) {
+
   ncdf_filename_input %>%
   regexpr("[0-9]+", . ) %>%  # Match 4-digit year.
   regmatches( ncdf_filename_input , . ) %>%  # Get matched REGEX from input string.
   return( . )
 }
-```
 
 # --- 1.B. Define "BIG" Function That Extracts Dataset From a NetCDF File.
-```{r}
+
 generate_datatable_from_rasterbricks <- function( ncdf_filename_input ) {
+
+	# Note: the only argument is a NetCDF filename.
+
+	# Start with file argument and process with the sub-functions above.
 	ncdf_filename_input %>%
+
 	open_netcdf_as_rasterbrick( . ) %>%
 	match_rainbrick_to_countryshape( . ) %>%
 	generate_data_from_rasterandshape( . ) -> country_means_dataframe
+
+
+	# Go back to the file input name, create automatic names, and save.
 	ncdf_filename_input %>%
+
 	grab_year_from_inputfile( ) %>%
 	write.csv( country_means_dataframe ,
 				file = file.path( . , output_path ) )
 }
-```
 
 # ---- 2. Main Code: Setup Environment to Run Big Function.
 
-Start with your name of the country shapefile we're referencing.
-```{r}
-"poly.shp" %>%
-file.path(countryshape_path) %>%
-readODG( den = .  , layer = "FID" ) -> countryshape
+# Start with your name of the country shapefile we're referencing.
+"country_shapefile_name.shp" %>%
+file.path( countryshape_path , ) %>%
+readODG( den = .  , layer = "countries" ) -> countryshape
+
+
+# Generate list of NetCDF files automatically from our directory.
+# Match all files ending in ".nc"
 raster_file_list <- list.files( path = weatherraster_path ,
 pattern = ".nc" , all.files = FALSE , full.names = FALSE )
-```
 
-Generate list of NetCDF files automatically from our directory.
-Match all files ending in ".nc"
-```{r}
-raster_file_list <- list.files( path = weatherraster_path ,
-pattern = ".nc" , all.files = FALSE , full.names = FALSE )
-```
-
-
-Run our big function on the list of NetCDF files.
-```{r}
+# Run our big function on the list of NetCDF files.
 mclapply( raster_file_list , generate_datatable_from_rasterbricks )
-```
 
 # ---- 3. Assemble .CSV Files using Data.Table and Lapply.
 
-Fetch all files ending in .CSV in out output path.
-```{r}
+# Fetch all files ending in .CSV in out output path.
 csv_file_list <- list.files( path = output_path ,
                              pattern = ".csv",
                              all.files = FALSE,
                              full.names = TRUE,
                              recursive = FALSE )
+
+# Take the list of saved files & "fast read" them into R.
 lapply( csv_file_list , fread , sep = "," ) %>%
+
+# Transform the list of read files into a data.table:
 rbindlist( . ) -> big_datatable
+
+
+# Note: Before reassembling the data, or after, you may want
+# to manipulate the data so that it is in a more usable format.
+
+# Note: You may want to setkeys() for data.table here.
+
+# Save the big file.
 write.csv( big_datatable, file = file.path( output_path , "big_file_name.csv") )
-```
-
-
-# !!!!!
-
-```{r}
-b <- nc_open("../data/env/netcdftest/1993_01_salinity.nc")
-b
-c <- brick(b, lvar = 4)
-c
-pts <- data_aea
-ts <- extract(c, cbind(pts$decimalLongitude, pts$decimalLatitude))
-```
-
