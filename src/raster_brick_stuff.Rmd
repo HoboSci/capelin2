@@ -150,3 +150,11 @@ pts <- data_aea
 ts <- extract(c, cbind(pts$decimalLongitude, pts$decimalLatitude))
 ```
 
+
+```{r}
+brickttest <- nc_open("../data/env/netcdftest/1993_01_salinity.nc")
+testbrick <- brick( "../data/env/netcdftest/1993_01_salinity.nc", lvar = 4)
+
+
+```
+

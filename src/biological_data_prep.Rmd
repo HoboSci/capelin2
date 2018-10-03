@@ -71,9 +71,10 @@ individualcount
 resname
 originalscientificname
 collectioncode (this contains some info that might help with finding out gear used in the survey)
+depth
 
 ```{r select colums needed}
-tidydata <- subset(tidydata, select = c(id, decimalLatitude, decimalLongitude, datecollected, institutioncode, individualcount, resname, originalscientificname, collectioncode))
+tidydata <- subset(tidydata, select = c(id, decimalLatitude, decimalLongitude, datecollected, institutioncode, individualcount, depth, resname, originalscientificname, collectioncode))
 head(tidydata)
 ```
 
@@ -972,10 +973,61 @@ ok and write a csv
 write.csv(data_aea,"../output/bio/data_aea_cell_amo_nao.csv", row.names = FALSE)
 ```
 
+# depth bins
+the depth layers in the netCDF are literal slices. I want to attribute the observations with depth data to the nearest depth layer. I have created a .csv which lists all the depth layers, and then created depth bins with min and max values.
+
+load the depth bin csv
+```{r}
+depthbin <- read.csv("../data/env/depth_bin.csv", header = TRUE) 
+head(depthbin)
+
+```
+
+so what you want to do is look at the observation, see if it has a depth value (data_aea$depth) and if so, find the value that lies between depthbin$bin_min and depthbin$bin_max, then extract depthbin$layer_name and add to data_aea$depth_layer, and then extract depthbin$layer_no and add to data_aea$depthlayer_no
+
+first make sure that the data_aea$depth without values == NA (currently they are marked xx)
+```{r}
+data_aea$depth[data_aea$depth == "xx"] <- NA #make all xx values NA
+```
+
+the depth data in data_aea is a factor. This needs to be numeric
+```{r}
+data_aea$depth <- as.numeric(as.character(data_aea$depth))
+str(data_aea)
+```
+
+Now run some fancy if loop (courtesy of [TinglTanglBob] (https://stackoverflow.com/questions/52626995/problem-with-loop-to-add-values-from-one-dataframe-and-to-another-based-on-condi/52627728#52627728))
+```{r}
+check_depth <- function(d_temp)
+{
+  #print(d_temp)
+  if(is.na(d_temp)) return(NA) # if d_temp is na just return NA 
+  layer_name_temp <- depthbin$layer_name[which(depthbin$bin_min <= d_temp & depthbin$bin_max >= d_temp)]
+  if(length(layer_name_temp) > 1) layer_name_temp <- layer_name_temp[1] # in case there are more hits, the first one is taken
+  return(layer_name_temp)
+}
+
+data_aea$depth_layer <- sapply(data_aea$depth, check_depth)
+```
+
+ok now dow the same thing to get your layer_no
+```{r}
+check_depth2 <- function(d_temp)
+{
+  #print(d_temp)
+  if(is.na(d_temp)) return(NA) # if d_temp is na just return NA 
+  layer_no_temp <- depthbin$layer_no[which(depthbin$bin_min <= d_temp & depthbin$bin_max >= d_temp)]
+  if(length(layer_no_temp) > 1) layer_no_temp <- layer_no_temp[1] # in case there are more hits, the first one is taken
+  return(layer_no_temp)
+}
+
+data_aea$depthlayerno <- sapply(data_aea$depth, check_depth2)
+```
+
+
 # warm/cold year
 
 The warm/cold year index will be taken from a [DFO CSAS report](http://www.dfo-mpo.gc.ca/csas-sccs/Publications/SAR-AS/2018/2018_039-eng.pdf)
 
 
 
-# depth bins

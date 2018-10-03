@@ -109,15 +109,16 @@ Done!
 ok so that unique cell layer was built from a GLORYS layer... in the biomer layer needs to match to this layer (and i have reason to think that it does not - the biomer layer was converted by me from an ORCA025 grid, and IIRC when I looked at the layers in ArcGIS there were some differences in the cell boundaries)
 
 read in a biomer netcdf
+note this only reads in the top layer which is what i need right now. To get the other layers, add ", lvar = 4" to brick (see code)
 ```{r}
 library("ncdf4")
-biobrick <- brick("../data/env/CMEMS_GLOBAL_REANALYSIS_BIO_001_018_chl_monthly_mean_1998-01.ncwgs.nc_lonlat.ncdepthtrim.nc")
+biobrick <- brick("../data/env/CMEMS_GLOBAL_REANALYSIS_BIO_001_018_chl_monthly_mean_1998-01.ncwgs.nc_lonlat.ncdepthtrim.nc") # lvar = 4 
 biobrick
 ```
 
 Project the biomer file to match the glorys layer
 ```{r}
-bio_aea <- projectRaster(biobrick, aea) #note this only projects the top layer
+bio_aea <- projectRaster(biobrick, aea) 
 bio_aea
 writeRaster(bio_aea,'../output/env/bio_aea.tif',overwrite=TRUE, options=c('TFW=YES')) #so you can access it again
 ```

@@ -44,7 +44,7 @@ open_netcdf_as_rasterbrick <- function( ncdf_filename_input ) {
   file.path( weatherraster_path , . ) %>%
   nc_open( . )  %>%  
   ncvar_get( . ) %>%   
-  brick( . ) %>% # original code: brick( . ,ymn = -0, ymx = 360, xmn = -90, xmx = 90, crs = "the string for your CRS" ) %>%
+  brick( . , lvar = 4) %>% # lvar = 4 to read in all depth levels (nlayers)
   return( . )
 }
 ```
@@ -54,7 +54,7 @@ Small function 2) Transforms the raster brick to our country shapefile.
 ```{r}
 match_rainbrick_to_countryshape <- function( brick_input ) {
   brick_input %>%
-  projectRaster( . , aea) %>% #aea represents an existing rasterbrick that is in the albers equal area   projection
+  projectRaster( . , aea) %>% #aea represents an existing rasterbrick that is in the albers equal area projection
   # Original code included a crop option here - my files are already cropped to the region I need
   return( . )
 }
@@ -64,7 +64,8 @@ match_rainbrick_to_countryshape <- function( brick_input ) {
 # Small function 3) Extract data from a raster brick.
 ```{r}
 generate_data_from_rasterandshape <- function( brick_input ) {
-	brick_input %>%
+	# this whole section needs to be changed 
+  brick_input %>%
 	# Take means according to the countryshape.
 	# Make sure df = TRUE , so that output is a dataframe.
     raster::extract( . , countryshape ,
@@ -75,6 +76,7 @@ generate_data_from_rasterandshape <- function( brick_input ) {
 
 
 # Small function 4) Grab 4-digit year from input filename.
+```{r}
 grab_year_from_inputfile <- function( ncdf_filename_input ) {
 
   ncdf_filename_input %>%
@@ -82,6 +84,8 @@ grab_year_from_inputfile <- function( ncdf_filename_input ) {
   regmatches( ncdf_filename_input , . ) %>%  # Get matched REGEX from input string.
   return( . )
 }
+```
+
 
 # --- 1.B. Define "BIG" Function That Extracts Dataset From a NetCDF File.
 
