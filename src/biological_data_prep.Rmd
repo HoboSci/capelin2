@@ -701,7 +701,7 @@ write.csv(inst_by_mt, file = "../output/bio/institutioncode_by_mth.csv")
 
 A unique cell ID layer has been created in the environmental_data_preperation.Rmd. Now you want to extract the value of that layer to the .csv you are creating...
 
-Load the env. data
+Load the env. data - you can just use the glorys layer or the biomer layer as they are identical
 ```{r}
 library(raster)
 cell_layer <- raster("../output/env/glo_unique_cell.tif") #this is loading the cell layer that was created and saved as a tif
@@ -994,15 +994,15 @@ head(depthbin)
 
 so what you want to do is look at the observation, see if it has a depth value (data_aea$depth) and if so, find the value that lies between depthbin$bin_min and depthbin$bin_max, then extract depthbin$layer_name and add to data_aea$depth_layer, and then extract depthbin$layer_no and add to data_aea$depthlayer_no
 
-first make sure that the data_aea$depth without values == NA (currently they are marked xx)
-```{r}
-data_aea$depth[data_aea$depth == "xx"] <- NA #make all xx values NA
-```
-
 the depth data in data_aea is a factor. This needs to be numeric
 ```{r}
-data_aea$depth <- as.numeric(as.character(data_aea$depth))
+data_aea$depth <- as.integer(as.character(data_aea$depth))
 str(data_aea)
+```
+
+make sure that the data_aea$depth without values == NA (currently they are marked xx)
+```{r}
+data_aea$depth[data_aea$depth == "xx"] <- NA #make all xx values NA
 ```
 
 Now run some fancy if loop (courtesy of [TinglTanglBob] (https://stackoverflow.com/questions/52626995/problem-with-loop-to-add-values-from-one-dataframe-and-to-another-based-on-condi/52627728#52627728))
@@ -1031,6 +1031,12 @@ check_depth2 <- function(d_temp)
 }
 
 data_aea$depthlayerno <- sapply(data_aea$depth, check_depth2)
+```
+
+and save
+
+```{r}
+write.csv(data_aea,"../output/bio/data_aea_cell_amo_nao_bins.csv", row.names = FALSE)
 ```
 
 

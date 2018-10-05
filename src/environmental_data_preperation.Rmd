@@ -27,7 +27,7 @@ read in a netcdf
 note this is a GLORYS dataset
 ```{r}
 library("ncdf4")
-ncbr <- brick("../data/env/CMEMS_GLOBAL_REANALYSIS_PHY_001_025_salinity_monthly_mean_1993-01.nclonlat.ncdepthtrim.nc")
+ncbr <- brick("../data/env/1993_01_salinity.nc")
 ncbr
 ```
 
@@ -37,7 +37,7 @@ There is currently an issue with the projectRaster command in the raster package
 ## use ncdf4 directly
 library(ncdf4)
 ## connection to the file
-nc <- nc_open("../data/env/CMEMS_GLOBAL_REANALYSIS_PHY_001_025_salinity_monthly_mean_1993-01.nclonlat.ncdepthtrim.nc")
+nc <- nc_open("../data/env/1993_01_salinity.nc")
 ## desired variable 
 v <- ncvar_get(nc, "salinity")
 ## dimension coordinates
@@ -84,20 +84,19 @@ unique_cell <- (aea[[1]])
 ```
 
 Because the NA values are currently attributed with some other number and not NA in R (NA is set to -32767 in this particular layer), you need to make sure to exclude the cells which represent NA... so anything under 0.
-the cell id will be a count of the cells with data. First calculate how many cells to remove from ncell (11,424)
+the cell id will be a count of the cells with data. First calculate how many cells to remove from ncell (15,402)
 ```{r}
 cell_val_freq <- freq(unique_cell, value=NULL)
 cell_val_freq
 ```
-ok so we have 4693 cells that have NA (or in reality a negative number that represents NA). so remove 4693 from ncell. We know that there are 11424 cells, soo... 11424-4693 = 6731 cells have data.
+ok so we have 7634 cells that have NA (or in reality a negative number that represents NA). so remove 7634 from ncell. We know that there are 15402 cells, soo... 15402-7634 = 7768 cells have data.
 
 now give a unique ID to each cell
 ```{r}
-unique_cell[unique_cell > 0] <- 1:6731 
-writeRaster(unique_cell,'../output/env/unique_cell.tif',overwrite=TRUE, options=c('TFW=YES')) #so you can access it again
+unique_cell[unique_cell > 0] <- 1:7768 
+writeRaster(unique_cell,'../output/env/glo_unique_cell.tif',overwrite=TRUE, options=c('TFW=YES')) #so you can access it again
 uniquecell_poly <- rasterToPolygons(aea[[1]], fun=NULL, n=4, na.rm=TRUE, digits=12, dissolve=FALSE)
-
-writeOGR(uniquecell_poly, dsn = '.', layer = '../output/env/poly', driver = "ESRI Shapefile")
+writeOGR(uniquecell_poly, dsn = '.', layer = '../output/env/glo_unique_cell_poly', driver = "ESRI Shapefile")
 
 ```
 
@@ -106,13 +105,12 @@ Done!
 -----------------------------------------
 # The Biomer Layers...
 
-ok so that unique cell layer was built from a GLORYS layer... in the biomer layer needs to match to this layer (and i have reason to think that it does not - the biomer layer was converted by me from an ORCA025 grid, and IIRC when I looked at the layers in ArcGIS there were some differences in the cell boundaries)
 
-read in a biomer netcdf
+Read in a biomer netcdf
 note this only reads in the top layer which is what i need right now. To get the other layers, add ", lvar = 4" to brick (see code)
 ```{r}
 library("ncdf4")
-biobrick <- brick("../data/env/CMEMS_GLOBAL_REANALYSIS_BIO_001_018_chl_monthly_mean_1998-01.ncwgs.nc_lonlat.ncdepthtrim.nc") # lvar = 4 
+biobrick <- brick("../data/env/1998_01_chl.nc") # lvar = 4 
 biobrick
 ```
 
@@ -130,42 +128,47 @@ plot(bio_aea)
 ok now lets do the same "create unique cell ID" process for the biomer layer as you did for GLORYS. You want to check they match
 
 Because the NA values are currently attributed with some other number and not NA in R (NA is set to -32767 in this particular layer), you need to make sure to exclude the cells which represent NA... so anything under 0.
-the cell id will be a count of the cells with data. First calculate how many cells to remove from ncell (11,424) 
+the cell id will be a count of the cells with data. First calculate how many cells to remove from ncell (15402) 
 ```{r}
 bio_unique_cell <- bio_aea
 bio_cell_val_freq <- freq(bio_unique_cell, value=NULL)
 bio_cell_val_freq
 ```
-ok so we have 4695 cells that have NA. Note that the GLORYS layer has 4693 NA cells....  a quick visual inspection with ArcGIS reveals one cell likes off the coast of the USA south of Nova Scotia (unique cell ID 4840) and one off the north tip of Nova Scotia (unique cell ID 3438)
-so remove 4840 from ncell. We know that there are 11424 cells, soo... 11424-4695 = 6729 cells have data.
+ok so we have 7652 cells that have NA. Note that the GLORYS layer has 7634 NA cells....  so let's remove the cells from the GLORYS raster that correspond to NA in the BIOMER raster...
 
-you need to remove cell 3438 and 4695 from the Glorys unique cell layer....
 ```{r}
-values(unique_cell)[values(unique_cell) == 3438] = NA
-values(unique_cell)[values(unique_cell) == 4840] = NA
+aea <- overlay(aea, bio_aea, fun = function(x, y){
+  x[is.na(y[])] <- NA
+  return(x)
+})
+plot(aea[[1]])
 ```
 
-look at the number of NAs again...
+
 ```{r}
-uc_na <- freq(unique_cell,value=NA)
-uc_na
+aea_cut_cell_val_freq <- freq(aea[[1]], value=NULL)
+aea_cut_cell_val_freq
 ```
 
-ok great. ok so now give a unique ID to each BIOMER cell
+great! So let's redo the GLORYS unique cell layer....
+
 ```{r}
-bio_unique_cell[bio_unique_cell > -1] <- 1:6729 
+unique_cell <- aea[[1]]
+unique_cell[unique_cell > 0] <- 1:7750 
+writeRaster(unique_cell,'../output/env/glo_unique_cell.tif',overwrite=TRUE, options=c('TFW=YES')) #so you can access it again
+uniquecell_poly <- rasterToPolygons(aea[[1]], fun=NULL, n=4, na.rm=TRUE, digits=12, dissolve=FALSE)
+writeOGR(uniquecell_poly, dsn = '.', layer = '../output/env/glo_unique_cell_poly', driver = "ESRI Shapefile")
+unique_cell
+```
+
+and create a unique cell biomer layer..
+
+```{r}
+bio_unique_cell <- bio_aea
+bio_unique_cell[bio_unique_cell > -1] <- 1:7750 
 writeRaster(bio_unique_cell,'../output/env/bio_unique_cell.tif',overwrite=TRUE, options=c('TFW=YES')) #so you can access it again
 bio_unique_cell
 ```
-now give a unique ID to the GLORYS layer with the cells removed...
-```{r}
-glo_unique_cell <- unique_cell
-glo_unique_cell[glo_unique_cell > -1] <- 1:6729 
-writeRaster(glo_unique_cell,'../output/env/glo_unique_cell.tif',overwrite=TRUE, options=c('TFW=YES')) #so you can access it again
-bio_unique_cell
-```
-
-and done (again)
 
 
 -------------------------------------------
