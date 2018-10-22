@@ -9,6 +9,8 @@ Mass netCDF to raster brick, and then reprojection...
 
 A note to anyone who might happen to stumble across this... I am a beginner in R and have had no exposure to similar languages. The code herein is unlikely to be elegant and there is likely more efficient ways of running the code.
 
+SAM - YOU MIGHT WANT TO [PARALLEL PROCESS FOR THE WHOLE DATASET..](https://cran.r-project.org/web/packages/doParallel/vignettes/gettingstartedParallel.pdf) and also [here](https://gis.stackexchange.com/questions/253618/r-multicore-approach-to-extract-raster-values-using-spatial-points)
+
 Built with 'r getRversion()'.
 
 # Package dependencies
@@ -25,22 +27,42 @@ suppressMessages(ipak)
 Ok first get a list of netcdfs in the folder...
 ```{r}
 netcdf_list <- list.files("../data/env/netcdf", pattern = '*.nc', full.names = TRUE)
-netcdf_list
 ```
 
-ok now create a raster brick for each netcdf (with the same file name),
+ok now create a raster brick for each netcdf, project, and assing the same file name as the netCDF
 
 ```{r}
-no_netcdf <- length(netcdf_list)
+no_netcdf <- length(netcdf_list) #for the loop - need to know how many files to cycle through
 netcdf_name <- list.files("../data/env/netcdf", pattern = '*.nc', full.names = FALSE) #false means the path is not included
 library (ncdf4)
 for (i in 1:no_netcdf) {
   print(netcdf_name[i]) #this just prings the name of the netCDF R is working on
   temp_brick <- brick(netcdf_list[i], lvar = 4)
+  temp_brick <- projectRaster(temp_brick, aea) #aea is an existing raster in the projection I want that I created (environmental_data_preperation)
   assign(netcdf_name[i], temp_brick) #this asigns the netCDF name to the raster brick
 }
 
 ```
+just a quick test....
+
+```{r}
+`1998_01_salinity.nc`
+plot(`1998_01_salinity.nc` [[8]])
+```
+
+Look up year and month in the occurence data (data_aea)
+year = data_aea$year
+month = data_aea$month
+
+the raster brick file names are 
+character 1:4 = year
+charcater 6:7 = month
+character 9:end = env. variable name
 
 
+maybe start by splitting the occurence data into year-month? Then you can search for the rasters without going through everything....
+```{r}
+species_obs_date <- split(data_aea,paste(data_aea$year, data_aea$month))
+species_obs_date
+```
 
