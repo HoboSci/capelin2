@@ -7,7 +7,7 @@ output: html_notebook
 # Overview
 Preperation of the capelin (*Mallotus villosus*) data obtained from [OBIS](www.iobis.org). This database shows the global occurance of capelin. 
 
-A note to anyone who might happen to stumble across this... I am a beginner in R and have had no exposure to similar languages. The code herein is unlikely to be elegant and there is likely more efficient ways of running the code.
+A note to anyone who might happen to stumble across this... I am a beginner in R and have had no exposure to similar languages. I don't know what I'm doing. The code herein is unlikely to be elegant and there area probably more efficient ways of running the code.
 
 Built with 'r getRversion()'.
 
@@ -1038,6 +1038,37 @@ and save
 ```{r}
 write.csv(data_aea,"../output/bio/data_aea_cell_amo_nao_bins.csv", row.names = FALSE)
 ```
+
+#add columns for the env. variables
+The ones ypu have to add are...
+
+mlp
+salinty_1
+salinity_depth
+ssh
+temp_1
+temp_depth
+chl_1
+chl_depth
+o2_1
+o2_depth
+
+populate the columns with NA
+```{r}
+data_aea$mlp <- NA
+data_aea$salinty_1 <- NA
+data_aea$salinity_depth <- NA
+data_aea$ssh <- NA
+data_aea$temp_1 <- NA
+data_aea$temp_depth <- NA
+data_aea$chl_1 <- NA
+data_aea$chl_depth <- NA
+data_aea$o2_1 <- NA
+data_aea$o2_depth <- NA
+write.csv(data_aea,"../output/bio/data_aea_cell_amo_nao_bins_env.csv", row.names = FALSE)
+```
+
+
 
 
 # warm/cold year

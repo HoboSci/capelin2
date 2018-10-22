@@ -7,7 +7,7 @@ output: html_notebook
 # Overview
 Mass netCDF to raster brick, and then reprojection...
 
-A note to anyone who might happen to stumble across this... I am a beginner in R and have had no exposure to similar languages. The code herein is unlikely to be elegant and there is likely more efficient ways of running the code.
+A note to anyone who might happen to stumble across this... I am a beginner in R and have had no exposure to similar languages. I don't know what I'm doing. The code herein is unlikely to be elegant and there area probably more efficient ways of running the code.
 
 SAM - YOU MIGHT WANT TO [PARALLEL PROCESS FOR THE WHOLE DATASET..](https://cran.r-project.org/web/packages/doParallel/vignettes/gettingstartedParallel.pdf) and also [here](https://gis.stackexchange.com/questions/253618/r-multicore-approach-to-extract-raster-values-using-spatial-points)
 
@@ -18,7 +18,7 @@ You can load them using the following code which uses a function called [ipak](h
 Note this function checks to see if the packages are installed first.
 
 ```{r pre-install packages, message=FALSE}
-packages <- c("ncdf4")
+packages <- c("ncdf4", "sp")
 source("../src/ipak.R")
 ipak(packages)
 suppressMessages(ipak)
@@ -62,7 +62,54 @@ character 9:end = env. variable name
 
 maybe start by splitting the occurence data into year-month? Then you can search for the rasters without going through everything....
 ```{r}
-species_obs_date <- split(data_aea,paste(data_aea$year, data_aea$month))
-species_obs_date
+library(sp)
+species_obs_date <- SpatialPointsDataFrame(coords = xy, data = data_aea, proj4string = CRS("+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0")) #convert into a spatialpoints dataframe to do the extraction
+species_obs_date <- spTransform(species_obs_date, CRS = "+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-60 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs") #need to reproject.... note -60 used to be -91. Changed to 'straighten up'
+split_obs <- split(species_obs_date, paste(species_obs_date$year, species_obs_date$month))
 ```
+
+just check the species_obs_date complete file in a plot
+```{r}
+plot(species_obs_date)
+```
+looks good...
+
+```{r}
+for(i in split_obs){
+  print(i)
+}
+```
+
+
+hmm what now....
+
+You want to populate the following fields in the species_obs_date spatialdf
+mlp
+salinty_1
+salinity_depth
+ssh
+temp_1
+temp_depth
+chl_1
+chl_depth
+o2_1
+o2_depth
+
+where _1 indicates the surface layer [[1]] and depth is == depthlayerno
+Note mlp and ssh have only one single layer ([[1]])
+
+
+netcdf_list = list of all netcdfs
+no_netcdf = number of netcdfs created
+netcdf_name = name of netcdfs - will match the name of the raster bricks too.
+
+
+```{r}
+
+
+
+```
+
+
+
 
