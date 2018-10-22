@@ -20,7 +20,7 @@ ipak(packages)
 
 # Initial setup
 
-Detect cores automatically, I usually free one up.
+Detect cores automatically, and free one up.
 ```{r}
 cores <- detectCores() - 1
 ```

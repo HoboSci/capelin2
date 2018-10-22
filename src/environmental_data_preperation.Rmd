@@ -27,8 +27,9 @@ read in a netcdf
 note this is a GLORYS dataset
 ```{r}
 library("ncdf4")
-ncbr <- brick("../data/env/1993_01_salinity.nc")
-ncbr
+testnc <-  "../data/env/1993_01_salinity.nc"
+ncbr <- brick(testnc,lvar = 4) #lvar = 4 loads the levels
+ncbr 
 ```
 
 reproject ...
@@ -62,13 +63,17 @@ writeRaster(aea[[1]],'../output/env/aea.tif',overwrite=TRUE,options=c('TFW=YES')
 
 if projectRaster would work properly...
 
-
+#```{r}
 library(raster)
-canada_eq_ar_proj <- "+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=- +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs"
+canada_eq_ar_proj <- "+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-60 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs"
 library("rgdal")
-rp <- projectRaster(ncbr, crs = canada_eq_ar_proj)
+rp <- projectRaster (ncbr, crs = canada_eq_ar_proj)
 rp
-writeRaster(rp,'../data/env/rp.tif',options=c('TFW=YES')) 
+plot(rp[[1]])
+writeRaster(rp[[1]],'../data/env/rplayer.tif',options=c('TFW=YES'), overwrite=TRUE) 
+#```
+
+
 
 
 

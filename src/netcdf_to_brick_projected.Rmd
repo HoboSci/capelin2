@@ -1,0 +1,46 @@
+---
+title: "netcdf_to_brick_projected"
+author: "Samantha Andrews"
+output: html_notebook
+---
+
+# Overview
+Mass netCDF to raster brick, and then reprojection...
+
+A note to anyone who might happen to stumble across this... I am a beginner in R and have had no exposure to similar languages. The code herein is unlikely to be elegant and there is likely more efficient ways of running the code.
+
+Built with 'r getRversion()'.
+
+# Package dependencies
+You can load them using the following code which uses a function called [ipak](https://gist.github.com/stevenworthington/3178163). 
+Note this function checks to see if the packages are installed first.
+
+```{r pre-install packages, message=FALSE}
+packages <- c("ncdf4")
+source("../src/ipak.R")
+ipak(packages)
+suppressMessages(ipak)
+```
+
+Ok first get a list of netcdfs in the folder...
+```{r}
+netcdf_list <- list.files("../data/env/netcdf", pattern = '*.nc', full.names = TRUE)
+netcdf_list
+```
+
+ok now create a raster brick for each netcdf (with the same file name),
+
+```{r}
+no_netcdf <- length(netcdf_list)
+netcdf_name <- list.files("../data/env/netcdf", pattern = '*.nc', full.names = FALSE) #false means the path is not included
+library (ncdf4)
+for (i in 1:no_netcdf) {
+  print(netcdf_name[i]) #this just prings the name of the netCDF R is working on
+  temp_brick <- brick(netcdf_list[i], lvar = 4)
+  assign(netcdf_name[i], temp_brick) #this asigns the netCDF name to the raster brick
+}
+
+```
+
+
+
