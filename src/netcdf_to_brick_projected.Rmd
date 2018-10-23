@@ -26,7 +26,7 @@ suppressMessages(ipak)
 
 Ok first get a list of netcdfs in the folder...
 ```{r}
-netcdf_list <- list.files("../data/env/netcdf", pattern = '*.nc', full.names = TRUE)
+netcdf_list <- list.files("../data/env/netcdf", pattern = '*.nc', full.names = TRUE) #true means the full path is included
 ```
 
 ok now create a raster brick for each netcdf, project, and assing the same file name as the netCDF
@@ -44,7 +44,7 @@ for (i in 1:no_netcdf) {
 
 ```
 just a quick test....
-
+(also not sure why the names are wrapped in '')
 ```{r}
 `1998_01_salinity.nc`
 plot(`1998_01_salinity.nc` [[8]])
@@ -83,7 +83,7 @@ for(i in split_obs){
 
 hmm what now....
 
-You want to populate the following fields in the species_obs_date spatialdf
+I want to populate the following fields in the species_obs_date spatialdf
 mlp
 salinty_1
 salinity_depth
@@ -95,7 +95,7 @@ chl_depth
 o2_1
 o2_depth
 
-where _1 indicates the surface layer [[1]] and depth is == depthlayerno
+where _1 indicates the surface layer [[1]] of each environmental variable, and depth is the == species_obs_date$depthlayerno
 Note mlp and ssh have only one single layer ([[1]])
 
 

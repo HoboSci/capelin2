@@ -330,6 +330,9 @@ pattern = &quot;.nc&quot; , all.files = FALSE , full.names = FALSE )</code></pre
 <p>Run our big function on the list of NetCDF files.</p>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxubWNsYXBwbHkoIHJhc3Rlcl9maWxlX2xpc3QgLCBnZW5lcmF0ZV9kYXRhdGFibGVfZnJvbV9yYXN0ZXJicmlja3MgKVxuYGBgIn0= -->
+<pre class="r"><code>mclapply( raster_file_list , generate_datatable_from_rasterbricks )</code></pre>
+<!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 </div>
@@ -338,6 +341,16 @@ pattern = &quot;.nc&quot; , all.files = FALSE , full.names = FALSE )</code></pre
 <p>Fetch all files ending in .CSV in out output path.</p>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuY3N2X2ZpbGVfbGlzdCA8LSBsaXN0LmZpbGVzKCBwYXRoID0gb3V0cHV0X3BhdGggLFxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICBwYXR0ZXJuID0gXCIuY3N2XCIsXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgIGFsbC5maWxlcyA9IEZBTFNFLFxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICBmdWxsLm5hbWVzID0gVFJVRSxcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgcmVjdXJzaXZlID0gRkFMU0UgKVxubGFwcGx5KCBjc3ZfZmlsZV9saXN0ICwgZnJlYWQgLCBzZXAgPSBcIixcIiApICU+JVxucmJpbmRsaXN0KCAuICkgLT4gYmlnX2RhdGF0YWJsZVxud3JpdGUuY3N2KCBiaWdfZGF0YXRhYmxlLCBmaWxlID0gZmlsZS5wYXRoKCBvdXRwdXRfcGF0aCAsIFwiYmlnX2ZpbGVfbmFtZS5jc3ZcIikgKVxuYGBgIn0= -->
+<pre class="r"><code>csv_file_list &lt;- list.files( path = output_path ,
+                             pattern = &quot;.csv&quot;,
+                             all.files = FALSE,
+                             full.names = TRUE,
+                             recursive = FALSE )
+lapply( csv_file_list , fread , sep = &quot;,&quot; ) %&gt;%
+rbindlist( . ) -&gt; big_datatable
+write.csv( big_datatable, file = file.path( output_path , &quot;big_file_name.csv&quot;) )</code></pre>
+<!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 </div>

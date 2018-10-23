@@ -193,8 +193,8 @@ ipak(packages)</code></pre>
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 </div>
-<div id="initial-setup" class="section level1">
-<h1>Initial setup</h1>
+<div id="use-multi-core-if-it-is-an-option" class="section level1">
+<h1>use multi-core (if it is an option)</h1>
 <p>Detect cores automatically, and free one up.</p>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
@@ -203,155 +203,125 @@ ipak(packages)</code></pre>
 <!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
-<p>Define your file paths here.</p>
+</div>
+<div id="the-short-story" class="section level1">
+<h1>The short story</h1>
+<p>I have multiple netCDFs that need to extract values from to points. The problem is, I need R to decide which netCDFs (and which layers) to perform the extraction on.</p>
+</div>
+<div id="the-details" class="section level1">
+<h1>The details</h1>
+<p>I have around 1500 NetCDFs. Each netCDF has 4 dimensions (time - T, longitude - X, latitude - Y, depth - Z) and represents a single oceanographic variable for a particular month in a particular year. I have given each netCDF the following naming convention:</p>
+<p>yyyy_mm_variablename.nc (where variable name can vary in length)</p>
+<p>An example of the netCDF is available <a href="https://drive.google.com/file/d/1y2XU5RzUBRLgTXkql667a5o_PVk5LMTP/view?usp=sharing">here</a> . To use the netCDFs in R, I have made a loop to create raster bricks and project them in an equal-area grid from all the netCDFs:</p>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxud2VhdGhlcnJhc3Rlcl9wYXRoIDwtIFwiL3BhdGgvdG8vd2VhdGhlcnJhc3RlcmZpbGVzXCJcbmNvdW50cnlzaGFwZV9wYXRoIDwtIFwiL3BhdGgvdG8vY291bnRyeXNoYXBlZmlsZVwiXG5vdXRwdXRfcGF0aCA8LSBcIi9wYXRoL3RvL291dHB1dGZpbGVzXCJcbmBgYCJ9 -->
-<pre class="r"><code>weatherraster_path &lt;- &quot;/path/to/weatherrasterfiles&quot;
-countryshape_path &lt;- &quot;/path/to/countryshapefile&quot;
-output_path &lt;- &quot;/path/to/outputfiles&quot;</code></pre>
-<!-- rnb-source-end -->
-<!-- rnb-chunk-end -->
-<!-- rnb-text-begin -->
-</div>
-<div id="define-functions." class="section level1">
-<h1>—- 1. Define Functions.</h1>
-</div>
-<div id="a.-define-small-subfunctions." class="section level1">
-<h1>– 1.A. Define Small Subfunctions.</h1>
-<p>Small function 1) Reads filename &amp; explicitly opens it as a NetCDF file.</p>
-<!-- rnb-text-end -->
-<!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxub3Blbl9uZXRjZGZfYXNfcmFzdGVyYnJpY2sgPC0gZnVuY3Rpb24oIG5jZGZfZmlsZW5hbWVfaW5wdXQgKSB7XG4gIG5jZGZfZmlsZW5hbWVfaW5wdXQgJT4lXG4gIGZpbGUucGF0aCggd2VhdGhlcnJhc3Rlcl9wYXRoICwgLiApICU+JVxuICBuY19vcGVuKCAuICkgICU+JSAgXG4gIG5jdmFyX2dldCggLiApICU+JSAgIFxuICBicmljayggLiAsIGx2YXIgPSA0KSAlPiUgIyBsdmFyID0gNCB0byByZWFkIGluIGFsbCBkZXB0aCBsZXZlbHMgKG5sYXllcnMpXG4gIHJldHVybiggLiApXG59XG5gYGAifQ== -->
-<pre class="r"><code>open_netcdf_as_rasterbrick &lt;- function( ncdf_filename_input ) {
-  ncdf_filename_input %&gt;%
-  file.path( weatherraster_path , . ) %&gt;%
-  nc_open( . )  %&gt;%  
-  ncvar_get( . ) %&gt;%   
-  brick( . , lvar = 4) %&gt;% # lvar = 4 to read in all depth levels (nlayers)
-  return( . )
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxubmV0Y2RmX2xpc3QgPC0gbGlzdC5maWxlcyhcIi4uL2RhdGEvZW52L25ldGNkZlwiLCBwYXR0ZXJuID0gJyoubmMnLCBmdWxsLm5hbWVzID0gVFJVRSkgI3RydWUgbWVhbnMgdGhlIGZ1bGwgcGF0aCBpcyBpbmNsdWRlZFxubm9fbmV0Y2RmIDwtIGxlbmd0aChuZXRjZGZfbGlzdCkgI2ZvciB0aGUgbG9vcCAtIG5lZWQgdG8ga25vdyBob3cgbWFueSBmaWxlcyB0byBjeWNsZSB0aHJvdWdoXG5uZXRjZGZfbmFtZSA8LSBsaXN0LmZpbGVzKFwiLi4vZGF0YS9lbnYvbmV0Y2RmXCIsIHBhdHRlcm4gPSAnKi5uYycsIGZ1bGwubmFtZXMgPSBGQUxTRSkgI2ZhbHNlIG1lYW5zIHRoZSBwYXRoIGlzIG5vdCBpbmNsdWRlZFxubGlicmFyeSAobmNkZjQpXG5mb3IgKGkgaW4gMTpub19uZXRjZGYpIHtcbiAgcHJpbnQobmV0Y2RmX25hbWVbaV0pICN0aGlzIGp1c3QgcHJpbmdzIHRoZSBuYW1lIG9mIHRoZSBuZXRDREYgUiBpcyB3b3JraW5nIG9uXG4gIHRlbXBfYnJpY2sgPC0gYnJpY2sobmV0Y2RmX2xpc3RbaV0sIGx2YXIgPSA0KVxuICB0ZW1wX2JyaWNrIDwtIHByb2plY3RSYXN0ZXIodGVtcF9icmljaywgYWVhKSAjYWVhIGlzIGFuIGV4aXN0aW5nIHJhc3RlciBpbiB0aGUgcHJvamVjdGlvbiBJIHdhbnQgdGhhdCBJIGNyZWF0ZWQgKGVudmlyb25tZW50YWxfZGF0YV9wcmVwZXJhdGlvbilcbiAgYXNzaWduKG5ldGNkZl9uYW1lW2ldLCB0ZW1wX2JyaWNrKSAjdGhpcyBhc2lnbnMgdGhlIG5ldENERiBuYW1lIHRvIHRoZSByYXN0ZXIgYnJpY2tcbn1cbmBgYCJ9 -->
+<pre class="r"><code>netcdf_list &lt;- list.files(&quot;../data/env/netcdf&quot;, pattern = '*.nc', full.names = TRUE) #true means the full path is included
+no_netcdf &lt;- length(netcdf_list) #for the loop - need to know how many files to cycle through
+netcdf_name &lt;- list.files(&quot;../data/env/netcdf&quot;, pattern = '*.nc', full.names = FALSE) #false means the path is not included
+library (ncdf4)
+for (i in 1:no_netcdf) {
+  print(netcdf_name[i]) #this just prings the name of the netCDF R is working on
+  temp_brick &lt;- brick(netcdf_list[i], lvar = 4)
+  temp_brick &lt;- projectRaster(temp_brick, aea) #aea is an existing raster in the projection I want that I created (environmental_data_preperation)
+  assign(netcdf_name[i], temp_brick) #this asigns the netCDF name to the raster brick
 }</code></pre>
 <!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
-<p>Small function 2) Transforms the raster brick to our country shapefile.</p>
+<p>Note that this may not be the most computationally efficient way to do this as I will be creating a lot of raster bricks that will be stored to memory…</p>
+<p>I also had a dataset (.csv) containing fish observation (point) data. This dataset (let’s call it occurrence) contains the following columns:</p>
+<p>occurrence<span class="math inline">\(id (a unique observation ID) occurrence\)</span>decimalLongitude (Longitude in decimal degree) occurrence<span class="math inline">\(decimalLatitude (Latitude in decimal degree) occurrence\)</span>dLongitudeM (Longitude in meters) occurrence<span class="math inline">\(LatitudeM (Latitude in meters) occurrence\)</span>year (year of observation) occurrence<span class="math inline">\(month (month of observation) occurrence\)</span>depthlayerno (depth of observation - the value corresponds to the depth layers in the raster bricks e.g. if occurrence$depthlayerno == 20, then the observation is from the raster brick layer [[20]])</p>
+<p>I then have some empty columns that need to be populated with data from the raster bricks, each representing an oceanographic variable and depth layer the data needs to come from. An example is:</p>
+<p>occurrence<span class="math inline">\(salinity_1 (extract value to point from the salinity raster brick layer [[1]]) occurrence\)</span>salinity_depth (extract value to point from the salinity raster brick layer [[occurrence$depthlayerno]])</p>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxubWF0Y2hfcmFpbmJyaWNrX3RvX2NvdW50cnlzaGFwZSA8LSBmdW5jdGlvbiggYnJpY2tfaW5wdXQgKSB7XG4gIGJyaWNrX2lucHV0ICU+JVxuICBwcm9qZWN0UmFzdGVyKCAuICwgYWVhKSAlPiUgI2FlYSByZXByZXNlbnRzIGFuIGV4aXN0aW5nIHJhc3RlcmJyaWNrIHRoYXQgaXMgaW4gdGhlIGFsYmVycyBlcXVhbCBhcmVhIHByb2plY3Rpb25cbiAgIyBPcmlnaW5hbCBjb2RlIGluY2x1ZGVkIGEgY3JvcCBvcHRpb24gaGVyZSAtIG15IGZpbGVzIGFyZSBhbHJlYWR5IGNyb3BwZWQgdG8gdGhlIHJlZ2lvbiBJIG5lZWRcbiAgcmV0dXJuKCAuIClcbn1cbmBgYCJ9 -->
-<pre class="r"><code>match_rainbrick_to_countryshape &lt;- function( brick_input ) {
-  brick_input %&gt;%
-  projectRaster( . , aea) %&gt;% #aea represents an existing rasterbrick that is in the albers equal area projection
-  # Original code included a crop option here - my files are already cropped to the region I need
-  return( . )
-}</code></pre>
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxub2NjdXJyZW5jZSA8LSByZWFkLmNzdihcIi4vZGF0YS9iaW8vb2NjdXJyZW5jZV9oZWxwLmNzdlwiLCBoZWFkZXIgPSBUUlVFKVxuYGBgIn0= -->
+<pre class="r"><code>occurrence &lt;- read.csv(&quot;./data/bio/occurrence_help.csv&quot;, header = TRUE)</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<p>Most of the raster bricks contain 50 layers - some only have 1 layer. Furthermore not all observations have a depthlayerno value (occurrence$depthlayerno == NA)</p>
+<p>A cut-down version of this .csv is available here XXXX.</p>
+<p>The dput for occurrence is as follows:</p>
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuZHB1dChvY2N1cnJlbmNlKVxuYGBgIn0= -->
+<pre class="r"><code>dput(occurrence)</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoic3RydWN0dXJlKGxpc3QoeWVhciA9IGMoMTk5OEwsIDE5OThMLCAxOTk4TCwgMTk5OEwsIDE5OThMLCAxOTk4TCwgXG4xOTk4TCwgMTk5OEwsIDE5OThMLCAxOTk4TCwgMTk5OEwsIDE5OThMLCAxOTk4TCwgMTk5OEwsIDE5OThMXG4pLCBtb250aCA9IGMoMTBMLCAxMEwsIDEwTCwgMTBMLCAxMUwsIDExTCwgMTJMLCAxMkwsIDEyTCwgNEwsIFxuNEwsIDRMLCA0TCwgNEwsIDVMKSwgaWQgPSBjKDM4NjY2OTg1MkwsIDM4NjY2OTg4MUwsIDM4NjY2OTkwNEwsIFxuMzg2NDExMDYyTCwgMzg2Njc0MTUzTCwgMzg2NDE1ODMwTCwgMzg2NDE3MzA1TCwgMzg2NDE3MzM1TCwgMzg2NDE3NTg4TCwgXG4zODY0MDM2MTJMLCAzODY0MDIwODFMLCAzODY0MDIwNjJMLCAzODY0MDI3ODdMLCAzODY0MDE4ODVMLCAzODY0MDU5ODlMXG4pLCBkZWNpbWFsTGF0aXR1ZGUgPSBjKDUzLjk1LCA1My42MywgNTMuNzIsIDQ1LjE5LCA1MC4yNiwgNDguNDIsIFxuNDguOTYsIDQ4Ljk1LCA0Ny43LCA0Ni44NywgNDYuMzgsIDQ2LjQ2LCA0Ny40LCA0Ny4xMiwgNDUuNiksIFxuICAgIGRlY2ltYWxMb25naXR1ZGUgPSBjKC01NC45MSwgLTU1LjUxLCAtNTUuNzMsIC01Mi44NSwgLTU1LjQ5LCBcbiAgICAtNDkuNTIsIC01Mi43OCwgLTUyLjgxLCAtNTIuOTMsIC01Ny44NiwgLTU0Ljk0LCAtNTQuODIsIC01Ni4zNywgXG4gICAgLTU0LjYxLCAtNTEuNjgpLCBMb25naXR1ZGVNID0gYygzMzExNzAuMzczMywgMjk0NTkyLjEyODgsIFxuICAgIDI3OTUzNi41NjM5LCA1NjgxMjAuNjYyMywgMzIxMTY0LjIyOCwgNzc1NTc3LjQ5NzEsIDUyOTAzOS44MDg4LCBcbiAgICA1MjY5NjguNTAyOCwgNTMyNzQ3LjYzNSwgMTY0NDQ1LjY1NjEsIDM5MjU5MC45ODE2LCA0MDEyMDQuNDk0NywgXG4gICAgMjc1Njk1LjA2MjIsIDQxMTYwMy4wNzMsIDY1NTA4My4yNDQzKSwgTGF0aXR1ZGVNID0gYygxNTQ5ODIwLjcyNywgXG4gICAgMTUxMTIyMS4yODksIDE1MjAzNTMuMTQyLCA1OTQ2NjYuODgsIDExMzU2MDQuNDk3LCA5ODExMzAuNzk4MywgXG4gICAgMTAwODgyNC44NDcsIDEwMDc0ODYuMTQ5LCA4Njg4OTguMzM4MywgNzUxODE2LjI4ODcsIDcwOTk5My42MTU5LCBcbiAgICA3MTk0ODcuMzAzOCwgODE1MTM5LjU5MzEsIDc5MzI5Ny45MDI4LCA2NTAwMzIuOTM4OSksIGRlcHRobGF5ZXJubyA9IGMoMzBMLCBcbiAgICAyOEwsIDI2TCwgMjRMLCAzNUwsIDM1TCwgMzNMLCAzMkwsIDI1TCwgMzNMLCAzMUwsIDMyTCwgMzVMLCBcbiAgICAzMUwsIDIzTCksIHNhbGludHlfMSA9IGMoTkEsIE5BLCBOQSwgTkEsIE5BLCBOQSwgTkEsIE5BLCBcbiAgICBOQSwgTkEsIE5BLCBOQSwgTkEsIE5BLCBOQSksIHNhbGluaXR5X2RlcHRoID0gYyhOQSwgTkEsIE5BLCBcbiAgICBOQSwgTkEsIE5BLCBOQSwgTkEsIE5BLCBOQSwgTkEsIE5BLCBOQSwgTkEsIE5BKSwgdGVtcF8xID0gYyhOQSwgXG4gICAgTkEsIE5BLCBOQSwgTkEsIE5BLCBOQSwgTkEsIE5BLCBOQSwgTkEsIE5BLCBOQSwgTkEsIE5BKSwgXG4gICAgdGVtcF9kZXB0aCA9IGMoTkEsIE5BLCBOQSwgTkEsIE5BLCBOQSwgTkEsIE5BLCBOQSwgTkEsIE5BLCBcbiAgICBOQSwgTkEsIE5BLCBOQSkpLCBjbGFzcyA9IFwiZGF0YS5mcmFtZVwiLCByb3cubmFtZXMgPSBjKE5BLCBcbi0xNUwpKVxuIn0= -->
+<pre><code>structure(list(year = c(1998L, 1998L, 1998L, 1998L, 1998L, 1998L, 
+1998L, 1998L, 1998L, 1998L, 1998L, 1998L, 1998L, 1998L, 1998L
+), month = c(10L, 10L, 10L, 10L, 11L, 11L, 12L, 12L, 12L, 4L, 
+4L, 4L, 4L, 4L, 5L), id = c(386669852L, 386669881L, 386669904L, 
+386411062L, 386674153L, 386415830L, 386417305L, 386417335L, 386417588L, 
+386403612L, 386402081L, 386402062L, 386402787L, 386401885L, 386405989L
+), decimalLatitude = c(53.95, 53.63, 53.72, 45.19, 50.26, 48.42, 
+48.96, 48.95, 47.7, 46.87, 46.38, 46.46, 47.4, 47.12, 45.6), 
+    decimalLongitude = c(-54.91, -55.51, -55.73, -52.85, -55.49, 
+    -49.52, -52.78, -52.81, -52.93, -57.86, -54.94, -54.82, -56.37, 
+    -54.61, -51.68), LongitudeM = c(331170.3733, 294592.1288, 
+    279536.5639, 568120.6623, 321164.228, 775577.4971, 529039.8088, 
+    526968.5028, 532747.635, 164445.6561, 392590.9816, 401204.4947, 
+    275695.0622, 411603.073, 655083.2443), LatitudeM = c(1549820.727, 
+    1511221.289, 1520353.142, 594666.88, 1135604.497, 981130.7983, 
+    1008824.847, 1007486.149, 868898.3383, 751816.2887, 709993.6159, 
+    719487.3038, 815139.5931, 793297.9028, 650032.9389), depthlayerno = c(30L, 
+    28L, 26L, 24L, 35L, 35L, 33L, 32L, 25L, 33L, 31L, 32L, 35L, 
+    31L, 23L), salinty_1 = c(NA, NA, NA, NA, NA, NA, NA, NA, 
+    NA, NA, NA, NA, NA, NA, NA), salinity_depth = c(NA, NA, NA, 
+    NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA), temp_1 = c(NA, 
+    NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA), 
+    temp_depth = c(NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, 
+    NA, NA, NA, NA)), class = &quot;data.frame&quot;, row.names = c(NA, 
+-15L))</code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<p>And str(occurrence) is</p>
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuc3RyKG9jY3VycmVuY2UpXG5gYGAifQ== -->
+<pre class="r"><code>str(occurrence)</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiJ2RhdGEuZnJhbWUnOlx0MTUgb2JzLiBvZiAgMTIgdmFyaWFibGVzOlxuICQgeWVhciAgICAgICAgICAgIDogaW50ICAxOTk4IDE5OTggMTk5OCAxOTk4IDE5OTggMTk5OCAxOTk4IDE5OTggMTk5OCAxOTk4IC4uLlxuICQgbW9udGggICAgICAgICAgIDogaW50ICAxMCAxMCAxMCAxMCAxMSAxMSAxMiAxMiAxMiA0IC4uLlxuICQgaWQgICAgICAgICAgICAgIDogaW50ICAzODY2Njk4NTIgMzg2NjY5ODgxIDM4NjY2OTkwNCAzODY0MTEwNjIgMzg2Njc0MTUzIDM4NjQxNTgzMCAzODY0MTczMDUgMzg2NDE3MzM1IDM4NjQxNzU4OCAzODY0MDM2MTIgLi4uXG4gJCBkZWNpbWFsTGF0aXR1ZGUgOiBudW0gIDU0IDUzLjYgNTMuNyA0NS4yIDUwLjMgLi4uXG4gJCBkZWNpbWFsTG9uZ2l0dWRlOiBudW0gIC01NC45IC01NS41IC01NS43IC01Mi45IC01NS41IC4uLlxuICQgTG9uZ2l0dWRlTSAgICAgIDogbnVtICAzMzExNzAgMjk0NTkyIDI3OTUzNyA1NjgxMjEgMzIxMTY0IC4uLlxuICQgTGF0aXR1ZGVNICAgICAgIDogbnVtICAxNTQ5ODIxIDE1MTEyMjEgMTUyMDM1MyA1OTQ2NjcgMTEzNTYwNCAuLi5cbiAkIGRlcHRobGF5ZXJubyAgICA6IGludCAgMzAgMjggMjYgMjQgMzUgMzUgMzMgMzIgMjUgMzMgLi4uXG4gJCBzYWxpbnR5XzEgICAgICAgOiBsb2dpICBOQSBOQSBOQSBOQSBOQSBOQSAuLi5cbiAkIHNhbGluaXR5X2RlcHRoICA6IGxvZ2kgIE5BIE5BIE5BIE5BIE5BIE5BIC4uLlxuICQgdGVtcF8xICAgICAgICAgIDogbG9naSAgTkEgTkEgTkEgTkEgTkEgTkEgLi4uXG4gJCB0ZW1wX2RlcHRoICAgICAgOiBsb2dpICBOQSBOQSBOQSBOQSBOQSBOQSAuLi5cbiJ9 -->
+<pre><code>'data.frame':   15 obs. of  12 variables:
+ $ year            : int  1998 1998 1998 1998 1998 1998 1998 1998 1998 1998 ...
+ $ month           : int  10 10 10 10 11 11 12 12 12 4 ...
+ $ id              : int  386669852 386669881 386669904 386411062 386674153 386415830 386417305 386417335 386417588 386403612 ...
+ $ decimalLatitude : num  54 53.6 53.7 45.2 50.3 ...
+ $ decimalLongitude: num  -54.9 -55.5 -55.7 -52.9 -55.5 ...
+ $ LongitudeM      : num  331170 294592 279537 568121 321164 ...
+ $ LatitudeM       : num  1549821 1511221 1520353 594667 1135604 ...
+ $ depthlayerno    : int  30 28 26 24 35 35 33 32 25 33 ...
+ $ salinty_1       : logi  NA NA NA NA NA NA ...
+ $ salinity_depth  : logi  NA NA NA NA NA NA ...
+ $ temp_1          : logi  NA NA NA NA NA NA ...
+ $ temp_depth      : logi  NA NA NA NA NA NA ...</code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<p>I have converted the occurrence dataset into a SpatialPointsDataFrame, projected it into an equal area grid (to match the raster bricks), and them split the data into year-months (I thought this might be an easier way to tackle the next stage):</p>
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxubGlicmFyeShzcClcbnNwZWNpZXNfb2JzX2RhdGUgPC0gU3BhdGlhbFBvaW50c0RhdGFGcmFtZShjb29yZHMgPSB4eSwgZGF0YSA9IGRhdGFfYWVhLCBwcm9qNHN0cmluZyA9IENSUyhcIitwcm9qPWxvbmdsYXQgK2RhdHVtPVdHUzg0ICtlbGxwcz1XR1M4NCArdG93Z3M4ND0wLDAsMFwiKSkgI2NvbnZlcnQgaW50byBhIHNwYXRpYWxwb2ludHMgZGF0YWZyYW1lIHRvIGRvIHRoZSBleHRyYWN0aW9uXG5zcGVjaWVzX29ic19kYXRlIDwtIHNwVHJhbnNmb3JtKHNwZWNpZXNfb2JzX2RhdGUsIENSUyA9IFwiK3Byb2o9YWVhICtsYXRfMT01MCArbGF0XzI9NzAgK2xhdF8wPTQwICtsb25fMD0tNjAgK3hfMD0wICt5XzA9MCArZWxscHM9R1JTODAgK2RhdHVtPU5BRDgzICt1bml0cz1tICtub19kZWZzXCIpICNuZWVkIHRvIHJlcHJvamVjdC4uLi4gbm90ZSAtNjAgdXNlZCB0byBiZSAtOTEuIENoYW5nZWQgdG8gJ3N0cmFpZ2h0ZW4gdXAnXG5zcGxpdF9vYnMgPC0gc3BsaXQoc3BlY2llc19vYnNfZGF0ZSwgcGFzdGUoc3BlY2llc19vYnNfZGF0ZSR5ZWFyLCBzcGVjaWVzX29ic19kYXRlJG1vbnRoKSlcbmBgYCJ9 -->
+<pre class="r"><code>library(sp)
+species_obs_date &lt;- SpatialPointsDataFrame(coords = xy, data = data_aea, proj4string = CRS(&quot;+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0&quot;)) #convert into a spatialpoints dataframe to do the extraction
+species_obs_date &lt;- spTransform(species_obs_date, CRS = &quot;+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-60 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs&quot;) #need to reproject.... note -60 used to be -91. Changed to 'straighten up'
+split_obs &lt;- split(species_obs_date, paste(species_obs_date$year, species_obs_date$month))</code></pre>
 <!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 </div>
-<div id="small-function-3-extract-data-from-a-raster-brick." class="section level1">
-<h1>Small function 3) Extract data from a raster brick.</h1>
-<!-- rnb-text-end -->
-<!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuZ2VuZXJhdGVfZGF0YV9mcm9tX3Jhc3RlcmFuZHNoYXBlIDwtIGZ1bmN0aW9uKCBicmlja19pbnB1dCApIHtcblx0IyB0aGlzIHdob2xlIHNlY3Rpb24gbmVlZHMgdG8gYmUgY2hhbmdlZCBcbiAgYnJpY2tfaW5wdXQgJT4lXG5cdCMgVGFrZSBtZWFucyBhY2NvcmRpbmcgdG8gdGhlIGNvdW50cnlzaGFwZS5cblx0IyBNYWtlIHN1cmUgZGYgPSBUUlVFICwgc28gdGhhdCBvdXRwdXQgaXMgYSBkYXRhZnJhbWUuXG4gICAgcmFzdGVyOjpleHRyYWN0KCAuICwgY291bnRyeXNoYXBlICxcbiAgICBcdFx0XHRcdGY9VFJVRSwgZnVuID0gbWVhbiwgbmEucm0gPSBUUlVFICApXG4gICAgcmV0dXJuKCAuIClcbn1cbmBgYCJ9 -->
-<pre class="r"><code>generate_data_from_rasterandshape &lt;- function( brick_input ) {
-    # this whole section needs to be changed 
-  brick_input %&gt;%
-    # Take means according to the countryshape.
-    # Make sure df = TRUE , so that output is a dataframe.
-    raster::extract( . , countryshape ,
-                    f=TRUE, fun = mean, na.rm = TRUE  )
-    return( . )
-}</code></pre>
-<!-- rnb-source-end -->
-<!-- rnb-chunk-end -->
-<!-- rnb-text-begin -->
-</div>
-<div id="small-function-4-grab-4-digit-year-from-input-filename." class="section level1">
-<h1>Small function 4) Grab 4-digit year from input filename.</h1>
-<!-- rnb-text-end -->
-<!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuZ3JhYl95ZWFyX2Zyb21faW5wdXRmaWxlIDwtIGZ1bmN0aW9uKCBuY2RmX2ZpbGVuYW1lX2lucHV0ICkge1xuXG4gIG5jZGZfZmlsZW5hbWVfaW5wdXQgJT4lXG4gIHJlZ2V4cHIoXCJbMC05XStcIiwgLiApICU+JSAgIyBNYXRjaCA0LWRpZ2l0IHllYXIuXG4gIHJlZ21hdGNoZXMoIG5jZGZfZmlsZW5hbWVfaW5wdXQgLCAuICkgJT4lICAjIEdldCBtYXRjaGVkIFJFR0VYIGZyb20gaW5wdXQgc3RyaW5nLlxuICByZXR1cm4oIC4gKVxufVxuYGBgIn0= -->
-<pre class="r"><code>grab_year_from_inputfile &lt;- function( ncdf_filename_input ) {
-
-  ncdf_filename_input %&gt;%
-  regexpr(&quot;[0-9]+&quot;, . ) %&gt;%  # Match 4-digit year.
-  regmatches( ncdf_filename_input , . ) %&gt;%  # Get matched REGEX from input string.
-  return( . )
-}</code></pre>
-<!-- rnb-source-end -->
-<!-- rnb-chunk-end -->
-<!-- rnb-text-begin -->
-</div>
-<div id="b.-define-big-function-that-extracts-dataset-from-a-netcdf-file." class="section level1">
-<h1>— 1.B. Define “BIG” Function That Extracts Dataset From a NetCDF File.</h1>
-<p>generate_datatable_from_rasterbricks &lt;- function( ncdf_filename_input ) {</p>
-<pre><code># Note: the only argument is a NetCDF filename.
-
-# Start with file argument and process with the sub-functions above.
-ncdf_filename_input %&gt;%
-
-open_netcdf_as_rasterbrick( . ) %&gt;%
-match_rainbrick_to_countryshape( . ) %&gt;%
-generate_data_from_rasterandshape( . ) -&gt; country_means_dataframe
-
-
-# Go back to the file input name, create automatic names, and save.
-ncdf_filename_input %&gt;%
-
-grab_year_from_inputfile( ) %&gt;%
-write.csv( country_means_dataframe ,
-            file = file.path( . , output_path ) )</code></pre>
-<p>}</p>
-</div>
-<div id="main-code-setup-environment-to-run-big-function." class="section level1">
-<h1>—- 2. Main Code: Setup Environment to Run Big Function.</h1>
-</div>
-<div id="start-with-your-name-of-the-country-shapefile-were-referencing." class="section level1">
-<h1>Start with your name of the country shapefile we’re referencing.</h1>
-<p>“country_shapefile_name.shp” %&gt;% file.path( countryshape_path , ) %&gt;% readODG( den = . , layer = “countries” ) -&gt; countryshape</p>
-</div>
-<div id="generate-list-of-netcdf-files-automatically-from-our-directory." class="section level1">
-<h1>Generate list of NetCDF files automatically from our directory.</h1>
-</div>
-<div id="match-all-files-ending-in-.nc" class="section level1">
-<h1>Match all files ending in “.nc”</h1>
-<p>raster_file_list &lt;- list.files( path = weatherraster_path , pattern = “.nc” , all.files = FALSE , full.names = FALSE )</p>
-</div>
-<div id="run-our-big-function-on-the-list-of-netcdf-files." class="section level1">
-<h1>Run our big function on the list of NetCDF files.</h1>
-<p>mclapply( raster_file_list , generate_datatable_from_rasterbricks )</p>
-</div>
-<div id="assemble-.csv-files-using-data.table-and-lapply." class="section level1">
-<h1>—- 3. Assemble .CSV Files using Data.Table and Lapply.</h1>
-</div>
-<div id="fetch-all-files-ending-in-.csv-in-out-output-path." class="section level1">
-<h1>Fetch all files ending in .CSV in out output path.</h1>
-<p>csv_file_list &lt;- list.files( path = output_path , pattern = “.csv”, all.files = FALSE, full.names = TRUE, recursive = FALSE )</p>
-</div>
-<div id="take-the-list-of-saved-files-fast-read-them-into-r." class="section level1">
-<h1>Take the list of saved files &amp; “fast read” them into R.</h1>
-<p>lapply( csv_file_list , fread , sep = “,” ) %&gt;%</p>
-</div>
-<div id="transform-the-list-of-read-files-into-a-data.table" class="section level1">
-<h1>Transform the list of read files into a data.table:</h1>
-<p>rbindlist( . ) -&gt; big_datatable</p>
-</div>
-<div id="note-before-reassembling-the-data-or-after-you-may-want" class="section level1">
-<h1>Note: Before reassembling the data, or after, you may want</h1>
-</div>
-<div id="to-manipulate-the-data-so-that-it-is-in-a-more-usable-format." class="section level1">
-<h1>to manipulate the data so that it is in a more usable format.</h1>
-</div>
-<div id="note-you-may-want-to-setkeys-for-data.table-here." class="section level1">
-<h1>Note: You may want to setkeys() for data.table here.</h1>
-</div>
-<div id="save-the-big-file." class="section level1">
-<h1>Save the big file.</h1>
-<p>write.csv( big_datatable, file = file.path( output_path , “big_file_name.csv”) )</p>
+<div id="the-problem" class="section level1">
+<h1>The problem</h1>
+<p>What I would like to happen is for each each observation (row) in occurrences, for each oceanographic variable (e.g. using salinity) look up occurrence<span class="math inline">\(year and occurrence\)</span>month and locate the appropriate raster brick, and extract values to points from layer [[1]] and add the result to occurrence<span class="math inline">\(salinity_1, then look up occurrence\)</span>depthlayerno and extract values to points from layer[[depthlayerno]] and add the result to occurrence$salinity_depth.</p>
+<p>Honestly, I have no idea where to begin. I found a rather <a href="http://nathanlane.info/tutorial/2016/01/02/gisfunctional.html">neat blog from Nathan Lane</a> in which he uses functions to extract values to polygons from multiple raster bricks (but without selecting particular raster bricks to extract the data from). Unfortunately adapting it to my needs is way beyond my current skillset (which is a beginner).</p>
+<p>Any help you can offer would be gratefully received!</p>
 <!-- rnb-text-end -->
 </div>
 
-<div id="rmd-source-code">LS0tDQp0aXRsZTogImhlbHBfZXh0cmFjdF9mcm9tX211bHRpcGxlX25ldENERnMiDQphdXRob3I6ICJTYW1hbnRoYSBBbmRyZXdzIg0Kb3V0cHV0OiBodG1sX25vdGVib29rDQotLS0NCg0KQSBub3RlIHRvIGFueW9uZSB3aG8gbWlnaHQgaGFwcGVuIHRvIHN0dW1ibGUgYWNyb3NzIHRoaXMuLi4gSSBhbSBhIGJlZ2lubmVyIGluIFIgYW5kIGhhdmUgaGFkIG5vIGV4cG9zdXJlIHRvIHNpbWlsYXIgbGFuZ3VhZ2VzLiBJIGRvbid0IGtub3cgd2hhdCBJJ20gZG9pbmcuIFRoZSBjb2RlIGhlcmVpbiBpcyB1bmxpa2VseSB0byBiZSBlbGVnYW50IGFuZCB0aGVyZSBhcmVhIHByb2JhYmx5IG1vcmUgZWZmaWNpZW50IHdheXMgb2YgcnVubmluZyB0aGUgY29kZS4NCg0KQnVpbHQgd2l0aCAnciBnZXRSdmVyc2lvbigpJy4NCg0KIyBQYWNrYWdlIGRlcGVuZGVuY2llcw0KWW91IGNhbiBpbnN0YWxsIGFuZCBsb2FkIHRoZW0gdXNpbmcgdGhlIGZvbGxvd2luZyBjb2RlIHdoaWNoIHVzZXMgYSBmdW5jdGlvbiBjYWxsZWQgW2lwYWtdKGh0dHBzOi8vZ2lzdC5naXRodWIuY29tL3N0ZXZlbndvcnRoaW5ndG9uLzMxNzgxNjMpLiANCk5vdGUgdGhpcyBmdW5jdGlvbiBjaGVja3MgdG8gc2VlIGlmIHRoZSBwYWNrYWdlcyBhcmUgaW5zdGFsbGVkIGZpcnN0LiBJZiB0aGV5IGFyZSBub3QgaW5zdGFsbGVkLCBpdCB3aWxsIGRvIHNvIGJlZm9yZSBsb2FkaW5nDQpgYGB7ciBwcmUtaW5zdGFsbCBwYWNrYWdlcywgc3VwcHJlc3NNZXNzYWdlcyhleHByKX0NCnBhY2thZ2VzIDwtIGMoInJnZGFsIiwgInJhc3RlciIsICJuY2RmNCIsICJSTmV0Q0RGIiwgInNwIiwgInBhcmFsbGVsIiwgIm1hZ3JpdHRyIiwgImRhdGEudGFibGUiKSANCnNvdXJjZSgiLi4vc3JjL2lwYWsuUiIpDQppcGFrKHBhY2thZ2VzKQ0KYGBgDQoNCg0KIyBJbml0aWFsIHNldHVwDQoNCkRldGVjdCBjb3JlcyBhdXRvbWF0aWNhbGx5LCBhbmQgZnJlZSBvbmUgdXAuDQpgYGB7cn0NCmNvcmVzIDwtIGRldGVjdENvcmVzKCkgLSAxDQpgYGANCg0KRGVmaW5lIHlvdXIgZmlsZSBwYXRocyBoZXJlLg0KYGBge3J9DQp3ZWF0aGVycmFzdGVyX3BhdGggPC0gIi9wYXRoL3RvL3dlYXRoZXJyYXN0ZXJmaWxlcyINCmNvdW50cnlzaGFwZV9wYXRoIDwtICIvcGF0aC90by9jb3VudHJ5c2hhcGVmaWxlIg0Kb3V0cHV0X3BhdGggPC0gIi9wYXRoL3RvL291dHB1dGZpbGVzIg0KYGBgDQoNCg0KIyAtLS0tIDEuIERlZmluZSBGdW5jdGlvbnMuDQoNCiMgLS0gMS5BLiBEZWZpbmUgU21hbGwgU3ViZnVuY3Rpb25zLg0KDQpTbWFsbCBmdW5jdGlvbiAxKSBSZWFkcyBmaWxlbmFtZSAmIGV4cGxpY2l0bHkgb3BlbnMgaXQgYXMgYSBOZXRDREYgZmlsZS4NCmBgYHtyfQ0Kb3Blbl9uZXRjZGZfYXNfcmFzdGVyYnJpY2sgPC0gZnVuY3Rpb24oIG5jZGZfZmlsZW5hbWVfaW5wdXQgKSB7DQogIG5jZGZfZmlsZW5hbWVfaW5wdXQgJT4lDQogIGZpbGUucGF0aCggd2VhdGhlcnJhc3Rlcl9wYXRoICwgLiApICU+JQ0KICBuY19vcGVuKCAuICkgICU+JSAgDQogIG5jdmFyX2dldCggLiApICU+JSAgIA0KICBicmljayggLiAsIGx2YXIgPSA0KSAlPiUgIyBsdmFyID0gNCB0byByZWFkIGluIGFsbCBkZXB0aCBsZXZlbHMgKG5sYXllcnMpDQogIHJldHVybiggLiApDQp9DQpgYGANCg0KDQpTbWFsbCBmdW5jdGlvbiAyKSBUcmFuc2Zvcm1zIHRoZSByYXN0ZXIgYnJpY2sgdG8gb3VyIGNvdW50cnkgc2hhcGVmaWxlLg0KYGBge3J9DQptYXRjaF9yYWluYnJpY2tfdG9fY291bnRyeXNoYXBlIDwtIGZ1bmN0aW9uKCBicmlja19pbnB1dCApIHsNCiAgYnJpY2tfaW5wdXQgJT4lDQogIHByb2plY3RSYXN0ZXIoIC4gLCBhZWEpICU+JSAjYWVhIHJlcHJlc2VudHMgYW4gZXhpc3RpbmcgcmFzdGVyYnJpY2sgdGhhdCBpcyBpbiB0aGUgYWxiZXJzIGVxdWFsIGFyZWEgcHJvamVjdGlvbg0KICAjIE9yaWdpbmFsIGNvZGUgaW5jbHVkZWQgYSBjcm9wIG9wdGlvbiBoZXJlIC0gbXkgZmlsZXMgYXJlIGFscmVhZHkgY3JvcHBlZCB0byB0aGUgcmVnaW9uIEkgbmVlZA0KICByZXR1cm4oIC4gKQ0KfQ0KYGBgDQoNCg0KIyBTbWFsbCBmdW5jdGlvbiAzKSBFeHRyYWN0IGRhdGEgZnJvbSBhIHJhc3RlciBicmljay4NCmBgYHtyfQ0KZ2VuZXJhdGVfZGF0YV9mcm9tX3Jhc3RlcmFuZHNoYXBlIDwtIGZ1bmN0aW9uKCBicmlja19pbnB1dCApIHsNCgkjIHRoaXMgd2hvbGUgc2VjdGlvbiBuZWVkcyB0byBiZSBjaGFuZ2VkIA0KICBicmlja19pbnB1dCAlPiUNCgkjIFRha2UgbWVhbnMgYWNjb3JkaW5nIHRvIHRoZSBjb3VudHJ5c2hhcGUuDQoJIyBNYWtlIHN1cmUgZGYgPSBUUlVFICwgc28gdGhhdCBvdXRwdXQgaXMgYSBkYXRhZnJhbWUuDQogICAgcmFzdGVyOjpleHRyYWN0KCAuICwgY291bnRyeXNoYXBlICwNCiAgICAJCQkJZj1UUlVFLCBmdW4gPSBtZWFuLCBuYS5ybSA9IFRSVUUgICkNCiAgICByZXR1cm4oIC4gKQ0KfQ0KYGBgDQoNCg0KIyBTbWFsbCBmdW5jdGlvbiA0KSBHcmFiIDQtZGlnaXQgeWVhciBmcm9tIGlucHV0IGZpbGVuYW1lLg0KYGBge3J9DQpncmFiX3llYXJfZnJvbV9pbnB1dGZpbGUgPC0gZnVuY3Rpb24oIG5jZGZfZmlsZW5hbWVfaW5wdXQgKSB7DQoNCiAgbmNkZl9maWxlbmFtZV9pbnB1dCAlPiUNCiAgcmVnZXhwcigiWzAtOV0rIiwgLiApICU+JSAgIyBNYXRjaCA0LWRpZ2l0IHllYXIuDQogIHJlZ21hdGNoZXMoIG5jZGZfZmlsZW5hbWVfaW5wdXQgLCAuICkgJT4lICAjIEdldCBtYXRjaGVkIFJFR0VYIGZyb20gaW5wdXQgc3RyaW5nLg0KICByZXR1cm4oIC4gKQ0KfQ0KYGBgDQoNCg0KIyAtLS0gMS5CLiBEZWZpbmUgIkJJRyIgRnVuY3Rpb24gVGhhdCBFeHRyYWN0cyBEYXRhc2V0IEZyb20gYSBOZXRDREYgRmlsZS4NCg0KZ2VuZXJhdGVfZGF0YXRhYmxlX2Zyb21fcmFzdGVyYnJpY2tzIDwtIGZ1bmN0aW9uKCBuY2RmX2ZpbGVuYW1lX2lucHV0ICkgew0KDQoJIyBOb3RlOiB0aGUgb25seSBhcmd1bWVudCBpcyBhIE5ldENERiBmaWxlbmFtZS4NCg0KCSMgU3RhcnQgd2l0aCBmaWxlIGFyZ3VtZW50IGFuZCBwcm9jZXNzIHdpdGggdGhlIHN1Yi1mdW5jdGlvbnMgYWJvdmUuDQoJbmNkZl9maWxlbmFtZV9pbnB1dCAlPiUNCg0KCW9wZW5fbmV0Y2RmX2FzX3Jhc3RlcmJyaWNrKCAuICkgJT4lDQoJbWF0Y2hfcmFpbmJyaWNrX3RvX2NvdW50cnlzaGFwZSggLiApICU+JQ0KCWdlbmVyYXRlX2RhdGFfZnJvbV9yYXN0ZXJhbmRzaGFwZSggLiApIC0+IGNvdW50cnlfbWVhbnNfZGF0YWZyYW1lDQoNCg0KCSMgR28gYmFjayB0byB0aGUgZmlsZSBpbnB1dCBuYW1lLCBjcmVhdGUgYXV0b21hdGljIG5hbWVzLCBhbmQgc2F2ZS4NCgluY2RmX2ZpbGVuYW1lX2lucHV0ICU+JQ0KDQoJZ3JhYl95ZWFyX2Zyb21faW5wdXRmaWxlKCApICU+JQ0KCXdyaXRlLmNzdiggY291bnRyeV9tZWFuc19kYXRhZnJhbWUgLA0KCQkJCWZpbGUgPSBmaWxlLnBhdGgoIC4gLCBvdXRwdXRfcGF0aCApICkNCn0NCg0KIyAtLS0tIDIuIE1haW4gQ29kZTogU2V0dXAgRW52aXJvbm1lbnQgdG8gUnVuIEJpZyBGdW5jdGlvbi4NCg0KIyBTdGFydCB3aXRoIHlvdXIgbmFtZSBvZiB0aGUgY291bnRyeSBzaGFwZWZpbGUgd2UncmUgcmVmZXJlbmNpbmcuDQoiY291bnRyeV9zaGFwZWZpbGVfbmFtZS5zaHAiICU+JQ0KZmlsZS5wYXRoKCBjb3VudHJ5c2hhcGVfcGF0aCAsICkgJT4lDQpyZWFkT0RHKCBkZW4gPSAuICAsIGxheWVyID0gImNvdW50cmllcyIgKSAtPiBjb3VudHJ5c2hhcGUNCg0KDQojIEdlbmVyYXRlIGxpc3Qgb2YgTmV0Q0RGIGZpbGVzIGF1dG9tYXRpY2FsbHkgZnJvbSBvdXIgZGlyZWN0b3J5Lg0KIyBNYXRjaCBhbGwgZmlsZXMgZW5kaW5nIGluICIubmMiDQpyYXN0ZXJfZmlsZV9saXN0IDwtIGxpc3QuZmlsZXMoIHBhdGggPSB3ZWF0aGVycmFzdGVyX3BhdGggLA0KcGF0dGVybiA9ICIubmMiICwgYWxsLmZpbGVzID0gRkFMU0UgLCBmdWxsLm5hbWVzID0gRkFMU0UgKQ0KDQojIFJ1biBvdXIgYmlnIGZ1bmN0aW9uIG9uIHRoZSBsaXN0IG9mIE5ldENERiBmaWxlcy4NCm1jbGFwcGx5KCByYXN0ZXJfZmlsZV9saXN0ICwgZ2VuZXJhdGVfZGF0YXRhYmxlX2Zyb21fcmFzdGVyYnJpY2tzICkNCg0KIyAtLS0tIDMuIEFzc2VtYmxlIC5DU1YgRmlsZXMgdXNpbmcgRGF0YS5UYWJsZSBhbmQgTGFwcGx5Lg0KDQojIEZldGNoIGFsbCBmaWxlcyBlbmRpbmcgaW4gLkNTViBpbiBvdXQgb3V0cHV0IHBhdGguDQpjc3ZfZmlsZV9saXN0IDwtIGxpc3QuZmlsZXMoIHBhdGggPSBvdXRwdXRfcGF0aCAsDQogICAgICAgICAgICAgICAgICAgICAgICAgICAgIHBhdHRlcm4gPSAiLmNzdiIsDQogICAgICAgICAgICAgICAgICAgICAgICAgICAgIGFsbC5maWxlcyA9IEZBTFNFLA0KICAgICAgICAgICAgICAgICAgICAgICAgICAgICBmdWxsLm5hbWVzID0gVFJVRSwNCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgcmVjdXJzaXZlID0gRkFMU0UgKQ0KDQojIFRha2UgdGhlIGxpc3Qgb2Ygc2F2ZWQgZmlsZXMgJiAiZmFzdCByZWFkIiB0aGVtIGludG8gUi4NCmxhcHBseSggY3N2X2ZpbGVfbGlzdCAsIGZyZWFkICwgc2VwID0gIiwiICkgJT4lDQoNCiMgVHJhbnNmb3JtIHRoZSBsaXN0IG9mIHJlYWQgZmlsZXMgaW50byBhIGRhdGEudGFibGU6DQpyYmluZGxpc3QoIC4gKSAtPiBiaWdfZGF0YXRhYmxlDQoNCg0KIyBOb3RlOiBCZWZvcmUgcmVhc3NlbWJsaW5nIHRoZSBkYXRhLCBvciBhZnRlciwgeW91IG1heSB3YW50DQojIHRvIG1hbmlwdWxhdGUgdGhlIGRhdGEgc28gdGhhdCBpdCBpcyBpbiBhIG1vcmUgdXNhYmxlIGZvcm1hdC4NCg0KIyBOb3RlOiBZb3UgbWF5IHdhbnQgdG8gc2V0a2V5cygpIGZvciBkYXRhLnRhYmxlIGhlcmUuDQoNCiMgU2F2ZSB0aGUgYmlnIGZpbGUuDQp3cml0ZS5jc3YoIGJpZ19kYXRhdGFibGUsIGZpbGUgPSBmaWxlLnBhdGgoIG91dHB1dF9wYXRoICwgImJpZ19maWxlX25hbWUuY3N2IikgKQ==</div>
+<div id="rmd-source-code">LS0tDQp0aXRsZTogImhlbHBfZXh0cmFjdF9mcm9tX211bHRpcGxlX25ldENERnMiDQphdXRob3I6ICJTYW1hbnRoYSBBbmRyZXdzIg0Kb3V0cHV0OiBodG1sX25vdGVib29rDQotLS0NCg0KQSBub3RlIHRvIGFueW9uZSB3aG8gbWlnaHQgaGFwcGVuIHRvIHN0dW1ibGUgYWNyb3NzIHRoaXMuLi4gSSBhbSBhIGJlZ2lubmVyIGluIFIgYW5kIGhhdmUgaGFkIG5vIGV4cG9zdXJlIHRvIHNpbWlsYXIgbGFuZ3VhZ2VzLiBJIGRvbid0IGtub3cgd2hhdCBJJ20gZG9pbmcuIFRoZSBjb2RlIGhlcmVpbiBpcyB1bmxpa2VseSB0byBiZSBlbGVnYW50IGFuZCB0aGVyZSBhcmVhIHByb2JhYmx5IG1vcmUgZWZmaWNpZW50IHdheXMgb2YgcnVubmluZyB0aGUgY29kZS4NCg0KQnVpbHQgd2l0aCAnciBnZXRSdmVyc2lvbigpJy4NCg0KIyBQYWNrYWdlIGRlcGVuZGVuY2llcw0KWW91IGNhbiBpbnN0YWxsIGFuZCBsb2FkIHRoZW0gdXNpbmcgdGhlIGZvbGxvd2luZyBjb2RlIHdoaWNoIHVzZXMgYSBmdW5jdGlvbiBjYWxsZWQgW2lwYWtdKGh0dHBzOi8vZ2lzdC5naXRodWIuY29tL3N0ZXZlbndvcnRoaW5ndG9uLzMxNzgxNjMpLiANCk5vdGUgdGhpcyBmdW5jdGlvbiBjaGVja3MgdG8gc2VlIGlmIHRoZSBwYWNrYWdlcyBhcmUgaW5zdGFsbGVkIGZpcnN0LiBJZiB0aGV5IGFyZSBub3QgaW5zdGFsbGVkLCBpdCB3aWxsIGRvIHNvIGJlZm9yZSBsb2FkaW5nDQpgYGB7ciBwcmUtaW5zdGFsbCBwYWNrYWdlcywgc3VwcHJlc3NNZXNzYWdlcyhleHByKX0NCnBhY2thZ2VzIDwtIGMoInJnZGFsIiwgInJhc3RlciIsICJuY2RmNCIsICJSTmV0Q0RGIiwgInNwIiwgInBhcmFsbGVsIiwgIm1hZ3JpdHRyIiwgImRhdGEudGFibGUiKSANCnNvdXJjZSgiLi4vc3JjL2lwYWsuUiIpDQppcGFrKHBhY2thZ2VzKQ0KYGBgDQoNCiMgdXNlIG11bHRpLWNvcmUgKGlmIGl0IGlzIGFuIG9wdGlvbikNCkRldGVjdCBjb3JlcyBhdXRvbWF0aWNhbGx5LCBhbmQgZnJlZSBvbmUgdXAuDQpgYGB7cn0NCmNvcmVzIDwtIGRldGVjdENvcmVzKCkgLSAxDQpgYGANCg0KIyBUaGUgc2hvcnQgc3RvcnkNCg0KSSBoYXZlIG11bHRpcGxlIG5ldENERnMgdGhhdCBuZWVkIHRvIGV4dHJhY3QgdmFsdWVzIGZyb20gdG8gcG9pbnRzLiBUaGUgcHJvYmxlbSBpcywgSSBuZWVkIFIgdG8gZGVjaWRlIHdoaWNoIG5ldENERnMgKGFuZCB3aGljaCBsYXllcnMpIHRvIHBlcmZvcm0gdGhlIGV4dHJhY3Rpb24gb24uDQoNCiMgVGhlIGRldGFpbHMNCg0KSSBoYXZlIGFyb3VuZCAxNTAwIE5ldENERnMuIEVhY2ggbmV0Q0RGIGhhcyA0IGRpbWVuc2lvbnMgKHRpbWUgLSBULCBsb25naXR1ZGUgLSBYLCBsYXRpdHVkZSAtIFksIGRlcHRoIC0gWikgYW5kIHJlcHJlc2VudHMgYSBzaW5nbGUgb2NlYW5vZ3JhcGhpYyB2YXJpYWJsZSBmb3IgYSBwYXJ0aWN1bGFyIG1vbnRoIGluIGEgcGFydGljdWxhciB5ZWFyLiBJIGhhdmUgZ2l2ZW4gZWFjaCBuZXRDREYgdGhlIGZvbGxvd2luZyBuYW1pbmcgY29udmVudGlvbjoNCg0KeXl5eV9tbV92YXJpYWJsZW5hbWUubmMgKHdoZXJlIHZhcmlhYmxlIG5hbWUgY2FuIHZhcnkgaW4gbGVuZ3RoKQ0KDQpBbiBleGFtcGxlIG9mIHRoZSBuZXRDREYgaXMgYXZhaWxhYmxlIFtoZXJlXShodHRwczovL2RyaXZlLmdvb2dsZS5jb20vZmlsZS9kLzF5MlhVNVJ6VUJSTGdUWGtxbDY2N2E1b19QVms1TE1UUC92aWV3P3VzcD1zaGFyaW5nKSAuIFRvIHVzZSB0aGUgbmV0Q0RGcyBpbiBSLCBJIGhhdmUgbWFkZSBhIGxvb3AgdG8gY3JlYXRlIHJhc3RlciBicmlja3MgYW5kIHByb2plY3QgdGhlbSBpbiBhbiBlcXVhbC1hcmVhIGdyaWQgZnJvbSBhbGwgdGhlIG5ldENERnM6DQoNCmBgYHtyfQ0KbmV0Y2RmX2xpc3QgPC0gbGlzdC5maWxlcygiLi4vZGF0YS9lbnYvbmV0Y2RmIiwgcGF0dGVybiA9ICcqLm5jJywgZnVsbC5uYW1lcyA9IFRSVUUpICN0cnVlIG1lYW5zIHRoZSBmdWxsIHBhdGggaXMgaW5jbHVkZWQNCm5vX25ldGNkZiA8LSBsZW5ndGgobmV0Y2RmX2xpc3QpICNmb3IgdGhlIGxvb3AgLSBuZWVkIHRvIGtub3cgaG93IG1hbnkgZmlsZXMgdG8gY3ljbGUgdGhyb3VnaA0KbmV0Y2RmX25hbWUgPC0gbGlzdC5maWxlcygiLi4vZGF0YS9lbnYvbmV0Y2RmIiwgcGF0dGVybiA9ICcqLm5jJywgZnVsbC5uYW1lcyA9IEZBTFNFKSAjZmFsc2UgbWVhbnMgdGhlIHBhdGggaXMgbm90IGluY2x1ZGVkDQpsaWJyYXJ5IChuY2RmNCkNCmZvciAoaSBpbiAxOm5vX25ldGNkZikgew0KICBwcmludChuZXRjZGZfbmFtZVtpXSkgI3RoaXMganVzdCBwcmluZ3MgdGhlIG5hbWUgb2YgdGhlIG5ldENERiBSIGlzIHdvcmtpbmcgb24NCiAgdGVtcF9icmljayA8LSBicmljayhuZXRjZGZfbGlzdFtpXSwgbHZhciA9IDQpDQogIHRlbXBfYnJpY2sgPC0gcHJvamVjdFJhc3Rlcih0ZW1wX2JyaWNrLCBhZWEpICNhZWEgaXMgYW4gZXhpc3RpbmcgcmFzdGVyIGluIHRoZSBwcm9qZWN0aW9uIEkgd2FudCB0aGF0IEkgY3JlYXRlZCAoZW52aXJvbm1lbnRhbF9kYXRhX3ByZXBlcmF0aW9uKQ0KICBhc3NpZ24obmV0Y2RmX25hbWVbaV0sIHRlbXBfYnJpY2spICN0aGlzIGFzaWducyB0aGUgbmV0Q0RGIG5hbWUgdG8gdGhlIHJhc3RlciBicmljaw0KfQ0KYGBgDQoNCk5vdGUgdGhhdCB0aGlzIG1heSBub3QgYmUgdGhlIG1vc3QgY29tcHV0YXRpb25hbGx5IGVmZmljaWVudCB3YXkgdG8gZG8gdGhpcyBhcyBJIHdpbGwgYmUgY3JlYXRpbmcgYSBsb3Qgb2YgcmFzdGVyIGJyaWNrcyB0aGF0IHdpbGwgYmUgc3RvcmVkIHRvIG1lbW9yeeKApiANCg0KSSBhbHNvIGhhZCBhIGRhdGFzZXQgKC5jc3YpIGNvbnRhaW5pbmcgZmlzaCBvYnNlcnZhdGlvbiAocG9pbnQpIGRhdGEuIFRoaXMgZGF0YXNldCAobGV0J3MgY2FsbCBpdCBvY2N1cnJlbmNlKSBjb250YWlucyB0aGUgZm9sbG93aW5nIGNvbHVtbnM6DQoNCm9jY3VycmVuY2UkaWQgKGEgdW5pcXVlIG9ic2VydmF0aW9uIElEKQ0Kb2NjdXJyZW5jZSRkZWNpbWFsTG9uZ2l0dWRlIChMb25naXR1ZGUgaW4gZGVjaW1hbCBkZWdyZWUpDQpvY2N1cnJlbmNlJGRlY2ltYWxMYXRpdHVkZSAoTGF0aXR1ZGUgaW4gZGVjaW1hbCBkZWdyZWUpDQpvY2N1cnJlbmNlJGRMb25naXR1ZGVNIChMb25naXR1ZGUgaW4gbWV0ZXJzKQ0Kb2NjdXJyZW5jZSRMYXRpdHVkZU0gKExhdGl0dWRlIGluIG1ldGVycykNCm9jY3VycmVuY2UkeWVhciAoeWVhciBvZiBvYnNlcnZhdGlvbikNCm9jY3VycmVuY2UkbW9udGggKG1vbnRoIG9mIG9ic2VydmF0aW9uKQ0Kb2NjdXJyZW5jZSRkZXB0aGxheWVybm8gKGRlcHRoIG9mIG9ic2VydmF0aW9uIC0gdGhlIHZhbHVlIGNvcnJlc3BvbmRzIHRvIHRoZSBkZXB0aCBsYXllcnMgaW4gdGhlIHJhc3RlciBicmlja3MgZS5nLiBpZiBvY2N1cnJlbmNlJGRlcHRobGF5ZXJubyA9PSAyMCwgdGhlbiB0aGUgb2JzZXJ2YXRpb24gaXMgZnJvbSB0aGUgcmFzdGVyIGJyaWNrIGxheWVyIFtbMjBdXSkNCg0KSSB0aGVuIGhhdmUgc29tZSBlbXB0eSBjb2x1bW5zIHRoYXQgbmVlZCB0byBiZSBwb3B1bGF0ZWQgd2l0aCBkYXRhIGZyb20gdGhlIHJhc3RlciBicmlja3MsIGVhY2ggcmVwcmVzZW50aW5nIGFuIG9jZWFub2dyYXBoaWMgdmFyaWFibGUgYW5kIGRlcHRoIGxheWVyIHRoZSBkYXRhIG5lZWRzIHRvIGNvbWUgZnJvbS4gQW4gZXhhbXBsZSBpczoNCg0Kb2NjdXJyZW5jZSRzYWxpbml0eV8xIChleHRyYWN0IHZhbHVlIHRvIHBvaW50IGZyb20gdGhlIHNhbGluaXR5IHJhc3RlciBicmljayBsYXllciBbWzFdXSkNCm9jY3VycmVuY2Ukc2FsaW5pdHlfZGVwdGggKGV4dHJhY3QgdmFsdWUgdG8gcG9pbnQgZnJvbSB0aGUgc2FsaW5pdHkgcmFzdGVyIGJyaWNrIGxheWVyIFtbb2NjdXJyZW5jZSRkZXB0aGxheWVybm9dXSkNCg0KYGBge3J9DQpvY2N1cnJlbmNlIDwtIHJlYWQuY3N2KCIuL2RhdGEvYmlvL29jY3VycmVuY2VfaGVscC5jc3YiLCBoZWFkZXIgPSBUUlVFKQ0KYGBgDQoNCg0KTW9zdCBvZiB0aGUgcmFzdGVyIGJyaWNrcyBjb250YWluIDUwIGxheWVycyAtIHNvbWUgb25seSBoYXZlIDEgbGF5ZXIuIEZ1cnRoZXJtb3JlIG5vdCBhbGwgb2JzZXJ2YXRpb25zIGhhdmUgYSBkZXB0aGxheWVybm8gdmFsdWUgKG9jY3VycmVuY2UkZGVwdGhsYXllcm5vID09IE5BKQ0KDQpBIGN1dC1kb3duIHZlcnNpb24gb2YgdGhpcyAuY3N2IGlzIGF2YWlsYWJsZSBoZXJlIFhYWFguIA0KDQpUaGUgZHB1dCBmb3Igb2NjdXJyZW5jZSBpcyBhcyBmb2xsb3dzOg0KDQpgYGB7cn0NCmRwdXQob2NjdXJyZW5jZSkNCmBgYA0KDQpBbmQgc3RyKG9jY3VycmVuY2UpIGlzDQoNCmBgYHtyfQ0Kc3RyKG9jY3VycmVuY2UpDQpgYGANCg0KSSBoYXZlIGNvbnZlcnRlZCB0aGUgb2NjdXJyZW5jZSBkYXRhc2V0IGludG8gYSBTcGF0aWFsUG9pbnRzRGF0YUZyYW1lLCBwcm9qZWN0ZWQgaXQgaW50byBhbiBlcXVhbCBhcmVhIGdyaWQgKHRvIG1hdGNoIHRoZSByYXN0ZXIgYnJpY2tzKSwgYW5kIHRoZW0gc3BsaXQgdGhlIGRhdGEgaW50byB5ZWFyLW1vbnRocyAoSSB0aG91Z2h0IHRoaXMgbWlnaHQgYmUgYW4gZWFzaWVyIHdheSB0byB0YWNrbGUgdGhlIG5leHQgc3RhZ2UpOg0KDQpgYGB7cn0NCmxpYnJhcnkoc3ApDQpzcGVjaWVzX29ic19kYXRlIDwtIFNwYXRpYWxQb2ludHNEYXRhRnJhbWUoY29vcmRzID0geHksIGRhdGEgPSBkYXRhX2FlYSwgcHJvajRzdHJpbmcgPSBDUlMoIitwcm9qPWxvbmdsYXQgK2RhdHVtPVdHUzg0ICtlbGxwcz1XR1M4NCArdG93Z3M4ND0wLDAsMCIpKSAjY29udmVydCBpbnRvIGEgc3BhdGlhbHBvaW50cyBkYXRhZnJhbWUgdG8gZG8gdGhlIGV4dHJhY3Rpb24NCnNwZWNpZXNfb2JzX2RhdGUgPC0gc3BUcmFuc2Zvcm0oc3BlY2llc19vYnNfZGF0ZSwgQ1JTID0gIitwcm9qPWFlYSArbGF0XzE9NTAgK2xhdF8yPTcwICtsYXRfMD00MCArbG9uXzA9LTYwICt4XzA9MCAreV8wPTAgK2VsbHBzPUdSUzgwICtkYXR1bT1OQUQ4MyArdW5pdHM9bSArbm9fZGVmcyIpICNuZWVkIHRvIHJlcHJvamVjdC4uLi4gbm90ZSAtNjAgdXNlZCB0byBiZSAtOTEuIENoYW5nZWQgdG8gJ3N0cmFpZ2h0ZW4gdXAnDQpzcGxpdF9vYnMgPC0gc3BsaXQoc3BlY2llc19vYnNfZGF0ZSwgcGFzdGUoc3BlY2llc19vYnNfZGF0ZSR5ZWFyLCBzcGVjaWVzX29ic19kYXRlJG1vbnRoKSkNCmBgYA0KDQojIFRoZSBwcm9ibGVtDQoNCldoYXQgSSB3b3VsZCBsaWtlIHRvIGhhcHBlbiBpcyBmb3IgZWFjaCAgZWFjaCBvYnNlcnZhdGlvbiAocm93KSBpbiBvY2N1cnJlbmNlcywgZm9yIGVhY2ggb2NlYW5vZ3JhcGhpYyB2YXJpYWJsZSAoZS5nLiB1c2luZyBzYWxpbml0eSkgbG9vayB1cCBvY2N1cnJlbmNlJHllYXIgYW5kIG9jY3VycmVuY2UkbW9udGggYW5kIGxvY2F0ZSB0aGUgYXBwcm9wcmlhdGUgcmFzdGVyIGJyaWNrLCBhbmQgZXh0cmFjdCB2YWx1ZXMgdG8gcG9pbnRzIGZyb20gbGF5ZXIgW1sxXV0gYW5kIGFkZCB0aGUgcmVzdWx0IHRvIG9jY3VycmVuY2Ukc2FsaW5pdHlfMSwgdGhlbiBsb29rIHVwIG9jY3VycmVuY2UkZGVwdGhsYXllcm5vIGFuZCBleHRyYWN0IHZhbHVlcyB0byBwb2ludHMgZnJvbSBsYXllcltbZGVwdGhsYXllcm5vXV0gYW5kIGFkZCB0aGUgcmVzdWx0IHRvIG9jY3VycmVuY2Ukc2FsaW5pdHlfZGVwdGguDQoNCkhvbmVzdGx5LCBJIGhhdmUgbm8gaWRlYSB3aGVyZSB0byBiZWdpbi4gSSBmb3VuZCBhIHJhdGhlciBbbmVhdCBibG9nIGZyb20gTmF0aGFuIExhbmVdKGh0dHA6Ly9uYXRoYW5sYW5lLmluZm8vdHV0b3JpYWwvMjAxNi8wMS8wMi9naXNmdW5jdGlvbmFsLmh0bWwpIGluIHdoaWNoIGhlIHVzZXMgZnVuY3Rpb25zIHRvIGV4dHJhY3QgdmFsdWVzIHRvIHBvbHlnb25zIGZyb20gbXVsdGlwbGUgcmFzdGVyIGJyaWNrcyAoYnV0IHdpdGhvdXQgc2VsZWN0aW5nIHBhcnRpY3VsYXIgcmFzdGVyIGJyaWNrcyB0byBleHRyYWN0IHRoZSBkYXRhIGZyb20pLiBVbmZvcnR1bmF0ZWx5IGFkYXB0aW5nIGl0IHRvIG15IG5lZWRzIGlzIHdheSBiZXlvbmQgbXkgY3VycmVudCBza2lsbHNldCAod2hpY2ggaXMgYSBiZWdpbm5lcikuDQoNCkFueSBoZWxwIHlvdSBjYW4gb2ZmZXIgd291bGQgYmUgZ3JhdGVmdWxseSByZWNlaXZlZCENCg==</div>
 
 
 

@@ -17,134 +17,89 @@ source("../src/ipak.R")
 ipak(packages)
 ```
 
-
-# Initial setup
-
+# use multi-core (if it is an option)
 Detect cores automatically, and free one up.
 ```{r}
 cores <- detectCores() - 1
 ```
 
-Define your file paths here.
+# The short story
+
+I have multiple netCDFs that need to extract values from to points. The problem is, I need R to decide which netCDFs (and which layers) to perform the extraction on.
+
+# The details
+
+I have around 1500 NetCDFs. Each netCDF has 4 dimensions (time - T, longitude - X, latitude - Y, depth - Z) and represents a single oceanographic variable for a particular month in a particular year. I have given each netCDF the following naming convention:
+
+yyyy_mm_variablename.nc (where variable name can vary in length)
+
+An example of the netCDF is available [here](https://drive.google.com/file/d/1y2XU5RzUBRLgTXkql667a5o_PVk5LMTP/view?usp=sharing) . To use the netCDFs in R, I have made a loop to create raster bricks and project them in an equal-area grid from all the netCDFs:
+
 ```{r}
-weatherraster_path <- "/path/to/weatherrasterfiles"
-countryshape_path <- "/path/to/countryshapefile"
-output_path <- "/path/to/outputfiles"
-```
-
-
-# ---- 1. Define Functions.
-
-# -- 1.A. Define Small Subfunctions.
-
-Small function 1) Reads filename & explicitly opens it as a NetCDF file.
-```{r}
-open_netcdf_as_rasterbrick <- function( ncdf_filename_input ) {
-  ncdf_filename_input %>%
-  file.path( weatherraster_path , . ) %>%
-  nc_open( . )  %>%  
-  ncvar_get( . ) %>%   
-  brick( . , lvar = 4) %>% # lvar = 4 to read in all depth levels (nlayers)
-  return( . )
+netcdf_list <- list.files("../data/env/netcdf", pattern = '*.nc', full.names = TRUE) #true means the full path is included
+no_netcdf <- length(netcdf_list) #for the loop - need to know how many files to cycle through
+netcdf_name <- list.files("../data/env/netcdf", pattern = '*.nc', full.names = FALSE) #false means the path is not included
+library (ncdf4)
+for (i in 1:no_netcdf) {
+  print(netcdf_name[i]) #this just prings the name of the netCDF R is working on
+  temp_brick <- brick(netcdf_list[i], lvar = 4)
+  temp_brick <- projectRaster(temp_brick, aea) #aea is an existing raster in the projection I want that I created (environmental_data_preperation)
+  assign(netcdf_name[i], temp_brick) #this asigns the netCDF name to the raster brick
 }
 ```
 
+Note that this may not be the most computationally efficient way to do this as I will be creating a lot of raster bricks that will be stored to memory… 
 
-Small function 2) Transforms the raster brick to our country shapefile.
+I also had a dataset (.csv) containing fish observation (point) data. This dataset (let's call it occurrence) contains the following columns:
+
+occurrence$id (a unique observation ID)
+occurrence$decimalLongitude (Longitude in decimal degree)
+occurrence$decimalLatitude (Latitude in decimal degree)
+occurrence$dLongitudeM (Longitude in meters)
+occurrence$LatitudeM (Latitude in meters)
+occurrence$year (year of observation)
+occurrence$month (month of observation)
+occurrence$depthlayerno (depth of observation - the value corresponds to the depth layers in the raster bricks e.g. if occurrence$depthlayerno == 20, then the observation is from the raster brick layer [[20]])
+
+I then have some empty columns that need to be populated with data from the raster bricks, each representing an oceanographic variable and depth layer the data needs to come from. An example is:
+
+occurrence$salinity_1 (extract value to point from the salinity raster brick layer [[1]])
+occurrence$salinity_depth (extract value to point from the salinity raster brick layer [[occurrence$depthlayerno]])
+
 ```{r}
-match_rainbrick_to_countryshape <- function( brick_input ) {
-  brick_input %>%
-  projectRaster( . , aea) %>% #aea represents an existing rasterbrick that is in the albers equal area projection
-  # Original code included a crop option here - my files are already cropped to the region I need
-  return( . )
-}
+occurrence <- read.csv("./data/bio/occurrence_help.csv", header = TRUE)
 ```
 
 
-# Small function 3) Extract data from a raster brick.
+Most of the raster bricks contain 50 layers - some only have 1 layer. Furthermore not all observations have a depthlayerno value (occurrence$depthlayerno == NA)
+
+A cut-down version of this .csv is available here XXXX. 
+
+The dput for occurrence is as follows:
+
 ```{r}
-generate_data_from_rasterandshape <- function( brick_input ) {
-	# this whole section needs to be changed 
-  brick_input %>%
-	# Take means according to the countryshape.
-	# Make sure df = TRUE , so that output is a dataframe.
-    raster::extract( . , countryshape ,
-    				f=TRUE, fun = mean, na.rm = TRUE  )
-    return( . )
-}
+dput(occurrence)
 ```
 
+And str(occurrence) is
 
-# Small function 4) Grab 4-digit year from input filename.
 ```{r}
-grab_year_from_inputfile <- function( ncdf_filename_input ) {
-
-  ncdf_filename_input %>%
-  regexpr("[0-9]+", . ) %>%  # Match 4-digit year.
-  regmatches( ncdf_filename_input , . ) %>%  # Get matched REGEX from input string.
-  return( . )
-}
+str(occurrence)
 ```
 
+I have converted the occurrence dataset into a SpatialPointsDataFrame, projected it into an equal area grid (to match the raster bricks), and them split the data into year-months (I thought this might be an easier way to tackle the next stage):
 
-# --- 1.B. Define "BIG" Function That Extracts Dataset From a NetCDF File.
+```{r}
+library(sp)
+species_obs_date <- SpatialPointsDataFrame(coords = xy, data = data_aea, proj4string = CRS("+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0")) #convert into a spatialpoints dataframe to do the extraction
+species_obs_date <- spTransform(species_obs_date, CRS = "+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-60 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs") #need to reproject.... note -60 used to be -91. Changed to 'straighten up'
+split_obs <- split(species_obs_date, paste(species_obs_date$year, species_obs_date$month))
+```
 
-generate_datatable_from_rasterbricks <- function( ncdf_filename_input ) {
+# The problem
 
-	# Note: the only argument is a NetCDF filename.
+What I would like to happen is for each  each observation (row) in occurrences, for each oceanographic variable (e.g. using salinity) look up occurrence$year and occurrence$month and locate the appropriate raster brick, and extract values to points from layer [[1]] and add the result to occurrence$salinity_1, then look up occurrence$depthlayerno and extract values to points from layer[[depthlayerno]] and add the result to occurrence$salinity_depth.
 
-	# Start with file argument and process with the sub-functions above.
-	ncdf_filename_input %>%
+Honestly, I have no idea where to begin. I found a rather [neat blog from Nathan Lane](http://nathanlane.info/tutorial/2016/01/02/gisfunctional.html) in which he uses functions to extract values to polygons from multiple raster bricks (but without selecting particular raster bricks to extract the data from). Unfortunately adapting it to my needs is way beyond my current skillset (which is a beginner).
 
-	open_netcdf_as_rasterbrick( . ) %>%
-	match_rainbrick_to_countryshape( . ) %>%
-	generate_data_from_rasterandshape( . ) -> country_means_dataframe
-
-
-	# Go back to the file input name, create automatic names, and save.
-	ncdf_filename_input %>%
-
-	grab_year_from_inputfile( ) %>%
-	write.csv( country_means_dataframe ,
-				file = file.path( . , output_path ) )
-}
-
-# ---- 2. Main Code: Setup Environment to Run Big Function.
-
-# Start with your name of the country shapefile we're referencing.
-"country_shapefile_name.shp" %>%
-file.path( countryshape_path , ) %>%
-readODG( den = .  , layer = "countries" ) -> countryshape
-
-
-# Generate list of NetCDF files automatically from our directory.
-# Match all files ending in ".nc"
-raster_file_list <- list.files( path = weatherraster_path ,
-pattern = ".nc" , all.files = FALSE , full.names = FALSE )
-
-# Run our big function on the list of NetCDF files.
-mclapply( raster_file_list , generate_datatable_from_rasterbricks )
-
-# ---- 3. Assemble .CSV Files using Data.Table and Lapply.
-
-# Fetch all files ending in .CSV in out output path.
-csv_file_list <- list.files( path = output_path ,
-                             pattern = ".csv",
-                             all.files = FALSE,
-                             full.names = TRUE,
-                             recursive = FALSE )
-
-# Take the list of saved files & "fast read" them into R.
-lapply( csv_file_list , fread , sep = "," ) %>%
-
-# Transform the list of read files into a data.table:
-rbindlist( . ) -> big_datatable
-
-
-# Note: Before reassembling the data, or after, you may want
-# to manipulate the data so that it is in a more usable format.
-
-# Note: You may want to setkeys() for data.table here.
-
-# Save the big file.
-write.csv( big_datatable, file = file.path( output_path , "big_file_name.csv") )
+Any help you can offer would be gratefully received!
