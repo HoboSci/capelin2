@@ -73,7 +73,7 @@ occurrence <- read.csv("./data/bio/occurrence_help.csv", header = TRUE)
 
 Most of the raster bricks contain 50 layers - some only have 1 layer. Furthermore not all observations have a depthlayerno value (occurrence$depthlayerno == NA)
 
-A cut-down version of this .csv is available here XXXX. 
+A cut-down version of this .csv is available [here](https://drive.google.com/file/d/13ZTZC48o2i0ZktobfukHjaTMh7Qbrfei/view?usp=sharing). 
 
 The dput for occurrence is as follows:
 
