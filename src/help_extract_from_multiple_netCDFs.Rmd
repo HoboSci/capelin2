@@ -6,13 +6,17 @@ output: html_notebook
 
 A note to anyone who might happen to stumble across this... I am a beginner in R and have had no exposure to similar languages. I don't know what I'm doing. The code herein is unlikely to be elegant and there area probably more efficient ways of running the code.
 
-Built with 'r getRversion()'.
+Built with 
+```{r}
+getRversion()
+```
+
 
 # Package dependencies
 You can install and load them using the following code which uses a function called [ipak](https://gist.github.com/stevenworthington/3178163). 
 Note this function checks to see if the packages are installed first. If they are not installed, it will do so before loading
 ```{r pre-install packages, suppressMessages(expr)}
-packages <- c("rgdal", "raster", "ncdf4", "RNetCDF", "sp", "parallel", "magrittr", "data.table") 
+packages <- c("ncdf4", "sp") 
 source("../src/ipak.R")
 ipak(packages)
 ```
@@ -24,11 +28,11 @@ I have multiple netCDFs that need to extract values from to points. The problem 
 
 # The details
 
-I have around 1500 NetCDFs. Each netCDF has 4 dimensions (time - T, longitude - X, latitude - Y, depth - Z) and represents a single oceanographic variable for a particular month in a particular year. I have given each netCDF the following naming convention:
+I have around 1500 NetCDFs. Each netCDF has 4 dimensions (`time - T`, `longitude - X`, `latitude - Y`, `depth - Z`) and represents a single oceanographic variable for a particular month in a particular year. I have given each netCDF the following naming convention:
 
-{yyyy_mm_variablename.nc} (where variable name can vary in length)
+`yyyy_mm_variablename.nc` (where variable name can vary in length)
 
-An example of the netCDF is available [here](https://drive.google.com/file/d/1y2XU5RzUBRLgTXkql667a5o_PVk5LMTP/view?usp=sharing) . To use the netCDFs in R, I have made a loop to create raster bricks and project them in an equal-area grid from all the netCDFs:
+An example of the `netCDF` is available [here](https://drive.google.com/file/d/1y2XU5RzUBRLgTXkql667a5o_PVk5LMTP/view?usp=sharing) . To use the netCDFs in R, I have made a loop to create `raster bricks` and project them in an equal-area grid:
 
 ```{r}
 netcdf_list <- list.files("../data/env/netcdf", pattern = '*.nc', full.names = TRUE) #true means the full path is included
@@ -45,44 +49,44 @@ for (i in 1:no_netcdf) {
 
 Note that this may not be the most computationally efficient way to do this as I will be creating a lot of raster bricks that will be stored to memory… 
 
-I also had a dataset (.csv) containing fish observation (point) data. This dataset (let's call it occurrence) contains the following columns:
+I also had a dataset (.csv) containing fish observation (point) data. This dataset (let's call it `occurrence`) contains the following columns:
 
-occurrence$id (a unique observation ID)
-occurrence$decimalLongitude (Longitude in decimal degree)
-occurrence$decimalLatitude (Latitude in decimal degree)
-occurrence$dLongitudeM (Longitude in meters)
-occurrence$LatitudeM (Latitude in meters)
-occurrence$year (year of observation)
-occurrence$month (month of observation)
-occurrence$depthlayerno (depth of observation - the value corresponds to the depth layers in the raster bricks e.g. if occurrence$depthlayerno == 20, then the observation is from the raster brick layer [[20]])
+`occurrence$id` (a unique observation ID)
+`occurrence$decimalLongitude` (Longitude in decimal degree)
+`occurrence$decimalLatitude` (Latitude in decimal degree)
+`occurrence$dLongitudeM` (Longitude in meters)
+`occurrence$LatitudeM` (Latitude in meters)
+`occurrence$year` (year of observation)
+`occurrence$month` (month of observation)
+`occurrence$depthlayerno (depth of observation - the value corresponds to the depth layers in the raster bricks e.g. if `occurrence$depthlayerno` == `20`, then the observation is from the raster brick layer `[[20]]`)
 
 I then have some empty columns that need to be populated with data from the raster bricks, each representing an oceanographic variable and depth layer the data needs to come from. An example is:
 
-occurrence$salinity_1 (extract value to point from the salinity raster brick layer [[1]])
-occurrence$salinity_depth (extract value to point from the salinity raster brick layer [[occurrence$depthlayerno]])
+`occurrence$salinity_1` (extract value to point from the salinity raster brick layer `[[1]]`)
+`occurrence$salinity_depth` (extract value to point from the salinity raster brick layer `[[occurrence$depthlayerno]]`)
 
 ```{r}
 occurrence <- read.csv("./data/bio/occurrence_help.csv", header = TRUE)
 ```
 
 
-Most of the raster bricks contain 50 layers - some only have 1 layer. Furthermore not all observations have a depthlayerno value (occurrence$depthlayerno == NA)
+Most of the raster bricks contain 50 layers - some only have 1 layer. Furthermore not all observations have a depthlayerno value (`occurrence$depthlayerno == NA`)
 
 A cut-down version of this .csv is available [here](https://drive.google.com/file/d/13ZTZC48o2i0ZktobfukHjaTMh7Qbrfei/view?usp=sharing). 
 
-The dput for occurrence is as follows:
+The `dput` for occurrence is as follows:
 
 ```{r}
 dput(occurrence)
 ```
 
-And str(occurrence) is
+And `str(occurrence)` is
 
 ```{r}
 str(occurrence)
 ```
 
-I have converted the occurrence dataset into a SpatialPointsDataFrame, projected it into an equal area grid (to match the raster bricks), and them split the data into year-months (I thought this might be an easier way to tackle the next stage):
+I have converted the occurrence dataset into a `SpatialPointsDataFrame`, projected it into an equal area grid (to match the raster bricks), and them split the data into year-months (I thought this might be an easier way to tackle the next stage):
 
 ```{r}
 library(sp)
@@ -93,8 +97,8 @@ split_obs <- split(species_obs_date, paste(species_obs_date$year, species_obs_da
 
 # The problem
 
-What I would like to happen is for each  each observation (row) in occurrences, for each oceanographic variable (e.g. using salinity) look up occurrence$year and occurrence$month and locate the appropriate raster brick, and extract values to points from layer [[1]] and add the result to occurrence$salinity_1, then look up occurrence$depthlayerno and extract values to points from layer[[depthlayerno]] and add the result to occurrence$salinity_depth.
+What I would like to happen is for each  each observation (row) in `occurrences`, for each oceanographic variable (e.g. using salinity) look up `occurrence$year` and `occurrence$month` and locate the appropriate raster brick, and extract values to points from layer `[[1]]` and add the result to `occurrence$salinity_1`, then look up `occurrence$depthlayerno` and extract values to points from layer`[[depthlayerno]]` and add the result to `occurrence$salinity_depth`.
 
-Honestly, I have no idea where to begin. I found a rather [neat blog from Nathan Lane](http://nathanlane.info/tutorial/2016/01/02/gisfunctional.html) in which he uses functions to extract values to polygons from multiple raster bricks (but without selecting particular raster bricks to extract the data from). Unfortunately adapting it to my needs is way beyond my current skillset (which is a beginner).
+Honestly, I have no idea where to begin. I found a rather [neat blog from Nathan Lane](http://nathanlane.info/tutorial/2016/01/02/gisfunctional.html) in which he uses functions to extract values to polygons from multiple raster bricks (but without selecting particular raster bricks to extract the data from). Unfortunately adapting it to my needs is way beyond my current skillset.
 
 Any help you can offer would be gratefully received!
