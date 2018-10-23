@@ -63,6 +63,7 @@ character 9:end = env. variable name
 maybe start by splitting the occurence data into year-month? Then you can search for the rasters without going through everything....
 ```{r}
 library(sp)
+xy <- data_aea[ , c("decimalLongitude", "decimalLatitude")]
 species_obs_date <- SpatialPointsDataFrame(coords = xy, data = data_aea, proj4string = CRS("+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0")) #convert into a spatialpoints dataframe to do the extraction
 species_obs_date <- spTransform(species_obs_date, CRS = "+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-60 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs") #need to reproject.... note -60 used to be -91. Changed to 'straighten up'
 split_obs <- split(species_obs_date, paste(species_obs_date$year, species_obs_date$month))
