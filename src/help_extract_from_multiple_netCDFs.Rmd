@@ -31,7 +31,7 @@ I have multiple netCDFs that need to extract values from to points. The problem 
 
 I have around 1500 NetCDFs. Each netCDF has 4 dimensions (time - T, longitude - X, latitude - Y, depth - Z) and represents a single oceanographic variable for a particular month in a particular year. I have given each netCDF the following naming convention:
 
-yyyy_mm_variablename.nc (where variable name can vary in length)
+'yyyy_mm_variablename.nc' (where variable name can vary in length)
 
 An example of the netCDF is available [here](https://drive.google.com/file/d/1y2XU5RzUBRLgTXkql667a5o_PVk5LMTP/view?usp=sharing) . To use the netCDFs in R, I have made a loop to create raster bricks and project them in an equal-area grid from all the netCDFs:
 
