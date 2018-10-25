@@ -1069,6 +1069,26 @@ write.csv(data_aea,"../output/bio/data_aea_cell_amo_nao_bins_env.csv", row.names
 ```
 
 
+# observations by cell (in total, and also by time step)
+
+as the title says... how many observations happeend in each cell:
+- in total
+- in each yyyymm
+
+```{r observation by cell - total}
+library(plyr) #to use the count function
+obs_by_cell <- count(data_aea, "cell_id")
+obs_by_cell
+write.csv(obs_by_cell, file = "../output/bio/no_observations_cell.csv")
+```
+
+```{r}
+obs_cell_yymm <- count(data_aea, c("cell_id", "year", "month"))
+obs_cell_yymm
+write.csv(obs_cell_yymm, file = "../output/bio/no_observations_cell_yymm.csv")
+```
+
+
 # warm/cold year
 
 The warm/cold year index will be taken from a [DFO CSAS report](http://www.dfo-mpo.gc.ca/csas-sccs/Publications/SAR-AS/2018/2018_039-eng.pdf) - Fig 8
