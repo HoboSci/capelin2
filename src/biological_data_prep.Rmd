@@ -16,7 +16,7 @@ You can load them using the following code which uses a function called [ipak](h
 Note this function checks to see if the packages are installed first.
 Th
 ```{r pre-install packages, message=FALSE}
-packages <- c("packrat", "rworldmap", "dplyr","plyr", "rgdal", "sp", "raster", "tibble", "useful")
+packages <- c("packrat", "rworldmap", "dplyr","plyr", "rgdal", "sp", "raster", "tibble", "useful", "marmap")
 source("../src/ipak.R")
 ipak(packages)
 suppressMessages(ipak)
@@ -1067,8 +1067,6 @@ data_aea$o2_1 <- NA
 data_aea$o2_depth <- NA
 write.csv(data_aea,"../output/bio/data_aea_cell_amo_nao_bins_env.csv", row.names = FALSE)
 ```
-
-
 
 
 # warm/cold year

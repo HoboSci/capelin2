@@ -363,3 +363,68 @@ now save this as a new csv
 write.csv(naophases, file = "../output/env/nao.csv", row.names = FALSE)
 ```
 
+# Bathymetric
+
+bottom depth from [GEBCO](www.gebco.net)
+
+```{r}
+library(ncdf4)
+gebco <- nc_open("../data/env/GEBCO_2014_2D_-70.0_34.0_-43.0_70.0.nc")
+gebco
+library(marmap)
+bat <-readGEBCO.bathy("../data/env/GEBCO_2014_2D_-70.0_34.0_-43.0_70.0.nc")
+summary(bat)
+```
+
+create pretty custom color palette and then plot the bathy laye
+```{r}
+blues <- colorRampPalette(c("lightblue", "cadetblue2", "cadetblue1", "white"))
+plot(bat, n = 1, image = TRUE, bpal = blues(100))
+```
+lovely jubbely
+
+add the species data...
+```{r}
+data_aea <-read.csv( "../output/bio/data_aea_cell_amo_nao_bins_env.csv", header = TRUE) #just for canada pc as not loaded
+plot(bat, n = 1, image = TRUE, bpal = blues(100))
+points(data_aea$decimalLongitude, data_aea$decimalLatitude, pch = 20, col = "yellow") #note these are both the wgs84 images
+```
+and now get depth... note all the points and bathy data is wgs!
+
+```{r}
+data_aea$bottom_depth <- get.depth(bat, data_aea[ ,5:4], locator = FALSE)
+data_aea$bottom_depth <- data_aea$bottom_depth[, 3] #this step is because get.bath actually produces it's own dataframe with long, lat, and depth. This is extracting the depth column and deplacing data_aea$bottom_depth with the correct data.
+head(data_aea)
+```
+
+
+
+
+might be easier just to work form a TIF though...
+
+First project the tiff to equal area
+```{r}
+library(raster)
+geb <- "../data/env/gebco.tif"
+mask1 <- "../data/env/aea.tif" #just for canada pc as file isn't loaded
+aea <- raster(mask1)
+gebr <- brick(geb)
+gebr
+aea
+geb
+geb_aea <- projectRaster(geb, aea) 
+```
+
+
+```{r GEBCO raster extraction}
+library(rgdal)
+library(sp)
+gebco_coordinates(data_aea) <- c("decimalLongitude", "decimalLatitude") 
+nafo_zones <- readOGR(dsn=path.expand("../data/bio/nafo_zones"), layer = "nafo_zones_wgs84") #this loads the shapefile
+proj4string(adddata) <- proj4string(nafo_zones) #tells R that the occurrence data is the same projection as the shapefile
+adddata$nafo_zone <- over(adddata, nafo_zones)$ZONE #ZONE is where the zone data is held in teh shapefiles' attributes
+head(adddata) #just to check it worked
+```
+
+
+
