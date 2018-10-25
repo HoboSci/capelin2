@@ -369,8 +369,6 @@ bottom depth from [GEBCO](www.gebco.net)
 
 ```{r}
 library(ncdf4)
-gebco <- nc_open("../data/env/GEBCO_2014_2D_-70.0_34.0_-43.0_70.0.nc")
-gebco
 library(marmap)
 bat <-readGEBCO.bathy("../data/env/GEBCO_2014_2D_-70.0_34.0_-43.0_70.0.nc")
 summary(bat)
@@ -397,34 +395,26 @@ data_aea$bottom_depth <- data_aea$bottom_depth[, 3] #this step is because get.ba
 head(data_aea)
 ```
 
+```{r}
+write.csv(data_aea,"../output/bio/data_aea_cell_amo_nao_bins_btmdepth.csv", row.names = FALSE)
+```
 
+note that you will still need to project the bathymetric layer to aea to do the mapping on...
 
+I THINK THIS WILL BE SOLVED ON MY REAL PC - SAM DEAL WITH THIS!
 
-might be easier just to work form a TIF though...
-
-First project the tiff to equal area
 ```{r}
 library(raster)
-geb <- "../data/env/gebco.tif"
 mask1 <- "../data/env/aea.tif" #just for canada pc as file isn't loaded
 aea <- raster(mask1)
-gebr <- brick(geb)
-gebr
-aea
-geb
-geb_aea <- projectRaster(geb, aea) 
+gebco <- raster("../data/env/GEBCO_2014_2D_-70.0_34.0_-43.0_70.0.nc")
+gebco
+prj <- "+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-60 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs"
+gebco_aea <- projectRaster(gebco, prj)  
+gebco_aea
 ```
 
-
-```{r GEBCO raster extraction}
-library(rgdal)
-library(sp)
-gebco_coordinates(data_aea) <- c("decimalLongitude", "decimalLatitude") 
-nafo_zones <- readOGR(dsn=path.expand("../data/bio/nafo_zones"), layer = "nafo_zones_wgs84") #this loads the shapefile
-proj4string(adddata) <- proj4string(nafo_zones) #tells R that the occurrence data is the same projection as the shapefile
-adddata$nafo_zone <- over(adddata, nafo_zones)$ZONE #ZONE is where the zone data is held in teh shapefiles' attributes
-head(adddata) #just to check it worked
+```{r}
+plot(gebco_aea)
 ```
-
-
 
