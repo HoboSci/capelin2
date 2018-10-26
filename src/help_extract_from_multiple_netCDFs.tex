@@ -1,0 +1,406 @@
+\documentclass[]{article}
+\usepackage{lmodern}
+\usepackage{amssymb,amsmath}
+\usepackage{ifxetex,ifluatex}
+\usepackage{fixltx2e} % provides \textsubscript
+\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+\else % if luatex or xelatex
+  \ifxetex
+    \usepackage{mathspec}
+  \else
+    \usepackage{fontspec}
+  \fi
+  \defaultfontfeatures{Ligatures=TeX,Scale=MatchLowercase}
+\fi
+% use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+% use microtype if available
+\IfFileExists{microtype.sty}{%
+\usepackage{microtype}
+\UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\usepackage[margin=1in]{geometry}
+\usepackage{hyperref}
+\hypersetup{unicode=true,
+            pdftitle={help\_extract\_from\_multiple\_netCDFs},
+            pdfauthor={Samantha Andrews},
+            pdfborder={0 0 0},
+            breaklinks=true}
+\urlstyle{same}  % don't use monospace font for urls
+\usepackage{color}
+\usepackage{fancyvrb}
+\newcommand{\VerbBar}{|}
+\newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+% Add ',fontsize=\small' for more characters per line
+\usepackage{framed}
+\definecolor{shadecolor}{RGB}{248,248,248}
+\newenvironment{Shaded}{\begin{snugshade}}{\end{snugshade}}
+\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\CharTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\StringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\ImportTok}[1]{#1}
+\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\BuiltInTok}[1]{#1}
+\newcommand{\ExtensionTok}[1]{#1}
+\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.77,0.63,0.00}{#1}}
+\newcommand{\RegionMarkerTok}[1]{#1}
+\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\AlertTok}[1]{\textcolor[rgb]{0.94,0.16,0.16}{#1}}
+\newcommand{\ErrorTok}[1]{\textcolor[rgb]{0.64,0.00,0.00}{\textbf{#1}}}
+\newcommand{\NormalTok}[1]{#1}
+\usepackage{graphicx,grffile}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+\IfFileExists{parskip.sty}{%
+\usepackage{parskip}
+}{% else
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt plus 2pt minus 1pt}
+}
+\setlength{\emergencystretch}{3em}  % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{0}
+% Redefines (sub)paragraphs to behave more like sections
+\ifx\paragraph\undefined\else
+\let\oldparagraph\paragraph
+\renewcommand{\paragraph}[1]{\oldparagraph{#1}\mbox{}}
+\fi
+\ifx\subparagraph\undefined\else
+\let\oldsubparagraph\subparagraph
+\renewcommand{\subparagraph}[1]{\oldsubparagraph{#1}\mbox{}}
+\fi
+
+%%% Use protect on footnotes to avoid problems with footnotes in titles
+\let\rmarkdownfootnote\footnote%
+\def\footnote{\protect\rmarkdownfootnote}
+
+%%% Change title format to be more compact
+\usepackage{titling}
+
+% Create subtitle command for use in maketitle
+\newcommand{\subtitle}[1]{
+  \posttitle{
+    \begin{center}\large#1\end{center}
+    }
+}
+
+\setlength{\droptitle}{-2em}
+
+  \title{help\_extract\_from\_multiple\_netCDFs}
+    \pretitle{\vspace{\droptitle}\centering\huge}
+  \posttitle{\par}
+    \author{Samantha Andrews}
+    \preauthor{\centering\large\emph}
+  \postauthor{\par}
+    \date{}
+    \predate{}\postdate{}
+  
+
+\begin{document}
+\maketitle
+
+A note to anyone who might happen to stumble across this\ldots{} I am a
+beginner in R and have had no exposure to similar languages. I don't
+know what I'm doing. The code herein is unlikely to be elegant and there
+area probably more efficient ways of running the code.
+
+Built with
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{getRversion}\NormalTok{()}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] '3.5.1'
+\end{verbatim}
+
+\section{Package dependencies}\label{package-dependencies}
+
+You can install and load them using the following code which uses a
+function called
+\href{https://gist.github.com/stevenworthington/3178163}{ipak}. Note
+this function checks to see if the packages are installed first. If they
+are not installed, it will do so before loading
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{packages <-}\StringTok{ }\KeywordTok{c}\NormalTok{(}\StringTok{"ncdf4"}\NormalTok{, }\StringTok{"sp"}\NormalTok{, }\StringTok{"raster"}\NormalTok{) }
+\KeywordTok{source}\NormalTok{(}\StringTok{"../src/ipak.R"}\NormalTok{)}
+\KeywordTok{ipak}\NormalTok{(packages)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Loading required package: ncdf4
+\end{verbatim}
+
+\begin{verbatim}
+## Loading required package: sp
+\end{verbatim}
+
+\begin{verbatim}
+## Loading required package: raster
+\end{verbatim}
+
+\begin{verbatim}
+##  ncdf4     sp raster 
+##   TRUE   TRUE   TRUE
+\end{verbatim}
+
+\section{The short story}\label{the-short-story}
+
+I have multiple netCDFs that need to extract values from to points. The
+problem is, I need R to decide which netCDFs (and which layers) to
+perform the extraction on.
+
+\section{The details}\label{the-details}
+
+I have around 1500 NetCDFs. Each netCDF has 4 dimensions
+(\texttt{time\ -\ T}, \texttt{longitude\ -\ X}, \texttt{latitude\ -\ Y},
+\texttt{depth\ -\ Z}) and represents a single oceanographic variable for
+a particular month in a particular year. I have given each netCDF the
+following naming convention:
+
+\texttt{yyyy\_mm\_variablename.nc} (where variable name can vary in
+length)
+
+An example of the \texttt{netCDF} is available
+\href{https://drive.google.com/file/d/1y2XU5RzUBRLgTXkql667a5o_PVk5LMTP/view?usp=sharing}{here}
+. To use the netCDFs in R, I have made a loop to create
+\texttt{raster\ bricks} and project them in an equal-area grid:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{aea <-}\StringTok{ }\KeywordTok{raster}\NormalTok{(}\StringTok{"../output/env/aea.tif"}\NormalTok{)}
+\NormalTok{netcdf_list <-}\StringTok{ }\KeywordTok{list.files}\NormalTok{(}\StringTok{"../data/env/netcdf"}\NormalTok{, }\DataTypeTok{pattern =} \StringTok{'*.nc'}\NormalTok{, }\DataTypeTok{full.names =} \OtherTok{TRUE}\NormalTok{) }\CommentTok{#true means the full path is included}
+\NormalTok{no_netcdf <-}\StringTok{ }\KeywordTok{length}\NormalTok{(netcdf_list) }\CommentTok{#for the loop - need to know how many files to cycle through}
+\NormalTok{netcdf_name <-}\StringTok{ }\KeywordTok{list.files}\NormalTok{(}\StringTok{"../data/env/netcdf"}\NormalTok{, }\DataTypeTok{pattern =} \StringTok{'*.nc'}\NormalTok{, }\DataTypeTok{full.names =} \OtherTok{FALSE}\NormalTok{) }\CommentTok{#false means the path is not included}
+\KeywordTok{library}\NormalTok{ (ncdf4)}
+\ControlFlowTok{for}\NormalTok{ (i }\ControlFlowTok{in} \DecValTok{1}\OperatorTok{:}\NormalTok{no_netcdf) \{}
+  \KeywordTok{print}\NormalTok{(netcdf_name[i]) }\CommentTok{#this just prings the name of the netCDF R is working on}
+\NormalTok{  temp_brick <-}\StringTok{ }\KeywordTok{brick}\NormalTok{(netcdf_list[i], }\DataTypeTok{lvar =} \DecValTok{4}\NormalTok{)}
+\NormalTok{  temp_brick <-}\StringTok{ }\KeywordTok{projectRaster}\NormalTok{(temp_brick, aea) }\CommentTok{#aea is an existing raster in the projection I want that I created (environmental_data_preperation)}
+  \KeywordTok{assign}\NormalTok{(netcdf_name[i], temp_brick) }\CommentTok{#this asigns the netCDF name to the raster brick}
+\NormalTok{\}}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] "1998_01_mlp.nc"
+## [1] "1998_01_salinity.nc"
+## [1] "1998_01_ssh.nc"
+## [1] "1998_01_temp.nc"
+## [1] "1998_02_mlp.nc"
+## [1] "1998_02_salinity.nc"
+## [1] "1998_02_ssh.nc"
+## [1] "1998_02_temp.nc"
+## [1] "1998_03_mlp.nc"
+## [1] "1998_03_salinity.nc"
+## [1] "1998_03_ssh.nc"
+## [1] "1998_03_temp.nc"
+## [1] "1998_04_mlp.nc"
+## [1] "1998_04_salinity.nc"
+## [1] "1998_04_ssh.nc"
+## [1] "1998_04_temp.nc"
+## [1] "1998_05_mlp.nc"
+## [1] "1998_05_salinity.nc"
+## [1] "1998_05_ssh.nc"
+## [1] "1998_05_temp.nc"
+## [1] "1998_06_mlp.nc"
+## [1] "1998_06_salinity.nc"
+## [1] "1998_06_ssh.nc"
+## [1] "1998_06_temp.nc"
+## [1] "1998_07_mlp.nc"
+## [1] "1998_07_salinity.nc"
+## [1] "1998_07_ssh.nc"
+## [1] "1998_07_temp.nc"
+## [1] "1998_08_mlp.nc"
+## [1] "1998_08_salinity.nc"
+## [1] "1998_08_ssh.nc"
+## [1] "1998_08_temp.nc"
+## [1] "1998_09_mlp.nc"
+## [1] "1998_09_salinity.nc"
+## [1] "1998_09_ssh.nc"
+## [1] "1998_09_temp.nc"
+## [1] "1998_10_mlp.nc"
+## [1] "1998_10_salinity.nc"
+## [1] "1998_10_ssh.nc"
+## [1] "1998_10_temp.nc"
+## [1] "1998_11_mlp.nc"
+## [1] "1998_11_salinity.nc"
+## [1] "1998_11_ssh.nc"
+## [1] "1998_11_temp.nc"
+## [1] "1998_12_mlp.nc"
+## [1] "1998_12_salinity.nc"
+## [1] "1998_12_ssh.nc"
+## [1] "1998_12_temp.nc"
+\end{verbatim}
+
+Note that this may not be the most computationally efficient way to do
+this as I will be creating a lot of raster bricks that will be stored to
+memory\ldots{}
+
+I also had a dataset (.csv) containing fish observation (point) data.
+This dataset (let's call it \texttt{occurrence}) contains the following
+columns:
+
+\texttt{occurrence\$id} (a unique observation ID)
+\texttt{occurrence\$decimalLongitude} (Longitude in decimal degree)
+\texttt{occurrence\$decimalLatitude} (Latitude in decimal degree)
+\texttt{occurrence\$dLongitudeM} (Longitude in meters)
+\texttt{occurrence\$LatitudeM} (Latitude in meters)
+\texttt{occurrence\$year} (year of observation)
+\texttt{occurrence\$month} (month of observation)
+\texttt{occurrence\$depthlayerno\ (depth\ of\ observation\ -\ the\ value\ corresponds\ to\ the\ depth\ layers\ in\ the\ raster\ bricks\ e.g.\ if}occurrence\$depthlayerno\texttt{==}20\texttt{,\ then\ the\ observation\ is\ from\ the\ raster\ brick\ layer}{[}{[}20{]}{]}`)
+
+I then have some empty columns that need to be populated with data from
+the raster bricks, each representing an oceanographic variable and depth
+layer the data needs to come from. An example is:
+
+\texttt{occurrence\$salinity\_1} (extract value to point from the
+salinity raster brick layer \texttt{{[}{[}1{]}{]}})
+\texttt{occurrence\$salinity\_depth} (extract value to point from the
+salinity raster brick layer
+\texttt{{[}{[}occurrence\$depthlayerno{]}{]}})
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{occurrence <-}\StringTok{ }\KeywordTok{read.csv}\NormalTok{(}\StringTok{"../data/bio/occurrence_help.csv"}\NormalTok{, }\DataTypeTok{header =} \OtherTok{TRUE}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+Most of the raster bricks contain 50 layers - some only have 1 layer.
+Furthermore not all observations have a depthlayerno value
+(\texttt{occurrence\$depthlayerno\ ==\ NA})
+
+A cut-down version of this .csv is available
+\href{https://drive.google.com/file/d/13ZTZC48o2i0ZktobfukHjaTMh7Qbrfei/view?usp=sharing}{here}.
+
+The \texttt{dput} for occurrence is as follows:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{dput}\NormalTok{(occurrence)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## structure(list(year = c(1998L, 1998L, 1998L, 1998L, 1998L, 1998L, 
+## 1998L, 1998L, 1998L, 1998L, 1998L, 1998L, 1998L, 1998L, 1998L
+## ), month = c(10L, 10L, 10L, 10L, 11L, 11L, 12L, 12L, 12L, 4L, 
+## 4L, 4L, 4L, 4L, 5L), id = c(386669852L, 386669881L, 386669904L, 
+## 386411062L, 386674153L, 386415830L, 386417305L, 386417335L, 386417588L, 
+## 386403612L, 386402081L, 386402062L, 386402787L, 386401885L, 386405989L
+## ), decimalLatitude = c(53.95, 53.63, 53.72, 45.19, 50.26, 48.42, 
+## 48.96, 48.95, 47.7, 46.87, 46.38, 46.46, 47.4, 47.12, 45.6), 
+##     decimalLongitude = c(-54.91, -55.51, -55.73, -52.85, -55.49, 
+##     -49.52, -52.78, -52.81, -52.93, -57.86, -54.94, -54.82, -56.37, 
+##     -54.61, -51.68), LongitudeM = c(331170.3733, 294592.1288, 
+##     279536.5639, 568120.6623, 321164.228, 775577.4971, 529039.8088, 
+##     526968.5028, 532747.635, 164445.6561, 392590.9816, 401204.4947, 
+##     275695.0622, 411603.073, 655083.2443), LatitudeM = c(1549820.727, 
+##     1511221.289, 1520353.142, 594666.88, 1135604.497, 981130.7983, 
+##     1008824.847, 1007486.149, 868898.3383, 751816.2887, 709993.6159, 
+##     719487.3038, 815139.5931, 793297.9028, 650032.9389), depthlayerno = c(30L, 
+##     28L, 26L, 24L, 35L, 35L, 33L, 32L, 25L, 33L, 31L, 32L, 35L, 
+##     31L, 23L), salinty_1 = c(NA, NA, NA, NA, NA, NA, NA, NA, 
+##     NA, NA, NA, NA, NA, NA, NA), salinity_depth = c(NA, NA, NA, 
+##     NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA), temp_1 = c(NA, 
+##     NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA), 
+##     temp_depth = c(NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, 
+##     NA, NA, NA, NA)), class = "data.frame", row.names = c(NA, 
+## -15L))
+\end{verbatim}
+
+And \texttt{str(occurrence)} is
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{str}\NormalTok{(occurrence)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 'data.frame':    15 obs. of  12 variables:
+##  $ year            : int  1998 1998 1998 1998 1998 1998 1998 1998 1998 1998 ...
+##  $ month           : int  10 10 10 10 11 11 12 12 12 4 ...
+##  $ id              : int  386669852 386669881 386669904 386411062 386674153 386415830 386417305 386417335 386417588 386403612 ...
+##  $ decimalLatitude : num  54 53.6 53.7 45.2 50.3 ...
+##  $ decimalLongitude: num  -54.9 -55.5 -55.7 -52.9 -55.5 ...
+##  $ LongitudeM      : num  331170 294592 279537 568121 321164 ...
+##  $ LatitudeM       : num  1549821 1511221 1520353 594667 1135604 ...
+##  $ depthlayerno    : int  30 28 26 24 35 35 33 32 25 33 ...
+##  $ salinty_1       : logi  NA NA NA NA NA NA ...
+##  $ salinity_depth  : logi  NA NA NA NA NA NA ...
+##  $ temp_1          : logi  NA NA NA NA NA NA ...
+##  $ temp_depth      : logi  NA NA NA NA NA NA ...
+\end{verbatim}
+
+I have converted the occurrence dataset into a
+\texttt{SpatialPointsDataFrame}, projected it into an equal area grid
+(to match the raster bricks), and them split the data into year-months
+(I thought this might be an easier way to tackle the next stage):
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{library}\NormalTok{(sp)}
+\NormalTok{xy <-}\StringTok{ }\NormalTok{occurrence[ , }\KeywordTok{c}\NormalTok{(}\StringTok{"decimalLongitude"}\NormalTok{, }\StringTok{"decimalLatitude"}\NormalTok{)]}
+\NormalTok{species_obs_date <-}\StringTok{ }\KeywordTok{SpatialPointsDataFrame}\NormalTok{(}\DataTypeTok{coords =}\NormalTok{ xy, }\DataTypeTok{data =}\NormalTok{ occurrence, }\DataTypeTok{proj4string =} \KeywordTok{CRS}\NormalTok{(}\StringTok{"+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"}\NormalTok{)) }\CommentTok{#convert into a spatialpoints dataframe to do the extraction}
+\NormalTok{species_obs_date <-}\StringTok{ }\KeywordTok{spTransform}\NormalTok{(species_obs_date, }\DataTypeTok{CRS =} \StringTok{"+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-60 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs"}\NormalTok{) }\CommentTok{#need to reproject.... note -60 used to be -91. Changed to 'straighten up'}
+\NormalTok{split_obs <-}\StringTok{ }\KeywordTok{split}\NormalTok{(species_obs_date, }\KeywordTok{paste}\NormalTok{(species_obs_date}\OperatorTok{$}\NormalTok{year, species_obs_date}\OperatorTok{$}\NormalTok{month))}
+\end{Highlighting}
+\end{Shaded}
+
+\section{The problem}\label{the-problem}
+
+What I would like to happen is for each each observation (row) in
+\texttt{occurrences}, for each oceanographic variable (e.g.~using
+salinity) look up \texttt{occurrence\$year} and
+\texttt{occurrence\$month} and locate the appropriate raster brick, and
+extract values to points from layer \texttt{{[}{[}1{]}{]}} and add the
+result to \texttt{occurrence\$salinity\_1}, then look up
+\texttt{occurrence\$depthlayerno} and extract values to points from
+layer\texttt{{[}{[}depthlayerno{]}{]}} and add the result to
+\texttt{occurrence\$salinity\_depth}.
+
+Honestly, I have no idea where to begin. I found a rather
+\href{http://nathanlane.info/tutorial/2016/01/02/gisfunctional.html}{neat
+blog from Nathan Lane} in which he uses functions to extract values to
+polygons from multiple raster bricks (but without selecting particular
+raster bricks to extract the data from). Unfortunately adapting it to my
+needs is way beyond my current skillset.
+
+Any help you can offer would be gratefully received!
+
+
+\end{document}

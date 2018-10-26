@@ -1,0 +1,68 @@
+---
+title: "timesliced_random_cell_selection"
+author: "Samantha Andrews"
+output: html_notebook
+---
+
+# Overview
+Preperation of the capelin (*Mallotus villosus*) data obtained from [OBIS](www.iobis.org). This database shows the global occurance of capelin. 
+
+A note to anyone who might happen to stumble across this... I am a beginner in R and have had no exposure to similar languages. I don't know what I'm doing. The code herein is unlikely to be elegant and there area probably more efficient ways of running the code.
+
+Built with 'r getRversion()'.
+
+# Package dependencies
+You can load them using the following code which uses a function called [ipak](https://gist.github.com/stevenworthington/3178163). 
+Note this function checks to see if the packages are installed first.
+Th
+```{r pre-install packages, message=FALSE}
+packages <- c("raster")
+source("../src/ipak.R")
+ipak(packages)
+suppressMessages(ipak)
+```
+
+you have a unique_cell raster already (glo_unique_cell) (output/env/glo_unique_cell.tif)
+
+```{r}
+plot(glo_unique_cell)
+```
+
+as a reminder, how many cells are there?
+```{r}
+glo_unique_cell
+```
+
+6729...
+
+ok now you want to generate a centroid for each cell... (a point in the center of each cell)
+use the raster layer to 1) transfer the raster into a dataframe, with the values (cell numbers) linked to each centroid with xy coordinates (note as the raster is an aea projection, the xy will be in meters)
+```{r}
+library(raster)
+unique_cell_centroid <- as.data.frame(glo_unique_cell, row.names = NULL, optional = FALSE, xy = TRUE, centroids = TRUE, na.rm = TRUE)
+names(unique_cell_centroid)[names(unique_cell_centroid)=="layer.1"] <- "cell_id" #just renames the output
+names(unique_cell_centroid)[names(unique_cell_centroid)=="x"] <- "longitude" #just renames the output
+names(unique_cell_centroid)[names(unique_cell_centroid)=="y"] <- "latitude" #just renames the output
+write.csv(unique_cell_centroid, "../output/env/unique_cell_centroid.csv")
+plot(glo_unique_cell)
+points(unique_cell_centroid$longitude, unique_cell_centroid$latitude, pch = 10, col = "black")
+```
+well... the plot doesn't tell me much... but i definately have points!
+
+ok so now I have a base list to work off... I have split the cells with presence data into a list by time-slice (split_obs_cell_yymm) (code in biological_data_prep)
+
+```{r}
+test_timeslice <- split_obs_cell_yymm[1]
+test_timeslice <- as.data.frame(test_timeslice)
+test_time_cell <- unique_cell_centroid
+test_time_cell <- test_time_cell[!test_time_cell$cell_id %in% test_timeslice$X1998.10.cell_id, , drop = FALSE]
+```
+ok that works... but you need to pop into a loop and dynamically name the output (and create a .csv maybe)
+
+
+
+```{r}
+
+```
+
+

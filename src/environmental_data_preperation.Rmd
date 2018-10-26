@@ -17,7 +17,7 @@ Built with 'r getRversion()'.
 You can load them using the following code which uses a function called [ipak](https://gist.github.com/stevenworthington/3178163). 
 Note this function checks to see if the packages are installed first.
 ```{r pre-install packages, message=FALSE}
-packages <- c("ncdf4", "raster", "rgdal", "useful") 
+packages <- c("ncdf4", "raster", "rgdal", "useful", "marmap") 
 source("../src/ipak.R")
 ipak(packages)
 ```
@@ -399,18 +399,13 @@ head(data_aea)
 write.csv(data_aea,"../output/bio/data_aea_cell_amo_nao_bins_btmdepth.csv", row.names = FALSE)
 ```
 
-note that you will still need to project the bathymetric layer to aea to do the mapping on...
-
-I THINK THIS WILL BE SOLVED ON MY REAL PC - SAM DEAL WITH THIS!
+And now create a raster of Gebco in aea for mapping...
 
 ```{r}
 library(raster)
-mask1 <- "../data/env/aea.tif" #just for canada pc as file isn't loaded
-aea <- raster(mask1)
 gebco <- raster("../data/env/GEBCO_2014_2D_-70.0_34.0_-43.0_70.0.nc")
 gebco
-prj <- "+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-60 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs"
-gebco_aea <- projectRaster(gebco, prj)  
+gebco_aea <- projectRaster(gebco, aea)  
 gebco_aea
 ```
 

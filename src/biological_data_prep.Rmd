@@ -1082,10 +1082,37 @@ obs_by_cell
 write.csv(obs_by_cell, file = "../output/bio/no_observations_cell.csv")
 ```
 
+
 ```{r}
 obs_cell_yymm <- count(data_aea, c("cell_id", "year", "month"))
 obs_cell_yymm
 write.csv(obs_cell_yymm, file = "../output/bio/no_observations_cell_yymm.csv")
+```
+Now attach these values to data_aea....
+
+total obs for the whole time period
+```{r}
+data_aea <- merge(data_aea, obs_by_cell, by="cell_id")
+head(data_aea)
+```
+rename freq column to something meaningful
+
+```{r}
+names(data_aea)[names(data_aea)=="freq"] <- "total_cell_obs"
+head(data_aea)
+```
+
+
+time-sliced
+```{r}
+data_aea <- merge(data_aea, obs_cell_yymm, by.x=c("cell_id", "year", "month"), by.y=c("cell_id", "year", "month"))
+names(data_aea)[names(data_aea)=="freq"] <- "yymm_cell_obs"
+head(data_aea)
+```
+
+write to .csv
+```{r}
+write.csv(data_aea,"../output/bio/data_aea_cell_amo_nao_bins_env_depth_cellobno.csv", row.names = FALSE)
 ```
 
 

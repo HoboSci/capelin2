@@ -107,3 +107,8 @@ What I would like to happen is for each  each observation (row) in `occurrences`
 Honestly, I have no idea where to begin. I found a rather [neat blog from Nathan Lane](http://nathanlane.info/tutorial/2016/01/02/gisfunctional.html) in which he uses functions to extract values to polygons from multiple raster bricks (but without selecting particular raster bricks to extract the data from). Unfortunately adapting it to my needs is way beyond my current skillset.
 
 Any help you can offer would be gratefully received!
+
+```{r}
+knitr::purl(input, output, documentation = 2)
+``
+
