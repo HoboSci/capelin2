@@ -61,33 +61,43 @@ split_cell_yymm <- split(cell_yymm, list(cell_yymm$year, cell_yymm$month), drop 
 
 
 What I want to do is for each time slice, create a list of all cells, then remove the ones where observations occured
+ly name the output (and create a .csv with the name of the level being worked on)
 
-```{r}
-test_timeslice <- split_cell_yymm[[1]]
-test_timeslice
-test_timeslice <- as.data.frame(test_timeslice)
+Here is a loop to create a copy of the unique_cell_centroid dataframe, and give it the same name as the splitobs_cell_yymm level
+.csv naming code courtesy of [nadizan/stack exchange](https://stackoverflow.com/questions/53045158/r-naming-csv-with-a-list-level-name-in-a-loop?noredirect=1#comment92990285_53045158)
 
-timeslice_name <- name(split_cell_yymm(1))
-test_time_cell <- unique_cell_centroid
-test_time_cell <- test_time_cell[!test_time_cell$cell_id %in% test_timeslice$cell_id, , drop = FALSE]
-write.csv(test_time_cell, "../output/bio/test_time_cell.csv", row.names = FALSE)
-```
-ok that works... but you need to pop into a loop and dynamically name the output (and create a .csv maybe)
+Note that the file are saved in /src. Manually move them to output/bio/background
 
-need a loop to create a copy of the unique_cell_centroid dataframe, and give it the same name as the splitobs_cell_yymm level
-
-
-
-this almost works - just need it to assign a name not a list number. note the output goes to /src....
 ```{r}
 no_timeslices <- length(split_cell_yymm) # how many levels (time slices) are in the list
 for (i in 1:no_timeslices){
-  test_timeslice <- split_cell_yymm[[i]]
-  test_timeslice <- as.data.frame(test_timeslice)
-  test_time_cell <- unique_cell_centroid
-  test_time_cell <- test_time_cell[!test_time_cell$cell_id %in% test_timeslice$cell_id, , drop = FALSE]
-  write.csv(test_time_cell, paste0(i, ".csv"), row.names = FALSE)
+  timeslice <- split_cell_yymm[[i]]
+  timeslice <- as.data.frame(test_timeslice)
+  time_cell <- unique_cell_centroid
+  time_cell <- test_time_cell[!test_time_cell$cell_id %in% test_timeslice$cell_id, , drop = FALSE]
+  write.csv(test_time_cell, paste0(names(lapply(split_cell_yymm, names))[i], ".csv"), row.names = FALSE) 
 }
+```
+
+Ok so now I have a bunch of .csv files containing cells where no observations occurred for a given timeslice.
+Next step is to randomly select cells in each timeslice. Make sure you generate new files for each...
+
+load the .csvs... [code](https://www.reed.edu/data-at-reed/software/R/reading_and_writing.html)
+
+```{r}
+bckrnd_folder <- "../output/bio/background/"      # path to folder that holds multiple .csv files
+bckrnd_list <- list.files(path = bckrnd_folder, pattern="*.csv") # create list of all .csv files in folder
+
+# read in each .csv file in file_list and create a data frame with the same name as the .csv file
+for (i in 1:length(bckrnd_list)){
+  assign(bckrnd_list[i], 
+  read.csv(paste(bckrnd_folder, bckrnd_list[i], sep=''))
+  )
+  #now do something....
+  
+  }
 
 ```
+and that something you are going to do is randomly select rows....
+
 
