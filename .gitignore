@@ -36,3 +36,10 @@ vignettes/*.pdf
 rsconnect/
 .Rproj.user
 packrat/lib*/
+
+# data created (automatically backed up once per day to GoogleDrive and also once a week to hard drive)
+*.csv
+*.pdf
+*.nc
+*.ini
+
