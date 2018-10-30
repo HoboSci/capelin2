@@ -97,9 +97,9 @@ bckrnd_list <- list.files(path = bckrnd_folder, pattern="*.csv") # create list o
 randbckoutput <- "../output/bio/background/rand/" #where the files are to be saved to
 # read in each .csv file in file_list and create a data frame with the same name as the .csv file
 for (i in 1:length(bckrnd_list)){
-  test_sel <- read.csv(paste(bckrnd_folder, bckrnd_list[i], sep=''))
-  test_sel <- sample_n(test_sel, 10000) #where 10000 = number of rows to sample (large sample as per maxent)
-  write.csv(test_sel, file = paste0(randbckoutput, bckrnd_list[i]), row.names = FALSE) #dont need to add .csv as it's already in the filename
+  sel <- read.csv(paste(bckrnd_folder, bckrnd_list[i], sep=''))
+  sel <- sample_n(test_sel, 10000) #where 10000 = number of rows to sample (large sample as per maxent)
+  write.csv(sel, file = paste0(randbckoutput, bckrnd_list[i]), row.names = FALSE) #dont need to add .csv as it's already in the filename
 }
   
 ```
@@ -107,6 +107,18 @@ for (i in 1:length(bckrnd_list)){
 ok now i have a ton of files for random background points broken into timeslices. I'd like to add a colum for year and one for month to each of these datasets. They should be populated based on the name of the file (e.g. 1998.4.csv would have year = 1998 and month = 4)
 
 ```{r}
-
+rand_folder <- "../output/bio/background/rand/"      # path to folder that holds multiple .csv files
+rand_list <- list.files(path = rand_folder, pattern="*.csv") # create list of all .csv files in folder
+randbckoutput <- "../output/bio/background/rand/" #where the files are to be saved to
+for(i in 1:length(rand_list)){
+  randtemp <- read.csv(paste(rand_folder, rand_list[i], sep=''))
+  randtemp$year <- substr(rand_list[i], 1, 4)
+  randtemp$month <- substr(rand_list[i], 6, 7)
+  write.csv(randtemp, file = paste0(randbckoutput, bckrnd_list[i]), row.names = FALSE) #dont need to add .csv as it's already in the filename
+}
 ```
+note that in the output temp file in R shows a . after the month if that month is a single digit. The .csv outputs don't 
+
+ok now you can start to populate the rest of the background point information. The background points file should mirror as much as possible the occurence file 
+
 
