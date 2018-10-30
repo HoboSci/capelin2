@@ -42,4 +42,5 @@ packrat/lib*/
 *.pdf
 *.nc
 *.ini
+data/bio/nafo_zones
 
