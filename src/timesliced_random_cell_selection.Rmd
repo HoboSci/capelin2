@@ -16,12 +16,13 @@ You can load them using the following code which uses a function called [ipak](h
 Note this function checks to see if the packages are installed first.
 Th
 ```{r pre-install packages, message=FALSE}
-packages <- c("raster", "dplyr")
+packages <- c("raster", "dplyr", "data.table", "sp")
 source("../src/ipak.R")
 ipak(packages)
 suppressMessages(ipak)
 ```
 
+# the show
 you have a unique_cell raster already (glo_unique_cell) (output/env/glo_unique_cell.tif)
 
 ```{r}
@@ -112,13 +113,67 @@ rand_list <- list.files(path = rand_folder, pattern="*.csv") # create list of al
 randbckoutput <- "../output/bio/background/rand/" #where the files are to be saved to
 for(i in 1:length(rand_list)){
   randtemp <- read.csv(paste(rand_folder, rand_list[i], sep=''))
-  randtemp$year <- substr(rand_list[i], 1, 4)
-  randtemp$month <- substr(rand_list[i], 6, 7)
+  randtemp$year <- substr(rand_list[i], 1, 4) #the year is characters 1-4 in the filename
+  randtemp$month <- substr(rand_list[i], 6, 7) #the month is characters 6 & 7 in the filename (except where the month is a single digit)
   write.csv(randtemp, file = paste0(randbckoutput, bckrnd_list[i]), row.names = FALSE) #dont need to add .csv as it's already in the filename
 }
 ```
 note that in the output temp file in R shows a . after the month if that month is a single digit. The .csv outputs don't 
 
-ok now you can start to populate the rest of the background point information. The background points file should mirror as much as possible the occurence file 
+# populating the background points data with... data
 
+ok now you can start to populate the rest of the background point information. The background points file should mirror as much as possible the occurence file. Maybe it would be best to merge the files together, and them split them again later? would save looping everything to repeat the process through multiple files...
+
+```{r}
+library(data.table)
+filenames  <- list.files(path = rand_folder, pattern="*.csv", full.names = TRUE) 
+background_all <- rbindlist(lapply(filenames,fread))
+write.csv(background_all, "../output/bio/background_all.csv", row.names = FALSE)
+```
+
+
+get the columns from the occurence data so you know what to add
+```{r}
+occ_column <- colnames(data_aea)
+occ_column
+```
+
+ok so have cell_id, year, month, decimalLongitude.1(meters - in background_all its longitude), decimalLatitude.1 (meters - in background_all its latitude), depth_layer_no.
+
+Easy first one - add an id based on id_depth
+```{r}
+background_all$id <- background_all$id_depth
+write.csv(background_all, "../output/bio/background_all.csv", row.names = FALSE)
+```
+
+ok lets's get the real decimalLatitude and decimalLongitude.
+Will need to plot all point, extract the lonlat coordinates
+
+1) load the file as a spatialdatapointframe. give it the aea coordinate
+
+```{r}
+library(sp)
+xy <- background_all[ ,c(1,2)] #lon lat in col 1 and 2
+sp_background <- SpatialPointsDataFrame(coords = xy, data = background_all, proj4string = CRS("+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-60 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs"))
+head(sp_background)
+```
+```{r}
+plot(sp_background)
+```
+
+2) reproject to a wgs (use an existing file as a mask)
+
+```{r}
+sp_background <- spTransform(sp_background, CRS = "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0")
+plot(sp_background)
+```
+3) extract lonlat, add to dataframe
+save as csv
+
+use the gebco raster as a mask?
+
+```{r}
+wgs84_mask <- gebco
+plot(wgs84_mask)
+```
 
