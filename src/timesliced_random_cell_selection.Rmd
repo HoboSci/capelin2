@@ -72,16 +72,16 @@ What I want to do is for each time slice, create a list of all cells (xyz), then
 Here is a loop to create a copy of the unique_cell_centroid dataframe, and give it the same name as the splitobs_cell_yymm level
 .csv naming code courtesy of [nadizan/stack exchange](https://stackoverflow.com/questions/53045158/r-naming-csv-with-a-list-level-name-in-a-loop?noredirect=1#comment92990285_53045158)
 
-Note that the file are saved in /src. Manually move them to output/bio/background
 
-```{r}
+```{r timesliced unique unsampled}
 no_timeslices <- length(split_cell_yymm) # how many levels (time slices) are in the list
+bckoutput <- "../output/bio/background/raw/" #where the files are to be saved to
 for (i in 1:no_timeslices){
   timeslice <- split_cell_yymm[[i]]
   timeslice <- as.data.frame(timeslice)
   time_cell <- unique_cell_xyz
   time_cell <- time_cell[!time_cell$id_depth %in% timeslice$id_depth, , drop = FALSE]
-  write.csv(time_cell, paste0(names(lapply(split_cell_yymm, names))[i], ".csv"), row.names = FALSE) 
+  write.csv(time_cell, paste0(bckoutput, names(lapply(split_cell_yymm, names))[i], ".csv"), row.names = FALSE) 
 }
 ```
 
@@ -91,25 +91,22 @@ Next step is to randomly select cells in each timeslice. Make sure you generate 
 load the .csvs... [code](https://www.reed.edu/data-at-reed/software/R/reading_and_writing.html)
 
 ```{r}
-bckrnd_folder <- "../output/bio/background/"      # path to folder that holds multiple .csv files
+library(dplyr)
+bckrnd_folder <- "../output/bio/background/raw/"      # path to folder that holds multiple .csv files
 bckrnd_list <- list.files(path = bckrnd_folder, pattern="*.csv") # create list of all .csv files in folder
-
+randbckoutput <- "../output/bio/background/rand/" #where the files are to be saved to
 # read in each .csv file in file_list and create a data frame with the same name as the .csv file
 for (i in 1:length(bckrnd_list)){
-  assign(bckrnd_list[i], 
-  read.csv(paste(bckrnd_folder, bckrnd_list[i], sep=''))
-  )
-  #now do something....
+  test_sel <- read.csv(paste(bckrnd_folder, bckrnd_list[i], sep=''))
+  test_sel <- sample_n(test_sel, 10000) #where 10000 = number of rows to sample (large sample as per maxent)
+  write.csv(test_sel, file = paste0(randbckoutput, bckrnd_list[i]), row.names = FALSE) #dont need to add .csv as it's already in the filename
+}
   
-  }
-
 ```
-and that something you are going to do is randomly select rows....
 
-manual attempt:
+ok now i have a ton of files for random background points broken into timeslices. I'd like to add a colum for year and one for month to each of these datasets. They should be populated based on the name of the file (e.g. 1998.4.csv would have year = 1998 and month = 4)
+
 ```{r}
-library(dplyr)
-test_cell_selection <- read.csv("../output/bio/background/1998.10.csv", header = TRUE) #just load one csv to play with
-test_ran_cell_sel <- sample_n(test_cell_selection, 10) #where 10 = number of rows to sample
+
 ```
 
