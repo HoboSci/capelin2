@@ -161,19 +161,21 @@ head(sp_background)
 plot(sp_background)
 ```
 
-2) reproject to a wgs (use an existing file as a mask)
+2) reproject to a wgs
 
 ```{r}
 sp_background <- spTransform(sp_background, CRS = "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0")
 plot(sp_background)
 ```
 3) extract lonlat, add to dataframe
-save as csv
-
-use the gebco raster as a mask?
 
 ```{r}
-wgs84_mask <- gebco
-plot(wgs84_mask)
+head(sp_background)
 ```
+
+
+
+save as csv
+
+
 

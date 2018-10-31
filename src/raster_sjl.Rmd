@@ -13,16 +13,16 @@ rasbr # this will give you some information about the raster brick
 ```
 We no longer care that the data originated from a netCDF file. Everything now is done with the raster brick.
 
-We can plot the different layers inside the raster brick.
+We can plot the different layers (which represent depth) inside the raster brick.
 
 Plot the top layer
 ```{r}
-plot(rasbr[[1]]) #the double brackets tell R which layer (which corresponds to my depth) to plot
+plot(rasbr[[1]]) #the double brackets tell R which layer to plot
 ```
 
 plot layer 20
 ```{r}
-plot(rasbr[[20]]) #the double brackets tell R which layer (which corresponds to my depth) to plot
+plot(rasbr[[20]]) 
 ```
 
 If you look back to the output of 'rasbr' and look at 'coord. ref.', you can see that the CRS (coordinate reference system) is in WGS84 (+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0)
@@ -39,6 +39,7 @@ The next piece of data we need is the observation data itself. I've sent you the
 obs <- read.csv("../data/bio/observations.csv") #change this path to your .csv location
 head(obs)
 ```
+A note about obs$depth. This is not a measurement, but relates to the layer in the raster bricks. E.G. the observation in row one was found at rasbr[[15]], the observation in row 3 at rasbr[[17]]. I created this field myself.
 
 The lon and lat represent meters as oppose to decimal degrees so it is 'albers equal area' ready.
 For this exercise, I'm going to ignore year, month, and depth and just do a straightforward extract to points.
@@ -61,6 +62,7 @@ The code to extract the valuees from any layer in 'rasbr_aea' is very simple
 obssp$salinity <- extract(x=rasbr_aea[[1]], y = obssp) #extract from the top layer of the rasbr_aea and add to the obssp dataset in a new column called salinity
 head(obssp) # just to take a look at the output
 ```
+
 
 I can write this 'spatialpoints dataframe' to a .csv and convert it back to a 'normal dataframe'.
 ```{r}
