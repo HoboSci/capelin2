@@ -1,0 +1,73 @@
+# load the netcdf and raster packages
+```{r}
+library(ncdf4)
+library(raster)
+```
+
+The data are held in netCDF files. We don't work directly with the netCDFs in R. Instad we load a netcdf file and convert it to a raster brick so we can work with it. In this example the netCDF I'll use is called '1993_01_salinity.nc'.I've sent it to you in the email with this code.
+
+```{r}
+nc <-  "./data/env/netcdf/1993_01_salinity.nc" # change the file path to where ever your netcdfs are saved
+rasbr <- brick(nc,lvar = 4) #lvar = 4 is used because the netCDF contains four dimensions. Without this command, the raster brick will only have one level (the top one, which is my surface data)
+rasbr # this will give you some information about the raster brick
+```
+We no longer care that the data originated from a netCDF file. Everything now is done with the raster brick.
+
+We can plot the different layers inside the raster brick.
+
+Plot the top layer
+```{r}
+plot(rasbr[[1]]) #the double brackets tell R which layer (which corresponds to my depth) to plot
+```
+
+plot layer 20
+```{r}
+plot(rasbr[[20]]) #the double brackets tell R which layer (which corresponds to my depth) to plot
+```
+
+If you look back to the output of 'rasbr' and look at 'coord. ref.', you can see that the CRS (coordinate reference system) is in WGS84 (+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0)
+
+Because I am using these files for Maxent, I need the projection to be an albers equal area. We can project the whole raster brick. There are a couple of ways to do this, but the simplest way is to use an existing file in the projection I want. The file I will use for this is called aea.tif. I've sent it to you in the email with this code as a zip. Note that there are two files in the zip folder - you will need both (but you only call on the .tif in the code) 
+```{r}
+aea <- raster("../output/env/aea.tif") # change the file path to where ever the tif and .twf files are saved
+rasbr_aea <- projectRaster(rasbr, aea) 
+plot(rasbr_aea[[1]]) # just to look at the top layer of the raster brick after projection so you can see the difference
+```
+
+The next piece of data we need is the observation data itself. I've sent you the observations.csv in the email with this code.
+```{r}
+obs <- read.csv("../data/bio/observations.csv") #change this path to your .csv location
+head(obs)
+```
+
+The lon and lat represent meters as oppose to decimal degrees so it is 'albers equal area' ready.
+For this exercise, I'm going to ignore year, month, and depth and just do a straightforward extract to points.
+
+First we need to convert 'obs' into a 'spatialpoints dataframe'
+```{r}
+xy <- obs[ ,c(4,5)] # This is to tell R where the coordinates are (in column 4 and 5). Note that the column order needs to be longitude, latitude
+obssp <- SpatialPointsDataFrame(coords = xy, data = obs, proj4string = CRS("+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-60 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")) # The CRS is used here is for the albers equal area projection.
+obssp
+```
+
+We can plot the observations on any layer of the 'rasbr_aea ' brick
+```{r}
+plot(rasbr_aea[[1]]) #plot layer 1 - the top layer
+points(obssp$lon, obssp$lat)
+```
+
+The code to extract the valuees from any layer in 'rasbr_aea' is very simple
+```{r}
+obssp$salinity <- extract(x=rasbr_aea[[1]], y = obssp) #extract from the top layer of the rasbr_aea and add to the obssp dataset in a new column called salinity
+head(obssp) # just to take a look at the output
+```
+
+I can write this 'spatialpoints dataframe' to a .csv and convert it back to a 'normal dataframe'.
+```{r}
+write.csv(obssp, file = "../output/bio/observations_sal.csv", row.names = FALSE) # change the path to where ever you would like to save it
+obs <- as.data.frame(obssp) # this coverts the 'spatialpoints dataframe' to a 'normal dataframe'
+obs # just to take a look at the output
+```
+
+for some reason converting the 'spatialpoints dataframe' to a 'normal dataframe' adds a duplicate lon and lat column (the write.csv function does the same). I don't know why, but they are easy to remove so I am not worried about it.
+
