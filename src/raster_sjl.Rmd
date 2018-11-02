@@ -37,7 +37,7 @@ plot(rasbr_aea[[1]]) # just to look at the top layer of the raster brick after p
 
 The next piece of data we need is the observation data itself. I've sent you the observations.csv in the email with this code.
 ```{r}
-obs <- read.csv("../data/observations3.csv") #change this path to your .csv location
+obs <- read.csv("../data/observations3.csv", header = TRUE) #change this path to your .csv location
 head(obs)
 ```
 A note about obs$depth. This is not a measurement, but relates to the layer in the raster bricks. E.G. the observation in row one was found at rasbr[[15]], the observation in row 3 at rasbr[[17]]. I created this field myself.
@@ -131,12 +131,29 @@ Data_Loop
 
 let's get the values manually
 ```{r}
-test15 <- extract(x=rasbr_aea[[15]], y = obssp)
-test22 <- extract(x=rasbr_aea[[22]], y = obssp)
-test17 <- extract(x=rasbr_aea[[17]], y = obssp)
+testrow1 <- read.csv("../data/row1.csv", header = TRUE)
+testrow1xy <- testrow1[ ,c(4,5)] # This is to tell R where the coordinates are (in column 4 and 5). Note that the column order needs to be longitude, latitude
+testrow1sp <- SpatialPointsDataFrame(coords = testrow1xy, data = testrow1, proj4string = CRS("+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-60 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")) # The CRS is used here is for the albers equal area projection.
+testrow1sp
+test15 <- extract(x=rasbr_aea[[15]], y = testrow1sp)
+test15
+testrow2 <- read.csv("../data/row1.csv", header = TRUE)
+testrow2xy <- testrow2[ ,c(4,5)] # This is to tell R where the coordinates are (in column 4 and 5). Note that the column order needs to be longitude, latitude
+testrow2sp <- SpatialPointsDataFrame(coords = testrow2xy, data = testrow2, proj4string = CRS("+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-60 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")) # The CRS is used here is for the albers equal area projection.
+testrow2sp
+test22 <- extract(x=rasbr_aea[[22]], y = testrow2sp)
+test22
+testrow3 <- read.csv("../data/row1.csv", header = TRUE)
+testrow3xy <- testrow3[ ,c(4,5)] # This is to tell R where the coordinates are (in column 4 and 5). Note that the column order needs to be longitude, latitude
+testrow3sp <- SpatialPointsDataFrame(coords = testrow3xy, data = testrow3, proj4string = CRS("+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-60 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")) # The CRS is used here is for the albers equal area projection.
+testrow3sp
+test17 <- extract(x=rasbr_aea[[17]], y = testrow3sp)
 test17
 ```
 
+row 1 (dpeth 15) should be 32.8761...
+row 2 (depth 22) should be 33.10022...
+row 3 (depth 17) should be 32.90343...
 
 
 
@@ -160,20 +177,32 @@ obssp$samtest
 ```
 
 take 2
+
 ```{r}
-Data_Loop <-NULL #Gonna put my loop data in here
+#Data_Loop <-NULL #Gonna put my loop data in here
 for (i in 1:length(obssp)) {  # CYCLES THROUGH THE ROWS
   de <- obssp$depth[[i]]  #have a variable for the depth layer
-  print(de)
-  obssp$samtest <- extract(x=rasbr_aea[[de]], y = obssp) #this is the equation you will be calculating for every value of y
+  #print(de)
+  obssp$samtest[i] <- extract(x=rasbr_aea[[de]], y = obssp) #this is the equation you will be calculating for every value of y
   
   #Put your data in a data frame. Don't forget to enclose this within the loop!
   #Data_Loop <- rbind(Data_Loop, data.frame(depth=obssp$depth, year=obssp$year, month=obssp$month, lon=obssp$lon, lat=obssp$lat, Salinity=sal))
   
   #print the i value so you can track progress. Good for longer loops
-  #print(i)
+  print(i)
   #Close the loop
 }
 #Data_Loop
 obssp$samtest
+obssp
 ```
+
+so with this code, the values are correct but I get the following error "number of items to replace is not a multiple of replacement length". I don't know why... but it works...
+
+
+
+Ok next step, can you dynamically name the column with the variable in question (or at least the name of the original netcdf)
+
+
+
+
