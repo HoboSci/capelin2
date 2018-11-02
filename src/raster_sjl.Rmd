@@ -7,10 +7,11 @@ library(raster)
 The data are held in netCDF files. We don't work directly with the netCDFs in R. Instad we load a netcdf file and convert it to a raster brick so we can work with it. In this example the netCDF I'll use is called '1993_01_salinity.nc'.I've sent it to you in the email with this code.
 
 ```{r}
-nc <-  "./data/env/netcdf/1993_01_salinity.nc" # change the file path to where ever your netcdfs are saved
+nc <-  "../data/env/netcdf/1993_01_salinity.nc" # change the file path to where ever your netcdfs are saved
 rasbr <- brick(nc,lvar = 4) #lvar = 4 is used because the netCDF contains four dimensions. Without this command, the raster brick will only have one level (the top one, which is my surface data)
 rasbr # this will give you some information about the raster brick
 ```
+
 We no longer care that the data originated from a netCDF file. Everything now is done with the raster brick.
 
 We can plot the different layers (which represent depth) inside the raster brick.
@@ -36,7 +37,7 @@ plot(rasbr_aea[[1]]) # just to look at the top layer of the raster brick after p
 
 The next piece of data we need is the observation data itself. I've sent you the observations.csv in the email with this code.
 ```{r}
-obs <- read.csv("../data/bio/observations.csv") #change this path to your .csv location
+obs <- read.csv("../data/observations3.csv") #change this path to your .csv location
 head(obs)
 ```
 A note about obs$depth. This is not a measurement, but relates to the layer in the raster bricks. E.G. the observation in row one was found at rasbr[[15]], the observation in row 3 at rasbr[[17]]. I created this field myself.
@@ -73,3 +74,106 @@ obs # just to take a look at the output
 
 for some reason converting the 'spatialpoints dataframe' to a 'normal dataframe' adds a duplicate lon and lat column (the write.csv function does the same). I don't know why, but they are easy to remove so I am not worried about it.
 
+#shawn code
+
+SL I AM DOING SOME STUFF HERE :O) 
+THE ABOVE EXTRACTION IS THE HOOK UP. I WANT TO EXTRACT FOR A CERTAIN DEPTH DEFINED BY OBSSP IN ORDER TO AUTOMATE THIS. THIS MEANS YOU NEED
+TO MAKE [[]] LINKED TO DEPTH...LET'S SEE IF WE CAN DO THIS NOW.
+```{r}
+obssp$salinity2 <- extract(x=rasbr_aea[[obssp$depth]], y = obssp)
+obssp$salinity2 # just to take a look at the output
+```
+
+Ok, the above is close but not right. It is printing salinity for depths 15, 22, 17, 18, 15, 16, 16 for each observation record.
+At least this is what I think. Let's check it out.
+```{r}
+obssp$salinity22 <- extract(x=rasbr_aea[[22]], y = obssp) #I expect this to be 33.42. Yep.
+obssp$salinity22
+```
+
+Starting over now I have created a smaller observation file with only 3 records. 
+Gonna create a loop here and iterate over the depths listed in the observation file
+```{r}
+Data_Loop <-NULL #Gonna put my loop data in here
+for (i in obssp$depth) { #cycle through values in depth column (15, 22, 17)
+  #this is the equation you will be calculating for every value of y
+  sal <- extract(x=rasbr_aea[[i]], y = obssp) #create a data list
+  
+  #Put your data in a data frame. Don't forget to enclose this within the loop!
+  Data_Loop <- rbind(Data_Loop, data.frame(depth=i, year=obssp$year, month=obssp$month, lon=obssp$lon, lat=obssp$lat, Salinity=sal))
+  
+  #print the i value so you can track progress. Good for longer loops
+  print(i)
+  #Close the loop
+  }
+Data_Loop
+```
+
+SL: TRY IT ANOTHER WAY. Problem is that we need to tell x to be at specific depth as specified by obssp$depth and y to be only the lat and lon at that depth.
+The two examples here (one above and one below) are VERY close. Just a matter of tweaking and playing around a bit more. See if you can figure it out.
+```{r}
+Data_Loop <-NULL #Gonna put my loop data in here
+for (i in 1:length(obssp)) { #cycle through values in depth column (15, 22, 17) #NO IT CYCLES THROUGH THE ROWS
+  #this is the equation you will be calculating for every value of y
+  sal <- extract(x=rasbr_aea[[obssp$depth[i]]], y = obssp[i,]) #go with i row in obssp
+  
+  #Put your data in a data frame. Don't forget to enclose this within the loop!
+  Data_Loop <- rbind(Data_Loop, data.frame(depth=obssp$depth, year=obssp$year, month=obssp$month, lon=obssp$lon, lat=obssp$lat, Salinity=sal))
+  
+  #print the i value so you can track progress. Good for longer loops
+  print(i)
+  #Close the loop
+}
+Data_Loop
+```
+
+# sam tests on shawns loop
+
+let's get the values manually
+```{r}
+test15 <- extract(x=rasbr_aea[[15]], y = obssp)
+test22 <- extract(x=rasbr_aea[[22]], y = obssp)
+test17 <- extract(x=rasbr_aea[[17]], y = obssp)
+test17
+```
+
+
+
+
+this loop replaces the values in obssp$samtest with the last depth layer... ie. the process does not work for each row in obssp in turn
+```{r}
+Data_Loop <-NULL #Gonna put my loop data in here
+for (i in 1:length(obssp)) {  # CYCLES THROUGH THE ROWS
+  de <- obssp$depth[[i]]  #have a variable for the depth layer
+  print(de)
+  obssp$samtest <- extract(x=rasbr_aea[[de]], y = obssp) #this is the equation you will be calculating for every value of y
+  
+  #Put your data in a data frame. Don't forget to enclose this within the loop!
+  #Data_Loop <- rbind(Data_Loop, data.frame(depth=obssp$depth, year=obssp$year, month=obssp$month, lon=obssp$lon, lat=obssp$lat, Salinity=sal))
+  
+  #print the i value so you can track progress. Good for longer loops
+  #print(i)
+  #Close the loop
+}
+#Data_Loop
+obssp$samtest
+```
+
+take 2
+```{r}
+Data_Loop <-NULL #Gonna put my loop data in here
+for (i in 1:length(obssp)) {  # CYCLES THROUGH THE ROWS
+  de <- obssp$depth[[i]]  #have a variable for the depth layer
+  print(de)
+  obssp$samtest <- extract(x=rasbr_aea[[de]], y = obssp) #this is the equation you will be calculating for every value of y
+  
+  #Put your data in a data frame. Don't forget to enclose this within the loop!
+  #Data_Loop <- rbind(Data_Loop, data.frame(depth=obssp$depth, year=obssp$year, month=obssp$month, lon=obssp$lon, lat=obssp$lat, Salinity=sal))
+  
+  #print the i value so you can track progress. Good for longer loops
+  #print(i)
+  #Close the loop
+}
+#Data_Loop
+obssp$samtest
+```
