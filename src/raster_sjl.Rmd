@@ -190,22 +190,14 @@ obssp$samtest
 take 2
 
 ```{r}
-#Data_Loop <-NULL #Gonna put my loop data in here
 for (i in 1:length(obssp)) {  # CYCLES THROUGH THE ROWS
   de <- obssp$depth[[i]]  #have a variable for the depth layer
-  #print(de)
-  obssp$samtest[i] <- extract(x=rasbr_aea[[de]], y = obssp) #this is the equation you will be calculating for every value of y
-  
-  #Put your data in a data frame. Don't forget to enclose this within the loop!
-  #Data_Loop <- rbind(Data_Loop, data.frame(depth=obssp$depth, year=obssp$year, month=obssp$month, lon=obssp$lon, lat=obssp$lat, Salinity=sal))
-  
-  #print the i value so you can track progress. Good for longer loops
+  obssp$salinity_depth[i] <- extract(x=rasbr_aea[[de]], y = obssp) #this is the equation you will be calculating for every value of y
+  obssp$salinity_surface[i] <- extract(x=rasbr_aea[[1]], y = obssp) #this is the equation you will be calculating for every value of y
   print(i)
-  #Close the loop
 }
-#Data_Loop
-obssp$samtest
-obssp
+obssp$salinity_depth
+obssp$salinity_surface
 ```
 
 so with this code, the values are correct but I get the following error "number of items to replace is not a multiple of replacement length". I don't know why... but it works...
@@ -217,7 +209,7 @@ for (i in 1:length(obssp)) {  # CYCLES THROUGH THE ROWS
   obssp$testsurface[i] <- extract(x=rasbr_aea[[1]], y = obssp) #this is the equation you will be calculating for every value of y
   print(i)
   }
-obssp$testsurface
+obssp$salinity_surface
 obssp
 ```
 
@@ -225,26 +217,84 @@ scrap the variable name matching idea (instead just make a loop for each variabl
 note you have changed the dates on the .csv file so reload it
 
 ```{r warning=FALSE}
+obs <- read.csv("../data/observations3.csv", header = TRUE) #change this path to your .csv location
+obs$month <- sprintf("%02d",obs$month) # new addition to add the 0 infront of single digit... test for seeing if you can match the netcdf name for year month selection of bricks
+xy <- obs[ ,c(4,5)] # This is to tell R where the coordinates are (in column 4 and 5). Note that the column order needs to be longitude, latitude
+obssp <- SpatialPointsDataFrame(coords = xy, data = obs, proj4string = CRS("+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-60 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")) # The CRS is used here is for the albers equal area projection.
+
+
+#the loop....
 netcdf_list <- list.files("../data/env/testnetcdf/salinity", pattern = '*.nc', full.names = TRUE) #true means the full path is included
 no_netcdf <- length(netcdf_list) #for the loop - need to know how many files to cycle through
 netcdf_name <- list.files("../data/env/testnetcdf/salinity", pattern = '*.nc', full.names = FALSE) #false means the path is not included
 library (ncdf4)
-for (i in 1:no_netcdf) {
-  print(netcdf_name[i]) #this just prings the name of the netCDF R is working on
-  brkyr <- sapply(strsplit(netcdf_name[i], "_"), "[[", 1) # here I am extracting the first part of the filename deliminated with _ (which is the year)
-  brkmth <- sapply(strsplit(netcdf_name[i], "_"), "[[", 2) # here I am extracting the second part of the filename deliminated with _ (which is the month)
+for (i in 1:no_netcdf){  
+  print(netcdf_name[i]) #this just prints the name of the netCDF R is working on
+  brkyr <- sapply(strsplit(netcdf_name[i], "_"), "[[", 1) # extracting the first part of the netcdf filename (which is the year)
+  brkmth <- sapply(strsplit(netcdf_name[i], "_"), "[[", 2) # extracting the second part of the netcdf filename (which is the month)
   temp_brick <- brick(netcdf_list[i], lvar = 4)
-  temp_brick <- projectRaster(temp_brick, aea) #aea is an existing raster in the projection I want that I created (environmental_data_preperation)
-    for (j in 1:length(obssp)) {  # CYCLES THROUGH THE ROWS
-      yr <- obssp$year[j]
-      mth <- obssp$month[j]
-      if (brkyr == yr &  brkmth == mth){
-        de <- obssp$depth[[j]]  #have a variable for the depth layer
-        obssp$samtest[j] <- extract(x=temp_brick[[de]], y = obssp) #this is the equation you will be calculating for every value of y
-        obssp$samtesttop[j] <- extract(x=temp_brick[[1]], y = obssp) #this is the equation you will be calculating for every value of y
-        print(j)
-      }
+  temp_brick <- projectRaster(temp_brick, aea) 
+    for (j in 1:length(obssp)) {  
+      print(j)
+      de <- obssp$depth[[j]]  # a variable for the observation depth layer
+      yr <- obssp$year[j]  # a variable for the observation year
+      mth <- obssp$month[j]  # a variable for the observation month
+      #I think i need an if statement here... if brkyr == yr & brkmth == mth do the data extraction below
+        if (brkyr == yr & brkmth == mth){
+          obssp$salinity_depth[j] <- extract(x=temp_brick[[de]], y = obssp) 
+          obssp$salinity_surface[j] <- extract(x=temp_brick[[1]], y = obssp)
+          
+        }
     }
 }
-obssp$samtesttop
+obssp$salinity_depth
+obssp$salinity_surface
+```
+not extracting the correct values...
+
+check
+
+load in the three netcdfs
+```{r}
+nc1 <-  "../data/env/testnetcdf/salinity/1993_01_salinity.nc" # change the file path to where ever your netcdfs are saved
+row1rast <- brick(nc1,lvar = 4) #lvar = 4 is used because the netCDF contains four dimensions. Without this command, the raster brick will only have one level (the top one, which is my surface data)
+nc2 <-  "../data/env/testnetcdf/salinity/1998_01_salinity.nc" # change the file path to where ever your netcdfs are saved
+row2rast <- brick(nc2,lvar = 4) #lvar = 4 is used because the netCDF contains four dimensions. Without this command, the raster brick will only have one level (the top one, which is my surface data)
+nc3 <-  "../data/env/testnetcdf/salinity/1998_02_salinity.nc" # change the file path to where ever your netcdfs are saved
+row3rast <- brick(nc3,lvar = 4) #lvar = 4 is used because the netCDF contains four dimensions. Without this command, the raster brick will only have one level (the top one, which is my surface data)
+```
+
+let's get the values manually at depth
+```{r}
+testrow1 <- read.csv("../data/row1.csv", header = TRUE)
+testrow1$month <- sprintf("%02d",testrow1$month)
+testrow1xy <- testrow1[ ,c(4,5)] # This is to tell R where the coordinates are (in column 4 and 5). Note that the column order needs to be longitude, latitude
+testrow1sp <- SpatialPointsDataFrame(coords = testrow1xy, data = testrow1, proj4string = CRS("+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-60 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")) # The CRS is used here is for the albers equal area projection.
+testrow1sp
+test15 <- extract(x=row1rast[[15]], y = testrow1sp)
+test15
+testrow2 <- read.csv("../data/row2.csv", header = TRUE)
+testrow2$month <- sprintf("%02d",testrow2$month)
+testrow2xy <- testrow2[ ,c(4,5)] # This is to tell R where the coordinates are (in column 4 and 5). Note that the column order needs to be longitude, latitude
+testrow2sp <- SpatialPointsDataFrame(coords = testrow2xy, data = testrow2, proj4string = CRS("+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-60 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")) # The CRS is used here is for the albers equal area projection.
+testrow2sp
+test22 <- extract(x=row2rast[[22]], y = testrow2sp)
+test22
+testrow3 <- read.csv("../data/row3.csv", header = TRUE)
+testrow3$month <- sprintf("%02d",testrow3$month)
+testrow3xy <- testrow3[ ,c(4,5)] # This is to tell R where the coordinates are (in column 4 and 5). Note that the column order needs to be longitude, latitude
+testrow3sp <- SpatialPointsDataFrame(coords = testrow3xy, data = testrow3, proj4string = CRS("+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-60 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")) # The CRS is used here is for the albers equal area projection.
+testrow3sp
+test17 <- extract(x=row3rast[[17]], y = testrow3sp)
+test17
+```
+
+let's get the values manually at the surface
+```{r}
+testrow1.1 <- extract(x=row1rast[[1]], y = testrow1sp)
+testrow1.1
+testrow2.1 <- extract(x=row2rast[[1]], y = testrow2sp)
+testrow2.1
+testrow3.1 <- extract(x=row3rast[[1]], y = testrow3sp)
+testrow3.1
 ```
