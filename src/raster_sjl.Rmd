@@ -2,6 +2,7 @@
 ```{r}
 library(ncdf4)
 library(raster)
+library(rgdal)
 ```
 
 The data are held in netCDF files. We don't work directly with the netCDFs in R. Instad we load a netcdf file and convert it to a raster brick so we can work with it. In this example the netCDF I'll use is called '1993_01_salinity.nc'.I've sent it to you in the email with this code.
@@ -33,6 +34,7 @@ Because I am using these files for Maxent, I need the projection to be an albers
 aea <- raster("../output/env/aea.tif") # change the file path to where ever the tif and .twf files are saved
 rasbr_aea <- projectRaster(rasbr, aea) 
 plot(rasbr_aea[[1]]) # just to look at the top layer of the raster brick after projection so you can see the difference
+rasbr_aea
 ```
 
 The next piece of data we need is the observation data itself. I've sent you the observations.csv in the email with this code.
@@ -243,13 +245,14 @@ for (i in 1:no_netcdf){
         if (brkyr == yr & brkmth == mth){
           obssp$salinity_depth[j] <- extract(x=temp_brick[[de]], y = obssp) 
           obssp$salinity_surface[j] <- extract(x=temp_brick[[1]], y = obssp)
-          
         }
     }
 }
-obssp$salinity_depth
-obssp$salinity_surface
+
+str(t)
 ```
+
+
 not extracting the correct values...
 
 check
@@ -298,3 +301,105 @@ testrow2.1
 testrow3.1 <- extract(x=row3rast[[1]], y = testrow3sp)
 testrow3.1
 ```
+
+
+
+
+shawn suggests creating a table/list of raster bricks with year and month data. Actually need to do this with the netCDFs (as you want to load the netCDF to convert)
+```{r}
+#the loop....
+netcdf_list <- list.files("../data/env/testnetcdf/salinity", pattern = '*.nc', full.names = TRUE)
+nctable <-as.data.frame(netcdf_list)
+no_netcdf <- length(netcdf_list) 
+netcdf_name <- list.files("../data/env/testnetcdf/salinity", pattern = '*.nc', full.names = FALSE) 
+library (ncdf4)
+for (i in 1:no_netcdf){  
+  print(netcdf_name[i]) #this just prints the name of the netCDF R is working on
+  nctable$year[i] <- sapply(strsplit(netcdf_name[i], "_"), "[[", 1)
+  nctable$month[i] <- sapply(strsplit(netcdf_name[i], "_"), "[[", 2)
+}  
+  
+```
+
+
+a new loop... no this isnt going to work...
+```{r warning=FALSE}
+#the loop....
+library (ncdf4)
+netcdf_list <- list.files("../data/env/testnetcdf/salinity", pattern = '*.nc', full.names = TRUE) #true means the full path is included
+netcdf_name <- list.files("../data/env/testnetcdf/salinity", pattern = '*.nc', full.names = FALSE) #false means the path is not included
+for (j in 1:length(obssp)) {  
+      print(j)
+      de <- obssp$depth[[j]]  # a variable for the observation depth layer
+      yr <- obssp$year[j]  # a variable for the observation year
+      mth <- obssp$month[j]  # a variable for the observation month
+      if (yr == nctable$year & mth == nctable$month) {
+        temp_brick <- brick(netcdf_list[i], lvar = 4)
+        temp_brick <- projectRaster(temp_brick, aea) 
+        for (j in 1:length(obssp)) {  
+        print(j)
+        de <- obssp$depth[[j]]  # a variable for the observation depth layer
+        obssp$salinity_depth[j] <- extract(x=temp_brick[[de]], y = obssp) 
+        obssp$salinity_surface[j] <- extract(x=temp_brick[[1]], y = obssp)
+        }
+      }
+}
+```
+
+
+hmmm play...
+```{r}
+netcdf_list <- list.files("../data/env/testnetcdf/salinity", pattern = '*.nc', full.names = TRUE) #true means the full path is included
+no_netcdf <- length(netcdf_list) #for the loop - need to know how many files to cycle through
+netcdf_name <- list.files("../data/env/testnetcdf/salinity", pattern = '*.nc', full.names = FALSE) #false means the path is not included
+library (ncdf4)
+for (i in 1:no_netcdf){  
+  print(netcdf_name[i]) #this just prints the name of the netCDF R is working on
+  brkyr <- sapply(strsplit(netcdf_name[i], "_"), "[[", 1) # extracting the first part of the netcdf filename (which is the year)
+  brkmth <- sapply(strsplit(netcdf_name[i], "_"), "[[", 2) # extracting the second part of the netcdf filename (which is the month)
+  temp_brick <- brick(netcdf_list[i], lvar = 4)
+  temp_brick <- projectRaster(temp_brick, aea) 
+    for (j in 1:length(obssp)) {  
+      print(j)
+      de <- obssp$depth[[j]]  # a variable for the observation depth layer
+      yr <- obssp$year[j]  # a variable for the observation year
+      mth <- obssp$month[j]  # a variable for the observation month
+      #I think i need an if statement here... if brkyr == yr & brkmth == mth do the data extraction below
+        for (k in 1:length(obssp)){
+          if (brkyr == yr & brkmth == mth){
+            obssp$salinity_depth[j] <- extract(x=temp_brick[[de]], y = obssp) 
+            obssp$salinity_surface[j] <- extract(x=temp_brick[[1]], y = obssp)
+          }
+        } 
+      }
+}
+obssp$salinity_depth
+```
+
+
+
+
+
+netcdf_list <- list.files("../data/env/testnetcdf/salinity", pattern = '*.nc', full.names = TRUE) #true means the full path is included
+no_netcdf <- length(netcdf_list) #for the loop - need to know how many files to cycle through
+netcdf_name <- list.files("../data/env/testnetcdf/salinity", pattern = '*.nc', full.names = FALSE) #false means the path is not included
+for (i in 1:no_netcdf){  
+  print(netcdf_name[i]) #this just prints the name of the netCDF R is working on
+  brkyr <- sapply(strsplit(netcdf_name[i], "_"), "[[", 1) # extracting the first part of the netcdf filename (which is the year)
+  brkmth <- sapply(strsplit(netcdf_name[i], "_"), "[[", 2) # extracting the second part of the netcdf filename (which is the month)
+  temp_brick <- brick(netcdf_list[i], lvar = 4)
+  temp_brick <- projectRaster(temp_brick, aea) 
+    for (j in 1:length(obssp)) {  
+      print(j)
+      de <- obssp$depth[[j]]  # a variable for the observation depth layer
+      yr <- obssp$year[j]  # a variable for the observation year
+      mth <- obssp$month[j]  # a variable for the observation month
+      #I think i need an if statement here... if brkyr == yr & brkmth == mth do the data extraction below
+        if (brkyr == yr & brkmth == mth){
+          obssp$salinity_depth[j] <- extract(x=temp_brick[[de]], y = obssp) 
+          obssp$salinity_surface[j] <- extract(x=temp_brick[[1]], y = obssp)
+        }
+    }
+}
+obssp$salinity_depth
+obssp$salinity_surface

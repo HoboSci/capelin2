@@ -153,10 +153,12 @@ Will need to plot all point, extract the lonlat coordinates
 
 ```{r}
 library(sp)
+background_all <- as.data.frame(background_all)
 xy <- background_all[ ,c(1,2)] #lon lat in col 1 and 2
 sp_background <- SpatialPointsDataFrame(coords = xy, data = background_all, proj4string = CRS("+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-60 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs"))
 head(sp_background)
 ```
+
 ```{r}
 plot(sp_background)
 ```
@@ -168,12 +170,17 @@ sp_background <- spTransform(sp_background, CRS = "+proj=longlat +datum=WGS84 +e
 plot(sp_background)
 ```
 3) extract lonlat, add to dataframe
-save as csv
-
-use the gebco raster as a mask?
 
 ```{r}
-wgs84_mask <- gebco
-plot(wgs84_mask)
+sp_background <- data.frame(test, long=coordinates(sp_background)[,1], lat=coordinates(sp_background)[,2])
+head(sp_background)
 ```
+
+save as csv
+```{r}
+write.csv(adddata_aea, file = "../output/bio/data_aea.csv", row.names = FALSE)
+
+```
+
+
 
