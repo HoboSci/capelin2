@@ -176,11 +176,48 @@ sp_background <- data.frame(test, long=coordinates(sp_background)[,1], lat=coord
 head(sp_background)
 ```
 
-save as csv
+change name of long lat columns to decimalLongitude and decimalLatitude respectively
 ```{r}
-write.csv(adddata_aea, file = "../output/bio/data_aea.csv", row.names = FALSE)
-
+sp_background <- as.data.frame(sp_background) #need to go back to a 'normal' dataframe to change col names
+head(sp_background) #note the columns in question have changed name...
+colnames(sp_background)[colnames(sp_background)=="longitude.1"] <- "decimalLongitude"
+colnames(sp_background)[colnames(sp_background)=="latitude.1"] <- "decimalLatitude"
+head(sp_background)
 ```
 
 
+save as csv
+```{r}
+write.csv(sp_background, file = "../output/bio/background_all_lonlat.csv", row.names = FALSE)
+```
 
+
+# Add NAFO Region background point is in
+NAFO Zones shapefile obtained from [NAFO](https://www.nafo.int/Data/GIS)
+
+```{r NAFO shapefile extraction}
+library(rgdal)
+library(sp)
+coordinates(sp_background) <- c("decimalLongitude", "decimalLatitude") 
+nafo_zones <- readOGR(dsn=path.expand("../data/bio/nafo_zones"), layer = "nafo_zones_wgs84") #this loads the shapefile
+proj4string(sp_background) <- proj4string(nafo_zones) #tells R that the occurrence data is the same projection as the shapefile
+sp_background$nafo_zone <- over(sp_background, nafo_zones)$ZONE #ZONE is where the zone data is held in teh shapefiles' attributes
+head(sp_background) #just to check it worked
+```
+
+Great. Lets see if any are missing a NAFO Zone. But first, write to a csv and reload as the data is now some wierd 'spatial points dataframe'...
+```{r}
+write.csv(sp_background, "../output/bio/background_all_lonlat_nafo.csv", row.names=FALSE)
+sp_background <- as.data.frame(sp_background) 
+bc_nafo_na <- subset(sp_background, is.na(sp_background$nafo_zone))
+bc_nafo_na
+```
+ok lots don't have a NAFO region attached. This is probably the Hudson Bay issue again...
+
+Uh oh there is a lot. A bet a bunch of them are in the Hudson Strait (which is outside the NAFO Zone).Map the nafo_na points...
+```{r}
+plot(map2, xlim = c(-65, -40), ylim =c(30, 70), asp = 1, main = "Occurences missing a NAFO Zone", col = "cornsilk") #the x and y lim are the long-lat bounds of the map
+points(bc_nafo_na$decimalLongitude, bc_nafo_na$decimalLatitude, col = "red") #this adds points to the mapet", xlab = "Longitude", ylab = "Latitude")
+```
+
+huh that is interesting... I think I want to plot this in Arc and take a closer look...
