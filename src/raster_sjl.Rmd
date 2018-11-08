@@ -395,31 +395,55 @@ obssp$salinity_surface
 ```
 done! Next stage... with rows where the year month combo comes up more than once...
 
+```{r}
+obs <- read.csv("../data/observationslong.csv", header = TRUE) #change this path to your .csv location
+#obs$month <- sprintf("%02d",obs$month) # new addition to add the 0 infront of single digit... test for seeing if you can match the netcdf name for year month selection of bricks
+xy <- obs[ ,c(4,5)] # This is to tell R where the coordinates are (in column 4 and 5). Note that the column order needs to be longitude, latitude
+obssp <- SpatialPointsDataFrame(coords = xy, data = obs, proj4string = CRS("+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-60 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")) # The CRS is used here is for the albers equal area projection.
+```
 
 
-
-
-
+```{r}
 netcdf_list <- list.files("../data/env/testnetcdf/salinity", pattern = '*.nc', full.names = TRUE) #true means the full path is included
 no_netcdf <- length(netcdf_list) #for the loop - need to know how many files to cycle through
 netcdf_name <- list.files("../data/env/testnetcdf/salinity", pattern = '*.nc', full.names = FALSE) #false means the path is not included
+library (ncdf4)
 for (i in 1:no_netcdf){  
-  print(netcdf_name[i]) #this just prints the name of the netCDF R is working on
-  brkyr <- sapply(strsplit(netcdf_name[i], "_"), "[[", 1) # extracting the first part of the netcdf filename (which is the year)
-  brkmth <- sapply(strsplit(netcdf_name[i], "_"), "[[", 2) # extracting the second part of the netcdf filename (which is the month)
+  print(netcdf_name[i]) #this just prints the name of the netCDF R is working one
+  brkyr <- as.integer(sapply(strsplit(netcdf_name[i], "_"), "[[", 1)) # extracting the first part of the netcdf filename (which is the year)
+  brkmth <- as.integer(sapply(strsplit(netcdf_name[i], "_"), "[[", 2)) # extracting the second part of the netcdf filename (which is the month)
   temp_brick <- brick(netcdf_list[i], lvar = 4)
   temp_brick <- projectRaster(temp_brick, aea) 
-    for (j in 1:length(obssp)) {  
-      print(j)
+    for (j in 1:nrow(obssp)) {  
+      print (j)
       de <- obssp$depth[[j]]  # a variable for the observation depth layer
-      yr <- obssp$year[j]  # a variable for the observation year
-      mth <- obssp$month[j]  # a variable for the observation month
+      yr <- (obssp$year[j])  # a variable for the observation year
+      mth <- (obssp$month[j])  # a variable for the observation month
       #I think i need an if statement here... if brkyr == yr & brkmth == mth do the data extraction below
-        if (brkyr == yr & brkmth == mth){
-          obssp$salinity_depth[j] <- extract(x=temp_brick[[de]], y = obssp) 
-          obssp$salinity_surface[j] <- extract(x=temp_brick[[1]], y = obssp)
-        }
+        #for (k in 1:nrow(obssp)){
+          if (brkyr == yr & brkmth == mth){
+            obssp$salinity_depth[j] <- extract(x=temp_brick[[de]], y = obssp[j, ]) 
+            obssp$salinity_surface[j] <- extract(x=temp_brick[[1]], y = obssp[j, ]) 
+           }
+          
+        #} 
     }
 }
+```
+
+```{r}
 obssp$salinity_depth
 obssp$salinity_surface
+```
+output is  
+> obssp$salinity_surface
+[1] 32.82551 33.19321 32.18221 32.23423 32.61295 32.61270 32.39069
+> obssp$salinity_depth
+[1] 32.83107 33.19973       NA 32.51381       NA 32.61270 32.39358
+
+next step - check to see if the values are correct (particularly interested in those NA...)
+
+```{r}
+plot(temp_brick[[40]])
+```
+for the NA - of course - the layer no longer exists at that depth (water shallower than that)
