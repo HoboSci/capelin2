@@ -547,23 +547,49 @@ for (i in 1:no_netcdf){
       de <- obssp$depth[[j]]  # a variable for the observation depth layer
       yr <- (obssp$year[j])  # a variable for the observation year
       mth <- (obssp$month[j])  # a variable for the observation month
-      #I think i need an if statement here... if brkyr == yr & brkmth == mth do the data extraction below
-        #for (k in 1:nrow(obssp)){
           if (brkyr == yr & brkmth == mth){
             obssp$salinity_surface[j] <- extract(x=temp_brick[[1]], y = obssp[j, ]) 
             if (is.na(de)){
-              obssp$salinity_depth <- NA
-            } else (de >= 1) {
+              obssp$salinity_depth[j] <- NA
+            } else  
               obssp$salinity_depth[j] <- extract(x=temp_brick[[de]], y = obssp[j, ])
-            }
-           }
-          
-        #} 
+          }
     }
 }
 ```
 
 ```{r}
-obssp$salinity_depth
+obssp$salinity_surface
 ```
+above works!
+
+Just play to see if you can get the variable thingy in....
+
+```{r}
+netcdf_list <- list.files("../data/env/testnetcdf/salinity", pattern = '*.nc', full.names = TRUE) #true means the full path is included
+no_netcdf <- length(netcdf_list) #for the loop - need to know how many files to cycle through
+netcdf_name <- list.files("../data/env/testnetcdf/salinity", pattern = '*.nc', full.names = FALSE) #false means the path is not included
+library (ncdf4)
+for (i in 1:no_netcdf){  
+  print(netcdf_name[i]) #this just prints the name of the netCDF R is working one
+  brkyr <- as.integer(sapply(strsplit(netcdf_name[i], "_"), "[[", 1)) # extracting the first part of the netcdf filename (which is the year)
+  brkmth <- as.integer(sapply(strsplit(netcdf_name[i], "_"), "[[", 2)) # extracting the second part of the netcdf filename (which is the month)
+  temp_brick <- brick(netcdf_list[i], lvar = 4)
+  temp_brick <- projectRaster(temp_brick, aea) 
+    for (j in 1:nrow(obssp)) {  
+      print (j)
+      de <- obssp$depth[[j]]  # a variable for the observation depth layer
+      yr <- (obssp$year[j])  # a variable for the observation year
+      mth <- (obssp$month[j])  # a variable for the observation month
+          if (brkyr == yr & brkmth == mth){
+            obssp$salinity_surface[j] <- extract(x=temp_brick[[1]], y = obssp[j, ]) 
+            if (is.na(de)){
+              obssp$salinity_depth[j] <- NA
+            } else  
+              obssp$salinity_depth[j] <- extract(x=temp_brick[[de]], y = obssp[j, ])
+          }
+    }
+}
+```
+
 
