@@ -673,3 +673,116 @@ testrow3.1
 ```
 
 yes! ok now for the bigger test...
+
+```{r}
+obs <- read.csv("../data/observationslong.csv", header = TRUE) #change this path to your .csv location
+#obs$month <- sprintf("%02d",obs$month) # new addition to add the 0 infront of single digit... test for seeing if you can match the netcdf name for year month selection of bricks
+xy <- obs[ ,c(4,5)] # This is to tell R where the coordinates are (in column 4 and 5). Note that the column order needs to be longitude, latitude
+obssp <- SpatialPointsDataFrame(coords = xy, data = obs, proj4string = CRS("+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-60 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")) # The CRS is used here is for the albers equal area projection.
+```
+
+
+```{r}
+netcdf_list <- list.files("../data/env/testnetcdf/salinity", pattern = '*.nc', full.names = TRUE) #true means the full path is included
+no_netcdf <- length(netcdf_list) #for the loop - need to know how many files to cycle through
+netcdf_name <- list.files("../data/env/testnetcdf/salinity", pattern = '*.nc', full.names = FALSE) #false means the path is not included
+library (ncdf4)
+for (i in 1:no_netcdf){  
+  print(netcdf_name[i]) #this just prints the name of the netCDF R is working one
+  brkyr <- as.integer(sapply(strsplit(netcdf_name[i], "_"), "[[", 1)) # extracting the first part of the netcdf filename (which is the year)
+  brkmth <- as.integer(sapply(strsplit(netcdf_name[i], "_"), "[[", 2)) # extracting the second part of the netcdf filename (which is the month)
+  brkvar <- (sapply(strsplit(netcdf_name[i], "_"), "[[", 3)) # extracting the third part of the netcdf (inc.nc)
+  temp_brick <- brick(netcdf_list[i], lvar = 4)
+  temp_brick <- projectRaster(temp_brick, aea) 
+    for (j in 1:nrow(obssp)) {  
+      print (j)
+      de <- obssp$depth[[j]]  # a variable for the observation depth layer
+      yr <- (obssp$year[j])  # a variable for the observation year
+      mth <- (obssp$month[j])  # a variable for the observation month
+          if (brkyr == yr & brkmth == mth & brkvar == "temp.nc"){
+           
+             obssp$temp_surface[j] <- extract(x=temp_brick[[1]], y = obssp[j, ]) 
+              if (is.na(de)){
+                obssp$temp_depth[j] <- NA
+              } else  
+                obssp$temp_depth[j] <- extract(x=temp_brick[[de]], y = obssp[j, ])
+          } else if (brkyr == yr & brkmth == mth & brkvar == "salinity.nc") {
+              obssp$salinity_surface[j] <- extract(x=temp_brick[[1]], y = obssp[j, ]) 
+              if (is.na(de)){
+                obssp$salinity_depth[j] <- NA
+              } else  
+                obssp$salinity_depth[j] <- extract(x=temp_brick[[de]], y = obssp[j, ]) 
+          }
+          } 
+          }
+    
+
+```
+
+```{r}
+obssp$temp_depth
+```
+
+checkt the temp
+
+```{r}
+test <- read.csv("../data/observationslong.csv", header = TRUE)
+testrow1 <- test[1, ]
+testrow1
+#testrow1$month <- sprintf("%02d",testrow1$month)
+testrow1xy <- testrow1[ ,c(4,5)] # This is to tell R where the coordinates are (in column 4 and 5). Note that the column order needs to be longitude, latitude
+testrow1sp <- SpatialPointsDataFrame(coords = testrow1xy, data = testrow1, proj4string = CRS("+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-60 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")) # The CRS is used here is for the albers equal area projection.
+test10 <- extract(x=row1rast[[10]], y = testrow1sp)
+test10
+testrow2 <- test[2, ]
+#testrow2$month <- sprintf("%02d",testrow2$month)
+testrow2xy <- testrow2[ ,c(4,5)] # This is to tell R where the coordinates are (in column 4 and 5). Note that the column order needs to be longitude, latitude
+testrow2sp <- SpatialPointsDataFrame(coords = testrow2xy, data = testrow2, proj4string = CRS("+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-60 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")) # The CRS is used here is for the albers equal area projection.
+test12 <- extract(x=row1rast[[12]], y = testrow2sp)
+test12
+testrow3 <- test[3, ]
+testrow3xy <- testrow3[ ,c(4,5)] # This is to tell R where the coordinates are (in column 4 and 5). Note that the column order needs to be longitude, latitude
+testrow3sp <- SpatialPointsDataFrame(coords = testrow3xy, data = testrow3, proj4string = CRS("+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-60 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")) # The CRS is used here is for the albers equal area projection.
+testrow3sp
+test40 <- extract(x=row3rast[[40]], y = testrow3sp)
+test40
+testrow4 <- test[4, ]
+testrow4xy <- testrow4[ ,c(4,5)] # This is to tell R where the coordinates are (in column 4 and 5). Note that the column order needs to be longitude, latitude
+testrow4sp <- SpatialPointsDataFrame(coords = testrow4xy, data = testrow4, proj4string = CRS("+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-60 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")) # The CRS is used here is for the albers equal area projection.
+testrow4sp
+test18 <- extract(x=row3rast[[18]], y = testrow4sp)
+test18
+testrow5 <- test[5, ]
+testrow5xy <- testrow5[ ,c(4,5)] # This is to tell R where the coordinates are (in column 4 and 5). Note that the column order needs to be longitude, latitude
+testrow5sp <- SpatialPointsDataFrame(coords = testrow5xy, data = testrow5, proj4string = CRS("+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-60 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")) # The CRS is used here is for the albers equal area projection.
+test27 <- extract(x=row3rast[[27]], y = testrow5sp)
+test27
+testrow6 <- test[6, ]
+testrow6xy <- testrow6[ ,c(4,5)] # This is to tell R where the coordinates are (in column 4 and 5). Note that the column order needs to be longitude, latitude
+testrow6sp <- SpatialPointsDataFrame(coords = testrow6xy, data = testrow6, proj4string = CRS("+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-60 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")) # The CRS is used here is for the albers equal area projection.
+test1 <- extract(x=row2rast[[1]], y = testrow6sp)
+test1
+testrow7 <- test[7, ]
+testrow7xy <- testrow7[ ,c(4,5)] # This is to tell R where the coordinates are (in column 4 and 5). Note that the column order needs to be longitude, latitude
+testrow7sp <- SpatialPointsDataFrame(coords = testrow7xy, data = testrow7, proj4string = CRS("+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-60 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")) # The CRS is used here is for the albers equal area projection.
+test5 <- extract(x=row2rast[[5]], y = testrow7sp)
+test5
+```
+
+```{r}
+test1.1 <- extract(x=row1rast[[1]], y = testrow1sp)
+test1.1
+test2.1 <- extract(x=row1rast[[1]], y = testrow2sp)
+test2.1
+test3.1 <- extract(x=row3rast[[1]], y = testrow3sp)
+test3.1
+test4.1 <- extract(x=row3rast[[1]], y = testrow4sp)
+test4.1
+test5.1 <- extract(x=row3rast[[1]], y = testrow5sp)
+test5.1
+test6.1 <- extract(x=row2rast[[1]], y = testrow6sp)
+test6.1
+test7.1 <- extract(x=row2rast[[1]], y = testrow7sp)
+test7.1
+```
+yes!!
