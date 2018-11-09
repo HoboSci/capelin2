@@ -565,6 +565,14 @@ above works!
 
 Just play to see if you can get the variable thingy in....
 
+
+```{r}
+obs <- read.csv("../data/observations3.csv", header = TRUE) #change this path to your .csv location
+#obs$month <- sprintf("%02d",obs$month) # new addition to add the 0 infront of single digit... test for seeing if you can match the netcdf name for year month selection of bricks
+xy <- obs[ ,c(4,5)] # This is to tell R where the coordinates are (in column 4 and 5). Note that the column order needs to be longitude, latitude
+obssp <- SpatialPointsDataFrame(coords = xy, data = obs, proj4string = CRS("+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-60 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")) # The CRS is used here is for the albers equal area projection.
+```
+
 ```{r}
 netcdf_list <- list.files("../data/env/testnetcdf/salinity", pattern = '*.nc', full.names = TRUE) #true means the full path is included
 no_netcdf <- length(netcdf_list) #for the loop - need to know how many files to cycle through
@@ -574,6 +582,7 @@ for (i in 1:no_netcdf){
   print(netcdf_name[i]) #this just prints the name of the netCDF R is working one
   brkyr <- as.integer(sapply(strsplit(netcdf_name[i], "_"), "[[", 1)) # extracting the first part of the netcdf filename (which is the year)
   brkmth <- as.integer(sapply(strsplit(netcdf_name[i], "_"), "[[", 2)) # extracting the second part of the netcdf filename (which is the month)
+  brkvar <- (sapply(strsplit(netcdf_name[i], "_"), "[[", 3)) # extracting the third part of the netcdf (inc.nc)
   temp_brick <- brick(netcdf_list[i], lvar = 4)
   temp_brick <- projectRaster(temp_brick, aea) 
     for (j in 1:nrow(obssp)) {  
@@ -581,15 +590,86 @@ for (i in 1:no_netcdf){
       de <- obssp$depth[[j]]  # a variable for the observation depth layer
       yr <- (obssp$year[j])  # a variable for the observation year
       mth <- (obssp$month[j])  # a variable for the observation month
-          if (brkyr == yr & brkmth == mth){
-            obssp$salinity_surface[j] <- extract(x=temp_brick[[1]], y = obssp[j, ]) 
-            if (is.na(de)){
-              obssp$salinity_depth[j] <- NA
-            } else  
-              obssp$salinity_depth[j] <- extract(x=temp_brick[[de]], y = obssp[j, ])
+          if (brkyr == yr & brkmth == mth & brkvar == "temp.nc"){
+           
+             obssp$temp_surface[j] <- extract(x=temp_brick[[1]], y = obssp[j, ]) 
+              if (is.na(de)){
+                obssp$temp_depth[j] <- NA
+              } else  
+                obssp$temp_depth[j] <- extract(x=temp_brick[[de]], y = obssp[j, ])
+          } else if (brkyr == yr & brkmth == mth & brkvar == "salinity.nc") {
+              obssp$salinity_surface[j] <- extract(x=temp_brick[[1]], y = obssp[j, ]) 
+              if (is.na(de)){
+                obssp$salinity_depth[j] <- NA
+              } else  
+                obssp$salinity_depth[j] <- extract(x=temp_brick[[de]], y = obssp[j, ]) 
           }
-    }
-}
+          } 
+          }
+    
+
+```
+
+```{r}
+obssp$temp_depth
 ```
 
 
+check temp
+
+
+```{r}
+nc1 <-  "../data/env/testnetcdf/salinity/1993_01_temp.nc" # change the file path to where ever your netcdfs are saved
+row1rast <- brick(nc1,lvar = 4) #lvar = 4 is used because the netCDF contains four dimensions. Without this command, the raster brick will only have one level (the top one, which is my surface data)
+row1rast <- projectRaster(row1rast, aea)
+row1rast
+nc2 <-  "../data/env/testnetcdf/salinity/1998_01_temp.nc" # change the file path to where ever your netcdfs are saved
+row2rast <- brick(nc2,lvar = 4) #lvar = 4 is used because the netCDF contains four dimensions. Without this command, the raster brick will only have one level (the top one, which is my surface data)
+row2rast <- projectRaster(row2rast, aea)
+row2rast
+nc3 <-  "../data/env/testnetcdf/salinity/1998_02_temp.nc" # change the file path to where ever your netcdfs are saved
+row3rast <- brick(nc3,lvar = 4) #lvar = 4 is used because the netCDF contains four dimensions. Without this command, the raster brick will only have one level (the top one, which is my surface data)
+row3rast <- projectRaster(row3rast, aea)
+row3rast
+```
+
+
+```{r}
+testrow1 <- read.csv("../data/row1.csv", header = TRUE)
+#testrow1$month <- sprintf("%02d",testrow1$month)
+testrow1xy <- testrow1[ ,c(4,5)] # This is to tell R where the coordinates are (in column 4 and 5). Note that the column order needs to be longitude, latitude
+testrow1sp <- SpatialPointsDataFrame(coords = testrow1xy, data = testrow1, proj4string = CRS("+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-60 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")) # The CRS is used here is for the albers equal area projection.
+testrow1sp
+test15 <- extract(x=row1rast[[15]], y = testrow1sp)
+test15
+testrow2 <- read.csv("../data/row2.csv", header = TRUE)
+#testrow2$month <- sprintf("%02d",testrow2$month)
+testrow2xy <- testrow2[ ,c(4,5)] # This is to tell R where the coordinates are (in column 4 and 5). Note that the column order needs to be longitude, latitude
+testrow2sp <- SpatialPointsDataFrame(coords = testrow2xy, data = testrow2, proj4string = CRS("+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-60 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")) # The CRS is used here is for the albers equal area projection.
+testrow2sp
+test22 <- extract(x=row2rast[[22]], y = testrow2sp)
+test22
+testrow3 <- read.csv("../data/row3.csv", header = TRUE)
+#testrow3$month <- sprintf("%02d",testrow3$month)
+testrow3xy <- testrow3[ ,c(4,5)] # This is to tell R where the coordinates are (in column 4 and 5). Note that the column order needs to be longitude, latitude
+testrow3sp <- SpatialPointsDataFrame(coords = testrow3xy, data = testrow3, proj4string = CRS("+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-60 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")) # The CRS is used here is for the albers equal area projection.
+testrow3sp
+test17 <- extract(x=row3rast[[17]], y = testrow3sp)
+test17
+```
+
+
+
+
+
+
+```{r}
+testrow1.1 <- extract(x=row1rast[[1]], y = testrow1sp)
+testrow1.1
+testrow2.1 <- extract(x=row2rast[[1]], y = testrow2sp)
+testrow2.1
+testrow3.1 <- extract(x=row3rast[[1]], y = testrow3sp)
+testrow3.1
+```
+
+yes! ok now for the bigger test...
