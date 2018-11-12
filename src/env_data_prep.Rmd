@@ -427,8 +427,8 @@ netcdf_name <- list.files("../data/env/netcdf", pattern = '*.nc', full.names = F
 library (ncdf4)
 library(sp)
 library(rgdal)
-library(raster)
 for (i in 1:no_netcdf) {  
+  library(raster)
   print(netcdf_name[i]) #this just prints the name of the netCDF R is working one
   brkyr <- as.integer(sapply(strsplit(netcdf_name[i], "_"), "[[", 1)) # extracting the first part of the netcdf filename (which is the year)
   brkmth <- as.integer(sapply(strsplit(netcdf_name[i], "_"), "[[", 2)) # extracting the second part of the netcdf filename (which is the month)
@@ -436,13 +436,11 @@ for (i in 1:no_netcdf) {
   temp_brick <- brick(netcdf_list[i], lvar = 4)
   temp_brick <- projectRaster(temp_brick, aea) 
     for (j in 1:nrow(data_aea_sp)) {  
-      print (j)
-      de <- data_aea_sp$depth[[j]]  # a variable for the observation depth layer
+      de <- data_aea_sp$depthlayerno[[j]]  # a variable for the observation depth layer
       yr <- (data_aea_sp$year[j])  # a variable for the observation year
       mth <- (data_aea_sp$month[j])  # a variable for the observation month
           if (brkyr == yr & brkmth == mth & brkvar == "temp.nc"){
-           
-             data_aea_sp$temp_surface[j] <- extract(x=temp_brick[[1]], y = data_aea_sp[j, ]) 
+              data_aea_sp$temp_surface[j] <- extract(x=temp_brick[[1]], y = data_aea_sp[j, ]) 
               if (is.na(de)){
                 data_aea_sp$temp_depth[j] <- NA
               } else  
@@ -475,3 +473,16 @@ for (i in 1:no_netcdf) {
     }
 }
 ```
+
+
+```{r}
+head(data_aea_sp$chl_depth)
+```
+
+change dataset back into a dataframe and then save as a .csv
+
+```{r}
+data_aea <- as.data.frame(data_aea_sp)
+write.csv(data_aea,"../output/bio/data_aea_cell_amo_nao_bins_env_depth_cellobno_env.csv", row.names = FALSE)
+```
+
