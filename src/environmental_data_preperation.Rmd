@@ -438,7 +438,6 @@ for (i in 1:no_netcdf){
   temp_brick <- brick(netcdf_list[i], lvar = 4)
   temp_brick <- projectRaster(temp_brick, aea) 
     for (j in 1:nrow(data_aea_sp)) {  
-      print (j)
       de <- data_aea_sp$depthlayerno[[j]]  # a variable for the observation depth layer
       yr <- (data_aea_sp$year[j])  # a variable for the observation year
       mth <- (data_aea_sp$month[j])  # a variable for the observation month
@@ -473,8 +472,8 @@ for (i in 1:no_netcdf){
               data_aea_sp$ssh_surface[j] <- extract(x=temp_brick[[1]], y = data_aea_sp[j, ]) 
             
           }
-    } 
-  }
+     
+    }
 }
     
 
