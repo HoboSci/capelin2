@@ -17,7 +17,7 @@ Built with 'r getRversion()'.
 You can load them using the following code which uses a function called [ipak](https://gist.github.com/stevenworthington/3178163). 
 Note this function checks to see if the packages are installed first.
 ```{r pre-install packages, message=FALSE}
-packages <- c("ncdf4", "raster", "rgdal", "useful", "marmap") 
+packages <- c("ncdf4", "raster", "rgdal", "useful", "marmap", "sp") 
 source("../src/ipak.R")
 ipak(packages)
 ```
@@ -399,7 +399,7 @@ head(data_aea)
 write.csv(data_aea,"../output/bio/data_aea_cell_amo_nao_bins_btmdepth.csv", row.names = FALSE)
 ```
 
-And now create a raster of Gebco in aea for mapping...
+And now create a raster of Gebco in aea for mapping once the SDM is done...
 
 ```{r}
 library(raster)
@@ -413,3 +413,69 @@ gebco_aea
 plot(gebco_aea)
 ```
 
+# attach environmental correlates
+
+This loop runs through the netcdf files and then looks for which rows in data_aea it should extract the value to point from, and at what depth (netcDF layer)
+
+First you need to put the observations (data_aea) into a spatialpointsdataframe.
+```{r}
+library(sp)
+xy2 <- data_aea[ ,c(18,19)] # This is to tell R where the coordinates are (in column 18 and 19). Note that the column order needs to be longitude, latitude
+data_aea_sp <- SpatialPointsDataFrame(coords = xy2, data = data_aea, proj4string = CRS("+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-60 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")) # The CRS is used here is for the albers equal area projection.
+```
+
+and the loop. Note that MLP and SSH only have a single layer and as such they do not have a statement to extract at depth.
+```{r}
+netcdf_list <- list.files("../data/env/netcdf", pattern = '*.nc', full.names = TRUE) #true means the full path is included
+no_netcdf <- length(netcdf_list) #for the loop - need to know how many files to cycle through
+netcdf_name <- list.files("../data/env/netcdf", pattern = '*.nc', full.names = FALSE) #false means the path is not included
+library (ncdf4)
+for (i in 1:no_netcdf){  
+  print(netcdf_name[i]) #this just prints the name of the netCDF R is working one
+  brkyr <- as.integer(sapply(strsplit(netcdf_name[i], "_"), "[[", 1)) # extracting the first part of the netcdf filename (which is the year)
+  brkmth <- as.integer(sapply(strsplit(netcdf_name[i], "_"), "[[", 2)) # extracting the second part of the netcdf filename (which is the month)
+  brkvar <- (sapply(strsplit(netcdf_name[i], "_"), "[[", 3)) # extracting the third part of the netcdf (inc.nc)
+  temp_brick <- brick(netcdf_list[i], lvar = 4)
+  temp_brick <- projectRaster(temp_brick, aea) 
+    for (j in 1:nrow(data_aea_sp)) {  
+      print (j)
+      de <- data_aea_sp$depthlayerno[[j]]  # a variable for the observation depth layer
+      yr <- (data_aea_sp$year[j])  # a variable for the observation year
+      mth <- (data_aea_sp$month[j])  # a variable for the observation month
+          if (brkyr == yr & brkmth == mth & brkvar == "temp.nc"){
+           
+             data_aea_sp$temp_surface[j] <- extract(x=temp_brick[[1]], y = data_aea_sp[j, ]) 
+              if (is.na(de)){
+                data_aea_sp$temp_depth[j] <- NA
+              } else  
+                data_aea_sp$temp_depth[j] <- extract(x=temp_brick[[de]], y = data_aea_sp[j, ])
+          } else if (brkyr == yr & brkmth == mth & brkvar == "salinity.nc") {
+              data_aea_sp$salinity_surface[j] <- extract(x=temp_brick[[1]], y = data_aea_sp[j, ]) 
+              if (is.na(de)){
+                data_aea_sp$salinity_depth[j] <- NA
+              } else  
+                data_aea_sp$salinity_depth[j] <- extract(x=temp_brick[[de]], y = data_aea_sp[j, ]) 
+          } else if (brkyr == yr & brkmth == mth & brkvar == "chl.nc") {
+              data_aea_sp$chl_surface[j] <- extract(x=temp_brick[[1]], y = data_aea_sp[j, ]) 
+              if (is.na(de)){
+                data_aea_sp$chl_depth[j] <- NA
+              } else  
+                data_aea_sp$chl_depth[j] <- extract(x=temp_brick[[de]], y = data_aea_sp[j, ]) 
+          } else if (brkyr == yr & brkmth == mth & brkvar == "o2.nc") {
+              data_aea_sp$o2_surface[j] <- extract(x=temp_brick[[1]], y = data_aea_sp[j, ]) 
+              if (is.na(de)){
+                data_aea_sp$o2_depth[j] <- NA
+              } else  
+                data_aea_sp$o2_depth[j] <- extract(x=temp_brick[[de]], y = data_aea_sp[j, ]) 
+          } else if (brkyr == yr & brkmth == mth & brkvar == "mlp.nc") {
+              data_aea_sp$mlp_surface[j] <- extract(x=temp_brick[[1]], y = data_aea_sp[j, ])
+          } else if (brkyr == yr & brkmth == mth & brkvar == "ssh.nc") {
+              data_aea_sp$ssh_surface[j] <- extract(x=temp_brick[[1]], y = data_aea_sp[j, ]) 
+            
+          }
+    } 
+  }
+}
+    
+
+```

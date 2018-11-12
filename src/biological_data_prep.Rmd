@@ -1039,35 +1039,6 @@ and save
 write.csv(data_aea,"../output/bio/data_aea_cell_amo_nao_bins.csv", row.names = FALSE)
 ```
 
-#add columns for the env. variables
-The ones ypu have to add are...
-
-mlp
-salinty_1
-salinity_depth
-ssh
-temp_1
-temp_depth
-chl_1
-chl_depth
-o2_1
-o2_depth
-
-populate the columns with NA
-```{r}
-data_aea$mlp <- NA
-data_aea$salinty_1 <- NA
-data_aea$salinity_depth <- NA
-data_aea$ssh <- NA
-data_aea$temp_1 <- NA
-data_aea$temp_depth <- NA
-data_aea$chl_1 <- NA
-data_aea$chl_depth <- NA
-data_aea$o2_1 <- NA
-data_aea$o2_depth <- NA
-write.csv(data_aea,"../output/bio/data_aea_cell_amo_nao_bins_env.csv", row.names = FALSE)
-```
-
 
 # observations by cell (in total, and also by time step)
 
