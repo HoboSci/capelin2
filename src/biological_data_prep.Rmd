@@ -7,7 +7,7 @@ output: html_notebook
 # Overview
 Preperation of the capelin (*Mallotus villosus*) data obtained from [OBIS](www.iobis.org). This database shows the global occurance of capelin. 
 
-A note to anyone who might happen to stumble across this... I am a beginner in R and have had no exposure to similar languages. I don't know what I'm doing. The code herein is unlikely to be elegant and there area probably more efficient ways of running the code.
+A note to anyone who might happen to stumble across this... I am a beginner in R and have had no exposure to similar languages. I don't know what I'm doing. The code herein is unlikely to be elegant and there are probably more efficient ways of running the code.
 
 Built with 'r getRversion()'.
 

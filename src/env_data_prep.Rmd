@@ -9,7 +9,7 @@ Preperation of GLORYS and BIOMER netCDFs obtained from [Copernicus](www.marine.c
 UPDATE: also includes prep of the AMO and NAO data...
 
 
-A note to anyone who might happen to stumble across this... I am a beginner in R and have had no exposure to similar languages. I don't know what I'm doing. The code herein is unlikely to be elegant and there area probably more efficient ways of running the code.
+A note to anyone who might happen to stumble across this... I am a beginner in R and have had no exposure to similar languages. I don't know what I'm doing. The code herein is unlikely to be elegant and there are probably more efficient ways of running the code.
 
 Built with 'r getRversion()'.
 
@@ -473,6 +473,18 @@ for (i in 1:no_netcdf) {
     }
 }
 ```
+note that if you wanted to just loop through the netcdfs and create a ton of raster bricks with the same name as the netcdf, the following code you wrote before works
+
+netcdf_list <- list.files("../data/env/netcdf", pattern = '*.nc', full.names = TRUE) #true means the full path is included
+no_netcdf <- length(netcdf_list) #for the loop - need to know how many files to cycle through
+netcdf_name <- list.files("../data/env/netcdf", pattern = '*.nc', full.names = FALSE) #false means the path is not included
+library (ncdf4)
+for (i in 1:no_netcdf) {
+  print(netcdf_name[i]) #this just prings the name of the netCDF R is working on
+  temp_brick <- brick(netcdf_list[i], lvar = 4)
+  temp_brick <- projectRaster(temp_brick, aea) #aea is an existing raster in the projection I want that I created (environmental_data_preperation)
+  assign(netcdf_name[i], temp_brick) #this asigns the netCDF name to the raster brick
+}
 
 
 ```{r}

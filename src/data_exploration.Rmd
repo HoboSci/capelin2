@@ -1,0 +1,47 @@
+---
+title: "Data Exploration"
+author: "Samantha Andrews"
+output: html_notebook
+---
+
+# Overview
+Exploration of all the data collected on the presence points
+
+A note to anyone who might happen to stumble across this... I am a beginner in R and have had no exposure to similar languages. I don't know what I'm doing. The code herein is unlikely to be elegant and there are probably more efficient ways of running the code.
+
+Built with 'r getRversion()'.
+
+# Package dependencies
+You can load them using the following code which uses a function called [ipak](https://gist.github.com/stevenworthington/3178163). 
+Note this function checks to see if the packages are installed first.
+```{r pre-install packages, message=FALSE}
+packages <- c() 
+source("../src/ipak.R")
+ipak(packages)
+```
+
+Read in the presence points
+
+```{r}
+presence <- read.csv("../output/bio/data_aea_cell_amo_nao_bins_env_depth_cellobno_env.csv", header = TRUE)
+head(presence)
+```
+
+# Update: Who sampled in which year and which month:
+
+year
+```{r}
+inst_by_yr <- with(presence, table(year, institutioncode))
+write.csv(inst_by_yr, file = "../output/bio/institutioncode_by_yr.csv")
+inst_by_yr
+```
+
+month
+```{r}
+inst_by_mt <- with(presence, table(month, institutioncode))
+write.csv(inst_by_mt, file = "../output/bio/institutioncode_by_mth.csv")
+inst_by_mt
+```
+
+
+
