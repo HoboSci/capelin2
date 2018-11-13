@@ -14,8 +14,9 @@ Built with 'r getRversion()'.
 # Package dependencies
 You can load them using the following code which uses a function called [ipak](https://gist.github.com/stevenworthington/3178163). 
 Note this function checks to see if the packages are installed first.
-```{r pre-install packages, message=FALSE}
-packages <- c() 
+The "include=FALSE" supresses the package installation text appearing in the document...
+```{r pre-install packages, include=FALSE}
+packages <- c("plyr") 
 source("../src/ipak.R")
 ipak(packages)
 ```
@@ -42,6 +43,28 @@ inst_by_mt <- with(presence, table(month, institutioncode))
 write.csv(inst_by_mt, file = "../output/bio/institutioncode_by_mth.csv")
 inst_by_mt
 ```
+
+# Update: Observations by Cell (in total and by time-step)
+
+as the title says... how many observations happeend in each cell:
+- in total
+
+
+```{r observation by cell - total}
+library(plyr) #to use the count function
+obs_by_cell <- count(presence, "cell_id")
+write.csv(obs_by_cell, file = "../output/bio/no_observations_cell.csv")
+head(obs_by_cell)
+```
+
+- in each yyyymm
+```{r}
+obs_cell_yymm <- count(presence, c("cell_id", "year", "month"))
+write.csv(obs_cell_yymm, file = "../output/bio/no_observations_cell_yymm.csv")
+head(obs_cell_yymm)
+```
+
+
 
 
 
