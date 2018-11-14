@@ -16,7 +16,7 @@ You can load them using the following code which uses a function called [ipak](h
 Note this function checks to see if the packages are installed first.
 The "include=FALSE" supresses the package installation text appearing in the document...
 ```{r pre-install packages, include=FALSE}
-packages <- c("plyr") 
+packages <- c("plyr", "graphics") 
 source("../src/ipak.R")
 ipak(packages)
 ```
@@ -43,4 +43,183 @@ inst_by_mt <- with(presence, table(month, institutioncode))
 write.csv(inst_by_mt, file = "../output/bio/institutioncode_by_mth.csv")
 inst_by_mt
 ```
+
+# environmental correlates
+
+1) Get the max, min, an mean values and add into a dataframe
+
+Temperature
+```{r}
+temp_depth_max <- max(presence$temp_depth, na.rm = TRUE)
+temp_depth_min <- min(presence$temp_depth, na.rm = TRUE)
+temp_depth_mean <- mean(presence$temp_depth, na.rm = TRUE)
+temp_surface_max <- max(presence$temp_surface, na.rm = TRUE)
+temp_surface_min <- min(presence$temp_surface, na.rm = TRUE)
+temp_surface_mean <- mean(presence$temp_surface, na.rm = TRUE)
+```
+
+Salinity
+```{r}
+sal_depth_max <- max(presence$salinity_depth, na.rm = TRUE)
+sal_depth_min <- min(presence$salinity_depth, na.rm = TRUE)
+sal_depth_mean <- mean(presence$salinity_depth, na.rm = TRUE)
+sal_surface_max <- max(presence$salinity_surface, na.rm = TRUE)
+sal_surface_min <- min(presence$salinity_surface, na.rm = TRUE)
+sal_surface_mean <- mean(presence$salinity_surface, na.rm = TRUE)
+```
+
+Chl
+```{r}
+chl_depth_max <- max(presence$chl_depth, na.rm = TRUE)
+chl_depth_min <- min(presence$chl_depth, na.rm = TRUE)
+chl_depth_mean <- mean(presence$chl_depth, na.rm = TRUE)
+chl_surface_max <- max(presence$chl_surface, na.rm = TRUE)
+chl_surface_min <- min(presence$chl_surface, na.rm = TRUE)
+chl_surface_mean <- mean(presence$chl_surface, na.rm = TRUE)
+```
+
+O2
+```{r}
+o2_depth_max <- max(presence$o2_depth, na.rm = TRUE)
+o2_depth_min <- min(presence$o2_depth, na.rm = TRUE)
+o2_depth_mean <- mean(presence$o2_depth, na.rm = TRUE)
+o2_surface_max <- max(presence$o2_surface, na.rm = TRUE)
+o2_surface_min <- min(presence$o2_surface, na.rm = TRUE)
+o2_surface_mean <- mean(presence$o2_surface, na.rm = TRUE)
+```
+
+MLP
+```{r}
+mlp_surface_max <- max(presence$mlp_surface, na.rm = TRUE)
+mlp_surface_min <- min(presence$mlp_surface, na.rm = TRUE)
+mlp_surface_mean <- mean(presence$mlp_surface, na.rm = TRUE)
+```
+
+SSH
+```{r}
+ssh_surface_max <- max(presence$ssh_surface, na.rm = TRUE)
+ssh_surface_min <- min(presence$ssh_surface, na.rm = TRUE)
+ssh_surface_mean <- mean(presence$ssh_surface, na.rm = TRUE)
+```
+
+create matrix
+```{r}
+td <- c(temp_depth_max, temp_depth_min, temp_depth_mean)
+ts <- c(temp_surface_max, temp_surface_min, temp_surface_mean)
+sd <- c(sal_depth_max, sal_depth_min, sal_depth_mean)
+ss <- c(sal_surface_max, sal_surface_min, sal_surface_mean)
+cd <- c(sal_depth_max, sal_depth_min, sal_depth_mean)
+cs <- c(sal_surface_max, sal_surface_min, sal_surface_mean)
+od <- c(o2_depth_max, o2_depth_min, o2_depth_mean)
+os <- c(o2_surface_max, o2_surface_min, o2_surface_mean)
+mlp <- c(mlp_surface_max, mlp_surface_min, mlp_surface_mean)
+ssh <- c(ssh_surface_max, ssh_surface_min, ssh_surface_mean)
+env_stats <- rbind(td, ts, sd, ss, cd, cs, od, os, mlp, ssh)
+row.names(env_stats) <- c("Temp Depth", "Temp Surface", "Salinity Depth", "Salinity Surface", "Chl Depth", "Chl Surface", "Oxygen Depth", "Oxygen Surface", "MLP", "SSH") 
+colnames(env_stats) <- c("Max", "Min", "Mean")
+write.csv(env_stats, "../output/env/env_correlates_basic_stats.csv", row.names = TRUE)
+env_stats
+```
+
+Hmm some potentially suspicious values here in
+- Oxygen Depth min
+- mlp  Max
+and maybe also
+- Salinity Depth min
+- Salinity Surface min
+- CHL depth min
+- CHL depth max
+
+lets just see where these values appear and check the netcdf layers. Note I will check these values in cygwin using the cdo operator infov on the netcdfs (to ensure there was no issue with processing in R). 
+
+
+get the year and month these values appeared in
+```{r}
+o2d_check_yr <- subset(presence$year, presence$o2_depth == o2_depth_min)
+o2d_check_mth <- subset(presence$month, presence$o2_depth == o2_depth_min)
+```
+O2 depth min is in 2005_08
+
+And value seems correct
+
+```{r}
+mlp_check_yr <- subset(presence$year, presence$mlp_surface == mlp_surface_max)
+mlp_check_mth <- subset(presence$month, presence$mlp_surface == mlp_surface_max)
+```
+mlp max in in 2007_12
+
+And yes the value seems correct
+
+```{r}
+sald_check_yr <- subset(presence$year, presence$salinity_depth == sal_depth_max)
+sald_check_mth <- subset(presence$month, presence$salinity_depth == sal_depth_max)
+```
+year month 2001_05
+
+also seems correct
+
+```{r}
+sals_check_yr <- subset(presence$year, presence$salinity_surface == sal_surface_min)
+sals_check_mth <- subset(presence$month, presence$salinity_surface == sal_surface_min)
+```
+year month 21998_06
+
+ok again...
+
+Leave the rest
+
+#simple plots of env. correlates
+
+temperature
+```{r}
+par(mfrow=c(1,2))
+plot(presence$temp_depth, main = "Temp at Depth (Various)", ylab = "Kelvin")
+plot(presence$temp_surface, main = "Temp at Surface", ylab = "Kelvin")
+dev.copy(png, "../output/env/simple_plots/temperature_simpleplot.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+```
+Hmm not necessarily very helpful. But anyway, lets carry on
+
+salinity
+```{r}
+par(mfrow=c(1,2))
+plot(presence$salinity_depth, main = "Salinity at Depth (Various)", ylab = "Practical Salinity Units")
+plot(presence$salinity_surface, main = "Salinity at Surface", ylab = "Practical Salinity Units")
+dev.copy(png,"../output/env/simple_plots/salinity_simpleplot.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+```
+
+Chlorophyll
+```{r}
+par(mfrow=c(1,2))
+plot(presence$chl_depth, main = "Chl at Depth (Various)", ylab = "Chl (mmol.m-3)")
+plot(presence$chl_surface, main = "Chl at Surface", ylab = "Chl (mmol.m-3)")
+dev.copy(png,"../output/env/simple_plots/chl_simpleplot.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+```
+
+O2
+```{r}
+par(mfrow=c(1,2))
+plot(presence$o2_depth, main = "Dissolved Oxygen at Depth (Various)", ylab = "Chl (mmol.m-3)")
+plot(presence$o2_surface, main = "Dissolved Oxygen at Surface", ylab = "O2 (mmol.m-3)")
+dev.copy(png,"../output/env/simple_plots/o2_simpleplot.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+```
+
+mlp
+```{r}
+plot(presence$mlp_surface, main = "Mixed Layer Thickness", ylab = "Depth (m)")
+dev.copy(png,"../output/env/simple_plots/mlp_simpleplot.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+```
+
+SSH
+```{r}
+plot(presence$ssh_surface, main = "Sea Surface Height", ylab = "Height (m)")
+dev.copy(png,"../output/env/simple_plots/ssh_simpleplot.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+```
+
+
 
