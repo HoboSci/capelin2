@@ -221,5 +221,45 @@ dev.copy(png,"../output/env/simple_plots/ssh_simpleplot.png") # to automatically
 dev.off() # stops automatic saving of the plot to a png
 ```
 
+XXX SAM - YOU WANT TO THINK ABOUT DOING THIS BY DEPTH RATHER THAN ALL DEPTHS)
+
+```{r}
+unique_depths <- unique(presence$depthlayerno)
+unique_depthdordered <- sort(unique_depths) #just puts the list in oder with no NA
+length(unique_depthdordered)
+```
+ouch - 40 layers... a job for a boxplot probably
+
+```{r}
+
+```
 
 
+
+# frequency plots of env. corr
+
+just do surface layers for now
+
+temperature
+```{r}
+hist(presence$temp_surface, main = "Temp at Surface", xlab = "Kelvin")
+dev.copy(png, "../output/env/simple_plots/temperature_surface_histogram.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+```
+
+
+
+# simple boxplots of env. corr
+
+Same as above but with boxplots (may provide some more useful info)
+
+XXX SAM YOU WANT TO PUT THE TWO LAYERS ON THE ONE PLOT - NOT TWO SIDE BY SIDE
+
+temperature
+```{r}
+par(mfrow=c(1,2))
+boxplot(presence$temp_depth, main = "Temp at Depth (Various)", ylab = "Kelvin")
+boxplot(presence$temp_surface, main = "Temp at Surface", ylab = "Kelvin")
+dev.copy(png, "../output/env/simple_plots/temperature_boxplot.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+```
