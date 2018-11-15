@@ -875,9 +875,9 @@ head(nao)
 ```
 
 So you want..
-- AMO value at sampling month/year
-- AMO value at previous sampling month/year
-- AMO phase at previous winter (because the winter values are thought to be a major driver of ocean conditions in the following spring, summer, and autumn)
+- NAO value at sampling month/year
+- NAO value at previous sampling month/year
+- NAO phase at previous winter (because the winter values are thought to be a major driver of ocean conditions in the following spring, summer, and autumn)
 
 change month col names to just numeric
 ```{r}

@@ -279,3 +279,23 @@ dev.off() #this turns off the print comman
 
 Indeed the many of the missing background points are in the hudson strait. Others are near the coast and thus probably just call outside the NAFO shapefiles (remember the smapefiles are not all super-perfectly fitting).
 Think I will take this to arcgis for fixing....
+
+basically what I did was use the selection -> select by attributes tool to find the points where NAFO_region = NA and then manually recode them (using the field calculator), and exported as a .csv.
+
+```{r}
+background_all <- read.csv("../output/bio/background_all_lonlat_nafo2.csv", header = TRUE)
+head(background_all)
+```
+
+#original scientific name
+
+create a column called "originalscientificname" and fill it with "Mallotus villosus ab"
+
+```{r}
+background_all$originalscientificname <- "Mallotus villosus ab"
+head(background_all)
+```
+
+#NAO and AMO values
+
+
