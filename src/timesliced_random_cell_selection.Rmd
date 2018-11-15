@@ -12,14 +12,12 @@ A note to anyone who might happen to stumble across this... I am a beginner in R
 Built with 'r getRversion()'.
 
 # Package dependencies
-You can load them using the following code which uses a function called [ipak](https://gist.github.com/stevenworthington/3178163). 
-Note this function checks to see if the packages are installed first.
-Th
-```{r pre-install packages, message=FALSE}
-packages <- c("raster", "dplyr", "data.table", "sp")
+You can install and load them using the following code which uses a function called [ipak](https://gist.github.com/stevenworthington/3178163). Note this function checks to see if the packages are installed first before loading.
+
+```{r pre-install & load packages, include=FALSE}
+packages <- c("raster", "dplyr", "data.table", "sp", "adehabitatHR")
 source("../src/ipak.R")
 ipak(packages)
-suppressMessages(ipak)
 ```
 
 # the show
@@ -67,8 +65,31 @@ cell_yymm$id_depth <- paste(cell_yymm$cell_id, cell_yymm$depthlayerno, sep="") #
 split_cell_yymm <- split(cell_yymm, list(cell_yymm$year, cell_yymm$month), drop = TRUE)
 ```
 
+The area covered by these points are huge -much larger than the distribution of my presence points. Ideally I need to constrain the area where the background points are selected from to match the entire range of the species. The most common method for this is to use a minimum convex hull to estimate the species range, and then use that area to constrain the background point selection.
+Note I am a little worried that I may loose some of the edge data as they are centroids of cells... 
 
-What I want to do is for each time slice, create a list of all cells (xyz), then remove the ones where observations occuredand create a .csv with the name of the level being worked on
+```{r}
+mcpbase <- read.csv("../output/bio/data_aea_cell_amo_nao_bins_env_depth_cellobno_env.csv", header = TRUE)
+mcpbase_xy <- mcpbase[ , c("decimalLongitude.1", "decimalLatitude.1")] # This is to tell R where the coordinates are (in column 18 and 19). Note that the column order needs to be longitude, latitude
+mcpbase_sp <- SpatialPointsDataFrame(coords = mcpbase_xy, data = mcpbase, proj4string = CRS("+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-60 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")) # The CRS is used here is for the albers equal area projection.
+mcp_capelin_100 <- mcp(mcpbase_sp[ , 12], percent = 100) #12 is the column with the species name in (the id for the species)
+plot(mcp_capelin_100)
+```
+
+oh tres exciting. Let's overlay the occurrence points on that
+
+```{r}
+plot(mcp_capelin_100)
+points(mcpbase_sp$decimalLongitude.1, mcpbase_sp$decimalLatitude.1)
+```
+
+ok yea, i guess.... still wondering about those edge areas....anyway
+
+
+
+
+
+What I want to do is for each time slice, create a list of all cells (xyz), then remove the ones where observations occurred and create a .csv with the name of the level being worked on
 
 Here is a loop to create a copy of the unique_cell_centroid dataframe, and give it the same name as the splitobs_cell_yymm level
 .csv naming code courtesy of [nadizan/stack exchange](https://stackoverflow.com/questions/53045158/r-naming-csv-with-a-list-level-name-in-a-loop?noredirect=1#comment92990285_53045158)
