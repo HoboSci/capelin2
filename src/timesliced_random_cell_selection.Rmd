@@ -25,7 +25,7 @@ ipak(packages)
 ```{r pre-install & load packages, include=FALSE}
 install.packages("pacman")
 library(pacman)
-p_load(raster, dplyr, data.table, sp, adehabitatHR, rgdal)
+p_load(raster, dplyr, data.table, sp, adehabitatHR, rgdal, rworldmap)
 ```
 
 # the show
@@ -231,12 +231,13 @@ sp_background <- data.frame(sp_background, long=coordinates(sp_background)[,1], 
 head(sp_background)
 ```
 
-change name of long lat columns to decimalLongitude and decimalLatitude respectively
+remove existing decimlalLongitude and decimlalLongitude, and long and lat, and optional (duplicate columns) and change name of longitude.2 & latitude.2 columns to decimalLongitude and decimalLatitude respectively
 ```{r}
 sp_background <- as.data.frame(sp_background) #need to go back to a 'normal' dataframe to change col names
-head(sp_background) #note the columns in question have changed name...
-colnames(sp_background)[colnames(sp_background)=="longitude.1"] <- "decimalLongitude"
-colnames(sp_background)[colnames(sp_background)=="latitude.1"] <- "decimalLatitude"
+head(sp_background) 
+sp_background <- subset(sp_background, select = -c(decimalLongitude, decimalLatitude, long, lat, optional))
+colnames(sp_background)[colnames(sp_background)=="longitude.2"] <- "decimalLongitude"
+colnames(sp_background)[colnames(sp_background)=="latitude.2"] <- "decimalLatitude"
 head(sp_background)
 ```
 
@@ -269,8 +270,12 @@ ok lots don't have a NAFO region attached. This is probably the Hudson Bay issue
 
 Uh oh there is a lot. A bet a bunch of them are in the Hudson Strait (which is outside the NAFO Zone).Map the nafo_na points...
 ```{r}
-plot(map2, xlim = c(-65, -40), ylim =c(30, 70), asp = 1, main = "Occurences missing a NAFO Zone", col = "cornsilk") #the x and y lim are the long-lat bounds of the map
+map2 <- getMap(resolution = "low") #creates an object called map at low resoultion
+plot(map2, xlim = c(-65, -40), ylim =c(30, 70), asp = 1, main = "Background missing a NAFO Zone", col = "cornsilk") #the x and y lim are the long-lat bounds of the map
 points(bc_nafo_na$decimalLongitude, bc_nafo_na$decimalLatitude, col = "red") #this adds points to the mapet", xlab = "Longitude", ylab = "Latitude")
+dev.copy(png, "../output/bio/background_missing_nafo.png") #this prints a png of the plot
+dev.off() #this turns off the print comman
 ```
 
-huh that is interesting... I think I want to plot this in Arc and take a closer look...
+Indeed the many of the missing background points are in the hudson strait. Others are near the coast and thus probably just call outside the NAFO shapefiles (remember the smapefiles are not all super-perfectly fitting).
+Think I will take this to arcgis for fixing....
