@@ -15,25 +15,24 @@ Built with 'r getRversion()'.
 You can install and load them using the following code which uses a function called [ipak](https://gist.github.com/stevenworthington/3178163). Note this function checks to see if the packages are installed first before loading.
 
 
-New package attempt to do this.... #include=FALSE
+New package attempt to do this....
+old code 
+packages <- c("raster", "dplyr", "data.table", "sp", "adehabitatHR", "maptools")
+source("../src/ipak.R")
+ipak(packages)
 
-```{r pre-install & load packages, }
+
+```{r pre-install & load packages, include=FALSE}
 install.packages("pacman")
 library(pacman)
-p_load(raster, dplyr, data.table, sp, adehabitatHR, maptools)
-
-#
-
-
-#packages <- c("raster", "dplyr", "data.table", "sp", "adehabitatHR", "maptools")
-#source("../src/ipak.R")
-#ipak(packages)
+p_load(raster, dplyr, data.table, sp, adehabitatHR, rgdal)
 ```
 
 # the show
 you have a unique_cell raster already (glo_unique_cell) (output/env/glo_unique_cell.tif)
 
 ```{r}
+glo_unique_cell <- raster("../output/env/glo_unique_cell.tif") #this is loading the cell layer that was created and saved as a tif
 plot(glo_unique_cell)
 ```
 
@@ -42,12 +41,11 @@ as a reminder, how many cells are there?
 glo_unique_cell
 ```
 
-6729...
+7750
 
 ok now you want to generate a centroid for each cell... (a point in the center of each cell)
 use the raster layer to 1) transfer the raster into a dataframe, with the values (cell numbers) linked to each centroid with xy coordinates (note as the raster is an aea projection, the xy will be in meters)
 ```{r}
-library(raster)
 unique_cell_centroid <- as.data.frame(glo_unique_cell, row.names = NULL, optional = FALSE, xy = TRUE, centroids = TRUE, na.rm = TRUE)
 names(unique_cell_centroid)[names(unique_cell_centroid)=="layer.1"] <- "cell_id" #just renames the output
 names(unique_cell_centroid)[names(unique_cell_centroid)=="x"] <- "longitude" #just renames the output
@@ -55,25 +53,9 @@ names(unique_cell_centroid)[names(unique_cell_centroid)=="y"] <- "latitude" #jus
 write.csv(unique_cell_centroid, "../output/env/unique_cell_centroid.csv")
 plot(glo_unique_cell)
 points(unique_cell_centroid$longitude, unique_cell_centroid$latitude, pch = 10, col = "black")
+write.csv(unique_cell_centroid, "../output/env/unique_cell_points.csv", row.names = FALSE)
 ```
 well... the plot doesn't tell me much... but i definately have points!
-
-ok so now I have a base list to work off... This gives you a dataset of xy points, but you need xyz (where z is based on the depth layers in the environmental data)
-```{r}
-unique_cell_xyz <- unique_cell_centroid
-unique_cell_xyz$depthlayerno <- NA
-unique_cell_xyz <- unique_cell_xyz[rep(seq_len(nrow(unique_cell_xyz)), each=50),] #this generates 50 repetitions of each row
-unique_cell_xyz$depthlayerno <- rep(1:50) #assign 1:50 on a repeating cycle to the depth column. 50 is chosen because there are 50 depth layers
-unique_cell_xyz$id_depth <- paste(unique_cell_xyz$cell_id, unique_cell_xyz$depthlayerno, sep="") #create a new column that is a unique cell_id & depth ID. This is to help remove cells later and randomise
-```
-
-Split the data_aea into timeslices (year/month).
-All you need is the year, month, cell_id, and depthlayerno
-```{r}
-cell_yymm <- subset(data_aea, select= c(cell_id, depthlayerno, year, month)) #create a new df with just cell_id, yr, month
-cell_yymm$id_depth <- paste(cell_yymm$cell_id, cell_yymm$depthlayerno, sep="") #create a new column that is a unique cell_id & depth ID. This is to help remove cells later and randomise
-split_cell_yymm <- split(cell_yymm, list(cell_yymm$year, cell_yymm$month), drop = TRUE)
-```
 
 The area covered by these points are huge -much larger than the distribution of my presence points. Ideally I need to constrain the area where the background points are selected from to match the entire range of the species. The most common method for this is to use a minimum convex hull to estimate the species range, and then use that area to constrain the background point selection.
 Note I am a little worried that I may loose some of the edge data as they are centroids of cells... 
@@ -93,13 +75,55 @@ plot(mcp_capelin_100)
 points(mcpbase_sp$decimalLongitude.1, mcpbase_sp$decimalLatitude.1)
 ```
 
-ok yea, i guess.... still wondering about those edge areas....anyway
+ok yea, i guess.... still wondering about those edge areas....anyway save the hull as a polygon
+
+```{r}
+writeOGR(mcp_capelin_100, dsn = '.', layer = '../output/bio/mcp_capelin_100_poly', driver = "ESRI Shapefile")
+```
+
+now need to select points within a polygon....
+```{r}
+unique_cell_centroid <- read.csv("../output/env/unique_cell_centroid.csv",header = TRUE)
+unique_cell_xy <- unique_cell_centroid[ , c("longitude", "latitude")] # This is to tell R where the coordinates are (in column 18 and 19). Note that the column order needs to be longitude, latitude
+unique_c_sp <- SpatialPointsDataFrame(coords = unique_cell_xy, data = unique_cell_centroid, proj4string = CRS("+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-60 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")) # The CRS is used here is for the albers equal area projection.
+plot(mcp_capelin_100)
+points(unique_c_sp, pch = "red")
+```
+
+```{r}
+mcp_unique_cell <- unique_c_sp[mcp_capelin_100, ] #this is just subsetting 
+plot(mcp_capelin_100)
+points(mcp_unique_cell)
+```
+ok now convert mcp_unique_cell back to a dataframe for further processing, and save the clipped unique cells to a .csv
+```{r}
+mcp_unique_cell <- as.data.frame(mcp_unique_cell)
+write.csv(mcp_unique_cell, "../output/env/unique_cell_centroid_mcp")
+```
 
 
+
+ok so now I have a base list to work off... This gives you a dataset of xy points, but you need xyz (where z is based on the depth layers in the environmental data)
+```{r}
+unique_cell_xyz <- mcp_unique_cell
+unique_cell_xyz$depthlayerno <- NA
+unique_cell_xyz <- unique_cell_xyz[rep(seq_len(nrow(unique_cell_xyz)), each=50),] #this generates 50 repetitions of each row
+unique_cell_xyz$depthlayerno <- rep(1:50) #assign 1:50 on a repeating cycle to the depth column. 50 is chosen because there are 50 depth layers
+unique_cell_xyz$id_depth <- paste(unique_cell_xyz$glo_unique_cell, unique_cell_xyz$depthlayerno, sep="") #create a new column that is a unique glo_unique_cell & depth ID. This is to help remove cells later and randomise
+```
 
 
 
 What I want to do is for each time slice, create a list of all cells (xyz), then remove the ones where observations occurred and create a .csv with the name of the level being worked on
+
+Split the data_aea into timeslices (year/month).
+All you need is the year, month, cell_id, and depthlayerno
+```{r}
+data_aea <- mcpbase
+cell_yymm <- subset(data_aea, select= c(cell_id, depthlayerno, year, month)) #create a new df with just cell_id, yr, month
+cell_yymm$id_depth <- paste(cell_yymm$cell_id, cell_yymm$depthlayerno, sep="") #create a new column that is a unique cell_id & depth ID. This is to help remove cells later and randomise
+split_cell_yymm <- split(cell_yymm, list(cell_yymm$year, cell_yymm$month), drop = TRUE)
+```
 
 Here is a loop to create a copy of the unique_cell_centroid dataframe, and give it the same name as the splitobs_cell_yymm level
 .csv naming code courtesy of [nadizan/stack exchange](https://stackoverflow.com/questions/53045158/r-naming-csv-with-a-list-level-name-in-a-loop?noredirect=1#comment92990285_53045158)
@@ -123,17 +147,16 @@ Next step is to randomly select cells in each timeslice. Make sure you generate 
 load the .csvs... [code](https://www.reed.edu/data-at-reed/software/R/reading_and_writing.html)
 
 ```{r}
-library(dplyr)
 bckrnd_folder <- "../output/bio/background/raw/"      # path to folder that holds multiple .csv files
 bckrnd_list <- list.files(path = bckrnd_folder, pattern="*.csv") # create list of all .csv files in folder
 randbckoutput <- "../output/bio/background/rand/" #where the files are to be saved to
 # read in each .csv file in file_list and create a data frame with the same name as the .csv file
 for (i in 1:length(bckrnd_list)){
   sel <- read.csv(paste(bckrnd_folder, bckrnd_list[i], sep=''))
-  sel <- sample_n(test_sel, 10000) #where 10000 = number of rows to sample (large sample as per maxent)
+  sel <- sample_n(sel, 10000) #where 10000 = number of rows to sample (large sample as per maxent)
   write.csv(sel, file = paste0(randbckoutput, bckrnd_list[i]), row.names = FALSE) #dont need to add .csv as it's already in the filename
 }
-  
+head(sel)  
 ```
 
 ok now i have a ton of files for random background points broken into timeslices. I'd like to add a colum for year and one for month to each of these datasets. They should be populated based on the name of the file (e.g. 1998.4.csv would have year = 1998 and month = 4)
@@ -148,6 +171,7 @@ for(i in 1:length(rand_list)){
   randtemp$month <- substr(rand_list[i], 6, 7) #the month is characters 6 & 7 in the filename (except where the month is a single digit)
   write.csv(randtemp, file = paste0(randbckoutput, bckrnd_list[i]), row.names = FALSE) #dont need to add .csv as it's already in the filename
 }
+head(randtemp)
 ```
 note that in the output temp file in R shows a . after the month if that month is a single digit. The .csv outputs don't 
 
@@ -156,10 +180,10 @@ note that in the output temp file in R shows a . after the month if that month i
 ok now you can start to populate the rest of the background point information. The background points file should mirror as much as possible the occurence file. Maybe it would be best to merge the files together, and them split them again later? would save looping everything to repeat the process through multiple files...
 
 ```{r}
-library(data.table)
 filenames  <- list.files(path = rand_folder, pattern="*.csv", full.names = TRUE) 
-background_all <- rbindlist(lapply(filenames,fread))
+background_all <- rbindlist(lapply(filenames,fread, fill = TRUE))
 write.csv(background_all, "../output/bio/background_all.csv", row.names = FALSE)
+head(background_all)
 ```
 
 
@@ -175,6 +199,7 @@ Easy first one - add an id based on id_depth
 ```{r}
 background_all$id <- background_all$id_depth
 write.csv(background_all, "../output/bio/background_all.csv", row.names = FALSE)
+head(background_all)
 ```
 
 ok lets's get the real decimalLatitude and decimalLongitude.
@@ -183,9 +208,8 @@ Will need to plot all point, extract the lonlat coordinates
 1) load the file as a spatialdatapointframe. give it the aea coordinate
 
 ```{r}
-library(sp)
 background_all <- as.data.frame(background_all)
-xy <- background_all[ ,c(1,2)] #lon lat in col 1 and 2
+xy <- background_all[ ,c(2,3)] #lon lat in col 1 and 2
 sp_background <- SpatialPointsDataFrame(coords = xy, data = background_all, proj4string = CRS("+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-60 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs"))
 head(sp_background)
 ```
@@ -203,7 +227,7 @@ plot(sp_background)
 3) extract lonlat, add to dataframe
 
 ```{r}
-sp_background <- data.frame(test, long=coordinates(sp_background)[,1], lat=coordinates(sp_background)[,2])
+sp_background <- data.frame(sp_background, long=coordinates(sp_background)[,1], lat=coordinates(sp_background)[,2])
 head(sp_background)
 ```
 
@@ -227,8 +251,6 @@ write.csv(sp_background, file = "../output/bio/background_all_lonlat.csv", row.n
 NAFO Zones shapefile obtained from [NAFO](https://www.nafo.int/Data/GIS)
 
 ```{r NAFO shapefile extraction}
-library(rgdal)
-library(sp)
 coordinates(sp_background) <- c("decimalLongitude", "decimalLatitude") 
 nafo_zones <- readOGR(dsn=path.expand("../data/bio/nafo_zones"), layer = "nafo_zones_wgs84") #this loads the shapefile
 proj4string(sp_background) <- proj4string(nafo_zones) #tells R that the occurrence data is the same projection as the shapefile
