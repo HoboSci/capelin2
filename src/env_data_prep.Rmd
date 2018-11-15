@@ -395,7 +395,7 @@ head(data_aea)
 write.csv(data_aea,"../output/bio/data_aea_cell_amo_nao_bins_btmdepth.csv", row.names = FALSE)
 ```
 
-And now create a raster of Gebco in aea for mapping once the SDM is done...
+And now create a raster of Gebco in aea for mapping once the SDM is done..
 
 ```{r}
 library(raster)

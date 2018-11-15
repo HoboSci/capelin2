@@ -14,10 +14,20 @@ Built with 'r getRversion()'.
 # Package dependencies
 You can install and load them using the following code which uses a function called [ipak](https://gist.github.com/stevenworthington/3178163). Note this function checks to see if the packages are installed first before loading.
 
-```{r pre-install & load packages, include=FALSE}
-packages <- c("raster", "dplyr", "data.table", "sp", "adehabitatHR")
-source("../src/ipak.R")
-ipak(packages)
+
+New package attempt to do this.... #include=FALSE
+
+```{r pre-install & load packages, }
+install.packages("pacman")
+library(pacman)
+p_load(raster, dplyr, data.table, sp, adehabitatHR, maptools)
+
+#
+
+
+#packages <- c("raster", "dplyr", "data.table", "sp", "adehabitatHR", "maptools")
+#source("../src/ipak.R")
+#ipak(packages)
 ```
 
 # the show
