@@ -270,7 +270,7 @@ write.csv(amophases, file = "../output/env/amo.csv", row.names = FALSE)
 Dataset mes from [NCAR](https://climatedataguide.ucar.edu/climate-data/hurrell-north-atlantic-oscillation-nao-index-pc-based). Note I am using the monthly principal component (PC)-based indices of the North Atlantic Oscillation [(NAO)](https://climatedataguide.ucar.edu/sites/default/files/nao_pc_monthly.txt). I have already converted this file into a csv and removed unncesessary text. Note there are no headers...
 
 ```{r}
-naoraw <- read.csv("../data/env/amon.us.data.csv", header = FALSE) 
+naoraw <- read.csv("../data/env/nao_pc_monthly.csv", header = FALSE) 
 head(naoraw)
 ```
 

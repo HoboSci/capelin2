@@ -928,7 +928,7 @@ nao_yrmt <- shift.column(data = nao_yrmt, columns = "nao_sample", up = FALSE)
 nao_yrmt
 ```
 
-Note the shifted values are in a new column called amo_sample.Shifted. rename to amo_prev
+Note the shifted values are in a new column called amo_sample.Shifted. rename to nao_prev
 
 ```{r}
 colnames(nao_yrmt)[colnames(nao_yrmt)=="nao_sample.Shifted"] <- "nao_prev"
