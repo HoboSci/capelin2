@@ -898,7 +898,7 @@ nao_yrmt <- reshape(nao_yrmt,
   v.names = "value",
   direction = "long")
 
-nao_yrmt <- nao_yrmt[order(amo_yrmt$year),]
+nao_yrmt <- nao_yrmt[order(nao_yrmt$year),] #changed amo to nao
 nao_yrmt
 ```
 
