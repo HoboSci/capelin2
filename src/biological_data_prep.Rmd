@@ -802,6 +802,7 @@ rename time to month.. and value to amo_sample
 colnames(amo_yrmt)[2] <- "month"
 colnames(amo_yrmt)[3] <- "amo_sample"
 amo_yrmt
+write.csv(amo_yrmt, "../output/env/amo_yrmt.csv") # written for reuse with the background points 
 ```
 
 now match the year and the month in the two dataframes, and populate the species dataset (data_aea) with amo_sample
