@@ -186,6 +186,24 @@ write.csv(background_all, "../output/bio/background_all.csv", row.names = FALSE)
 head(background_all)
 ```
 
+check for unique years
+```{r}
+back_yr_uniq <- unique(background_all$year)
+back_yr_uniq
+```
+check for unique months
+```{r}
+back_mt_uniq <- unique(background_all$month)
+back_mt_uniq
+```
+
+check number of observations 
+```{r}
+back_rowcount <- nrow(background_all)
+back_rowcount
+```
+
+
 
 get the columns from the occurence data so you know what to add
 ```{r}
@@ -282,10 +300,27 @@ Think I will take this to arcgis for fixing....
 
 basically what I did was use the selection -> select by attributes tool to find the points where NAFO_region = NA and then manually recode them (using the field calculator), and exported as a .csv.
 
+just double-check they are all gone
 ```{r}
 background_all <- read.csv("../output/bio/background_all_lonlat_nafo2.csv", header = TRUE)
+bc_nafo2_na <- subset(background_all, is.na(background_all$nafo_zone))
+bc_nafo2_na
+```
+great none!
+
+
+```{r}
 head(background_all)
 ```
+ok so some more crap has been added - the year and month both have _ appended.... change this. Also change glo_unique_cell to cell_id
+
+```{r}
+names(background_all)[names(background_all)=="year_"] <- "year"
+names(background_all)[names(background_all)=="month_"] <- "month"
+names(background_all)[names(background_all)=="glo_unique_cell"] <- "cell_id"
+head(background_all)
+```
+
 
 #original scientific name
 
@@ -293,9 +328,89 @@ create a column called "originalscientificname" and fill it with "Mallotus villo
 
 ```{r}
 background_all$originalscientificname <- "Mallotus villosus ab"
+write.csv(background_all, "../output/bio/background_all_lonlat_nafo2_sciname.csv")
 head(background_all)
 ```
 
-#NAO and AMO values
+# Add AMO Data
+The data has been prepared as per the environmental_data_preperation.Rmd, and biological_data_prep.Rmd
 
+So you want..
+- AMO value at sampling month/year
+- AMO value at previous sampling month/year
+- AMO phase at previous winter (because the winter values are thought to be a major driver of ocean conditions in the following spring, summer, and autumn)
+
+Load the prepared amo_prev.csv file with has the amo at different year/month steps
+```{r}
+amo_prev <- read.csv("../output/env/amo_prev.csv", header = TRUE)
+head(amo_prev)
+```
+
+now match the year and the month in the two dataframes, and populate the background points with amo_sample
+```{r}
+background_all <- merge(x = background_all, y = amo_prev[ , c("year", "month", "amo_sample")], by = c("year", "month"), all.x = TRUE)
+head(background_all)
+```
+
+ok next - AMO value at previous sampling month/year 
+```{r}
+background_all <- merge(x = background_all, y = amo_prev[ , c("year", "month", "amo_prev")], by = c("year", "month"), all.x = TRUE)
+head(background_all)
+```
+
+and now - AMO phase at previous winter (because the winter values are thought to be a major driver of ocean conditions in the following spring, summer, and autumn) (note they are in a different .csv)
+
+```{r}
+amo_winter <- read.csv("../output/env/amo_winter.csv")
+background_all <- merge(x = background_all, y = amo_winter[ , c("year", "WinterAvg.Shifted")], by = c("year"), all.x = TRUE)
+colnames(background_all)[colnames(background_all)=="WinterAvg.Shifted"] <- "amo_winter" #change the colname
+head(background_all)
+```
+
+ok and write a csv
+```{r}
+write.csv(data_aea,"../output/bio/background_all_lonlat_nafo2_sciname_amo.csv", row.names = FALSE)
+```
+
+
+# NAO values
+The data has been prepared as per the environmental_data_preperation.Rmd and biological_data_prep.Rmd
+
+So you want..
+- NAO value at sampling month/year
+- NAO value at previous sampling month/year
+- NAO phase at previous winter (because the winter values are thought to be a major driver of ocean conditions in the following spring, summer, and autumn)
+
+Load the prepared nao_prev.csv file with has the amo at different year/month steps
+```{r}
+nao_prev <- read.csv("../output/env/nao_prev.csv", header = TRUE)
+head(nao_prev)
+```
+
+now match the year and the month in the two dataframes, and populate the background points with nao_sample
+
+```{r}
+background_all <- merge(x = background_all, y = nao_prev[ , c("year", "month", "nao_sample")], by = c("year", "month"), all.x = TRUE)
+background_all
+```
+
+ok next - NAO value at previous sampling month/year
+```{r}
+background_all <- merge(x = background_all, y = nao_prev[ , c("year", "month", "nao_prev")], by = c("year", "month"), all.x = TRUE)
+background_all
+```
+
+and now - NAO phase at previous winter (because the winter values are thought to be a major driver of ocean conditions in the following spring, summer, and autumn). The data is in a different .CSV
+
+```{r}
+nao_winter <- read.csv("../output/env/nao_winter.csv")
+background_all <- merge(x = background_all, y = nao_winter[ , c("year", "WinterAvg.Shifted")], by = c("year"), all.x = TRUE)
+colnames(background_all)[colnames(background_all)=="WinterAvg.Shifted"] <- "nao_winter" #change the colname
+background_all
+```
+
+and write .csv
+```{r}
+write.csv(background_all,"../output/bio/background_all_lonlat_nafo2_sciname_amo_nao.csv", row.names = FALSE)
+```
 

@@ -899,7 +899,7 @@ nao_yrmt <- reshape(nao_yrmt,
   v.names = "value",
   direction = "long")
 
-nao_yrmt <- nao_yrmt[order(nao_yrmt$year),] #changed amo to nao
+nao_yrmt <- nao_yrmt[order(nao_yrmt$year),] 
 nao_yrmt
 ```
 
@@ -915,7 +915,7 @@ now match the year and the month in the two dataframes, and populate the species
 
 ```{r}
 data_aea <- merge(x = data_aea, y = nao_yrmt[ , c("year", "month", "nao_sample")], by = c("year", "month"), all.x = TRUE)
-data_aea
+head(data_aea)
 ```
 
 ok next - NAO value at previous sampling month/year
@@ -968,7 +968,7 @@ write.csv(nao_winter, "../output/env/nao_winter.csv", row.names = FALSE) #for so
 
 remember your shifted column is called WinterAvg.Shifted
 
-now extract the WinterAvg.Shifted values to the species dataset
+now extract the WinterAvg.Shifted values to the species dataset #####XXXXXXX#####
 
 ```{r}
 nao_winter <- read.csv("../output/env/nao_winter.csv")
