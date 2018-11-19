@@ -312,12 +312,24 @@ great none!
 ```{r}
 head(background_all)
 ```
-ok so some more crap has been added - the year and month both have _ appended.... change this. Also change glo_unique_cell to cell_id
+ok so some more crap has been added - the year and month both have _ appended.... change this. Also change 
+- glo_unique_cell to cell_id
+- longitude to longitude_meters
+- latitude to latitude_meters
+
+and remove
+- optional
+- x.1
+- x
+- id_depth
 
 ```{r}
 names(background_all)[names(background_all)=="year_"] <- "year"
 names(background_all)[names(background_all)=="month_"] <- "month"
 names(background_all)[names(background_all)=="glo_unique_cell"] <- "cell_id"
+names(background_all)[names(background_all)=="longitude"] <- "longitude_meters"
+names(background_all)[names(background_all)=="latitude"] <- "latitude_meters"
+background_all <- subset(background_all, select = -c(optional, X.1, X, id_depth))
 head(background_all)
 ```
 
@@ -413,4 +425,13 @@ and write .csv
 ```{r}
 write.csv(background_all,"../output/bio/background_all_lonlat_nafo2_sciname_amo_nao.csv", row.names = FALSE)
 ```
+
+still need
+-bottom_depth
+-depth_layer
+-total_cell_obs
+-yymm_cell_obs
+
+#depth layer
+
 

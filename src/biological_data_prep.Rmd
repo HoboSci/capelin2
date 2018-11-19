@@ -1087,6 +1087,15 @@ write to .csv
 write.csv(data_aea,"../output/bio/data_aea_cell_amo_nao_bins_env_depth_cellobno.csv", row.names = FALSE)
 ```
 
+rename the lat/long meters columns and remove the duplicate column
+
+```{r}
+names(data_aea)[names(data_aea)=="decimalLongitude.1"] <- "longitude_meters"
+names(data_aea)[names(data_aea)=="decimalLatitude.1"] <- "latitude_meters"
+data_aea <- subset(data_aea, select = -c(decimalLongitude.1.1, decimalLatitude.1.1))
+head(data_aea)
+```
+
 
 # warm/cold year
 
