@@ -386,7 +386,7 @@ points(data_aea$decimalLongitude, data_aea$decimalLatitude, pch = 20, col = "yel
 and now get depth... note all the points and bathy data is wgs!
 
 ```{r}
-data_aea$bottom_depth <- get.depth(bat, data_aea[ ,5:4], locator = FALSE)
+data_aea$bottom_depth <- get.depth(bat, data_aea[ ,5:4], locator = FALSE) #5 = decimalLongitude, 4 = decimalLatitude
 data_aea$bottom_depth <- data_aea$bottom_depth[, 3] #this step is because get.bath actually produces it's own dataframe with long, lat, and depth. This is extracting the depth column and deplacing data_aea$bottom_depth with the correct data.
 head(data_aea)
 ```

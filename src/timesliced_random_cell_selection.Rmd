@@ -25,7 +25,7 @@ ipak(packages)
 ```{r pre-install & load packages, include=FALSE}
 install.packages("pacman")
 library(pacman)
-p_load(raster, dplyr, data.table, sp, adehabitatHR, rgdal, rworldmap)
+p_load(raster, dplyr, data.table, sp, adehabitatHR, rgdal, rworldmap, ncdf4, marmap)
 ```
 
 # the show
@@ -434,4 +434,113 @@ still need
 
 #depth layer
 
+the depth layers in the netCDF are literal slices. Currently I have listed the depthlayerno (which is literally which layer in the netcdf). I should also add the depth_layer name which gives the depth the slice is supposed to represent. Data is stored in depth_bin.csv
 
+load the depth bin csv
+```{r}
+depthbin <- read.csv("../data/env/depth_bin.csv", header = TRUE) 
+head(depthbin)
+```
+
+so basically what i want to do is, where depthbin$layer_no = background_all$depthlayerno, extract depthbin$layer_name and add to background_all$depth_layer. Can use the merge function.
+First need to change depthbin col names to match background_all
+
+```{r}
+names(depthbin)[names(depthbin)=="layer_no"] <- "depthlayerno"
+names(depthbin)[names(depthbin)=="layer_name"] <- "depth_layer" #this one is just so i don't have to change the column name in the background_all file later
+head(depthbin)
+```
+```{r}
+background_all <- merge(x = background_all, y = depthbin[ , c("depthlayerno", "depth_layer")], by.x = ("depthlayerno"), all.x = TRUE)
+head(background_all)
+```
+
+just check some random rows...
+
+```{r}
+randcheck <- background_all[sample(nrow(background_all), 10), ]
+randcheck
+```
+all good - save to .csv
+
+```{r}
+write.csv(background_all, "../output/bio/background_all_lonlat_nafo2_sciname_amo_nao_depthname.csv", row.names = FALSE)
+```
+
+
+# Bathymetric
+
+bottom depth from [GEBCO](www.gebco.net)
+
+```{r}
+bat <-readGEBCO.bathy("../data/env/GEBCO_2014_2D_-70.0_34.0_-43.0_70.0.nc")
+summary(bat)
+```
+
+create pretty custom color palette and then plot the bathy laye
+```{r}
+blues <- colorRampPalette(c("lightblue", "cadetblue2", "cadetblue1", "white"))
+plot(bat, n = 1, image = TRUE, bpal = blues(100))
+```
+lovely jubbely
+
+add the species data...
+```{r}
+plot(bat, n = 1, image = TRUE, bpal = blues(100))
+points(background_all$decimalLongitude, background_all$decimalLatitude, pch = 20, col = "yellow") #note these are both the wgs84 images
+```
+and now get depth... note all the points and bathy data is wgs!
+
+```{r}
+background_all$bottom_depth <- get.depth(bat, background_all[ ,10:11], locator = FALSE)
+background_all$bottom_depth <- background_all$bottom_depth[, 3] #this step is because get.bath actually produces it's own dataframe with long, lat, and depth. This is extracting the depth column and deplacing data_aea$bottom_depth with the correct data.
+write.csv(background_all,"../output/bio/background_all_lonlat_nafo2_sciname_amo_nao_depthname_bath.csv", row.names = FALSE)
+head(background_all)
+```
+
+# observations by cell (in total, and also by time step)
+
+as the title says... how many observations happeend in each cell:
+- in total
+- in each yyyymm
+
+```{r observation by cell - total}
+library(plyr) #to use the count function
+obs_by_cell <- count(data_aea, "cell_id")
+obs_by_cell
+write.csv(obs_by_cell, file = "../output/bio/no_observations_cell.csv")
+```
+
+
+```{r}
+obs_cell_yymm <- count(data_aea, c("cell_id", "year", "month"))
+obs_cell_yymm
+write.csv(obs_cell_yymm, file = "../output/bio/no_observations_cell_yymm.csv")
+```
+Now attach these values to data_aea....
+
+total obs for the whole time period
+```{r}
+data_aea <- merge(data_aea, obs_by_cell, by="cell_id")
+head(data_aea)
+```
+rename freq column to something meaningful
+
+```{r}
+names(data_aea)[names(data_aea)=="freq"] <- "total_cell_obs"
+head(data_aea)
+```
+
+
+time-sliced
+```{r}
+data_aea <- merge(data_aea, obs_cell_yymm, by.x=c("cell_id", "year", "month"), by.y=c("cell_id", "year", "month"))
+names(data_aea)[names(data_aea)=="freq"] <- "yymm_cell_obs"
+head(data_aea)
+```
+
+write to .csv
+```{r}
+write.csv(data_aea,"../output/bio/data_aea_cell_amo_nao_bins_env_depth_cellobno.csv", row.names = FALSE)
+```
+`
