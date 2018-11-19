@@ -25,7 +25,7 @@ ipak(packages)
 ```{r pre-install & load packages, include=FALSE}
 install.packages("pacman")
 library(pacman)
-p_load(raster, dplyr, data.table, sp, adehabitatHR, rgdal, rworldmap, ncdf4, marmap)
+p_load(raster, dplyr, data.table, sp, adehabitatHR, rgdal, rworldmap, ncdf4, marmap, plyr)
 ```
 
 # the show
@@ -505,42 +505,60 @@ as the title says... how many observations happeend in each cell:
 - in each yyyymm
 
 ```{r observation by cell - total}
-library(plyr) #to use the count function
-obs_by_cell <- count(data_aea, "cell_id")
-obs_by_cell
-write.csv(obs_by_cell, file = "../output/bio/no_observations_cell.csv")
+obs_by_cell_back <- count(background_all, "cell_id")
+write.csv(obs_by_cell_back, file = "../output/bio/back_no_observations_cell.csv")
+head(obs_by_cell_back)
 ```
 
 
 ```{r}
-obs_cell_yymm <- count(data_aea, c("cell_id", "year", "month"))
-obs_cell_yymm
-write.csv(obs_cell_yymm, file = "../output/bio/no_observations_cell_yymm.csv")
+obs_cell_yymm_back <- count(background_all, c("cell_id", "year", "month"))
+write.csv(obs_cell_yymm_back, file = "../output/bio/back_no_observations_cell_yymm.csv")
+head(obs_cell_yymm_back)
 ```
+
+```{r}
+obs_cell_yymm_depth_back <- count(background_all, c("cell_id", "year", "month", "depthlayerno"))
+write.csv(obs_cell_yymm_depth_back, file = "../output/bio/back_no_observations_cell_yymm_depth.csv")
+head(obs_cell_yymm_depth_back)
+```
+
+
 Now attach these values to data_aea....
 
 total obs for the whole time period
 ```{r}
-data_aea <- merge(data_aea, obs_by_cell, by="cell_id")
-head(data_aea)
+background_all <- merge(background_all, obs_by_cell_back, by="cell_id")
+head(background_all)
 ```
+
 rename freq column to something meaningful
+```{r}
+names(background_all)[names(background_all)=="freq"] <- "total_cell_obs"
+head(background_all)
+```
+
+just check some random rows...
 
 ```{r}
-names(data_aea)[names(data_aea)=="freq"] <- "total_cell_obs"
-head(data_aea)
+randcheckcell <- background_all[sample(nrow(background_all), 10), ]
+randcheckcell
 ```
-
+all good
 
 time-sliced
 ```{r}
-data_aea <- merge(data_aea, obs_cell_yymm, by.x=c("cell_id", "year", "month"), by.y=c("cell_id", "year", "month"))
-names(data_aea)[names(data_aea)=="freq"] <- "yymm_cell_obs"
-head(data_aea)
+background_all <- merge(background_all, obs_cell_yymm_back, by.x=c("cell_id", "year", "month"), by.y=c("cell_id", "year", "month"))
+background_all <- merge(background_all, obs_cell_yymm_depth_back, by.x=c("cell_id", "year", "month", "depthlayerno"), by.y=c("cell_id", "year", "month", "depthlayerno"))
+names(background_all)[names(background_all)=="freq"] <- "yymm_cell_obs"
+names(background_all)[names(background_all)=="freq"] <- "yymmdepth_cell_obs"
+write.csv(background_all,"../output/bio/background_all_lonlat_nafo2_sciname_amo_nao_depthname_bath_cellobs.csv", row.names = FALSE)
+head(background_all)
 ```
 
-write to .csv
+and just check some random rows...
+
 ```{r}
-write.csv(data_aea,"../output/bio/data_aea_cell_amo_nao_bins_env_depth_cellobno.csv", row.names = FALSE)
+randcheckyymm <- background_all[sample(nrow(background_all), 10), ]
+randcheckyymm
 ```
-`
