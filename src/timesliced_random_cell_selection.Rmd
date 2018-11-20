@@ -95,21 +95,102 @@ mcp_unique_cell <- unique_c_sp[mcp_capelin_100, ] #this is just subsetting
 plot(mcp_capelin_100)
 points(mcp_unique_cell)
 ```
-ok now convert mcp_unique_cell back to a dataframe for further processing, and save the clipped unique cells to a .csv
+ok now save the clipped unique cells to a .csv
 ```{r}
-mcp_unique_cell <- as.data.frame(mcp_unique_cell)
 write.csv(mcp_unique_cell, "../output/env/unique_cell_centroid_mcp")
 ```
 
+#decimalLat and Lon
+ok lets's get the real decimalLatitude and decimalLongitude.
+Will need to plot all point, extract the lonlat coordinates
 
+reproject to a wgs (use an existing file as a mask)
 
-ok so now I have a base list to work off... This gives you a dataset of xy points, but you need xyz (where z is based on the depth layers in the environmental data)
 ```{r}
+sp_mcp_unique_cell <- spTransform(mcp_unique_cell, CRS = "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0")
+plot(sp_mcp_unique_cell)
+```
+extract lonlat, add to dataframe
+
+```{r}
+sp_mcp_unique_cell <- data.frame(sp_mcp_unique_cell, long=coordinates(sp_mcp_unique_cell)[,1], lat=coordinates(sp_mcp_unique_cell)[,2])
+head(sp_mcp_unique_cell)
+```
+
+remove existing long, lat, optional, longitude.1, latitude.1 (duplicate columns) and change name of longitude.2 & latitude.2 columns to decimalLongitude and decimalLatitude respectively, and longitude and latitude to longitude_meters and latitude_meters ande glo_unique_cell to cell_id
+```{r}
+sp_mcp_unique_cell <- as.data.frame(sp_mcp_unique_cell) #need to go back to a 'normal' dataframe to change col names
+head(sp_mcp_unique_cell) 
+sp_mcp_unique_cell <- subset(sp_mcp_unique_cell, select = -c(long, lat, optional, longitude.1, latitude.1))
+colnames(sp_mcp_unique_cell)[colnames(sp_mcp_unique_cell)=="longitude.2"] <- "decimalLongitude"
+colnames(sp_mcp_unique_cell)[colnames(sp_mcp_unique_cell)=="latitude.2"] <- "decimalLatitude"
+colnames(sp_mcp_unique_cell)[colnames(sp_mcp_unique_cell)=="longitude"] <- "longitude_meters"
+colnames(sp_mcp_unique_cell)[colnames(sp_mcp_unique_cell)=="latitude"] <- "latitude_meters"
+colnames(sp_mcp_unique_cell)[colnames(sp_mcp_unique_cell)=="glo_unique_cell"] <- "cell_id"
+head(sp_mcp_unique_cell)
+```
+
+
+save as csv
+```{r}
+write.csv(sp_background, file = "../output/bio/unique_cell_centroid_lonlat.csv", row.names = FALSE)
+```
+
+
+# Add NAFO Region background points in
+NAFO Zones shapefile obtained from [NAFO](https://www.nafo.int/Data/GIS)
+
+```{r NAFO shapefile extraction}
+coordinates(sp_mcp_unique_cell) <- c("decimalLongitude", "decimalLatitude") 
+nafo_zones <- readOGR(dsn=path.expand("../data/bio/nafo_zones"), layer = "nafo_zones_wgs84") #this loads the shapefile
+proj4string(sp_mcp_unique_cell) <- proj4string(nafo_zones) #tells R that the occurrence data is the same projection as the shapefile
+sp_mcp_unique_cell$nafo_zone <- over(sp_mcp_unique_cell, nafo_zones)$ZONE #ZONE is where the zone data is held in teh shapefiles' attributes
+head(sp_mcp_unique_cell) #just to check it worked
+```
+
+Great. Lets see if any are missing a NAFO Zone. But first, write to a csv and reload as the data is now some wierd 'spatial points dataframe'...
+```{r}
+write.csv(sp_mcp_unique_cell, "../output/bio/unique_cell_centroid_lonlat_nafo.csv", row.names=FALSE)
+sp_mcp_unique_cell <- as.data.frame(sp_mcp_unique_cell) 
+bc_nafo_na <- subset(sp_mcp_unique_cell, is.na(sp_mcp_unique_cell$nafo_zone))
+bc_nafo_na
+```
+
+ok lots don't have a NAFO region attached. This is probably the Hudson Bay issue again...
+
+Uh oh there is a lot. A bet a bunch of them are in the Hudson Strait (which is outside the NAFO Zone).Map the nafo_na points...
+```{r}
+map2 <- getMap(resolution = "low") #creates an object called map at low resoultion
+plot(map2, xlim = c(-65, -40), ylim =c(30, 70), asp = 1, main = "Background missing a NAFO Zone", col = "cornsilk") #the x and y lim are the long-lat bounds of the map
+points(bc_nafo_na$decimalLongitude, bc_nafo_na$decimalLatitude, col = "red") #this adds points to the mapet", xlab = "Longitude", ylab = "Latitude")
+dev.copy(png, "../output/bio/background_missing_nafo.png") #this prints a png of the plot
+dev.off() #this turns off the print comman
+```
+
+Indeed the many of the missing background points are in the hudson strait. Others are near the coast and thus probably just call outside the NAFO shapefiles (remember the smapefiles are not all super-perfectly fitting).
+Think I will take this to arcgis for fixing....
+
+basically what I did was use the selection -> select by attributes tool to find the points where NAFO_region = NA and then manually recode them (using the field calculator), and exported as a .csv.
+
+just double-check they are all gone
+```{r}
+mcp_unique_cell <- read.csv("../output/env/unique_cell_centroid_lonlat_nafo2.csv", header = TRUE)
+bc_nafo2_na <- subset(mcp_unique_cell, is.na(mcp_unique_cell$nafo_zone))
+bc_nafo2_na
+```
+
+# random depth
+
+
+ok so now I have a base list to work off... This gives you a dataset of xy points, but you need xyz (where z is based on the depth layers in the environmental data). This should be constrained by the presence depth range
+```{r}
+max_obs_depth <- max(mcpbase$depthlayerno, na.rm = TRUE) #max is 47
+min_obs_depth <- min(mcpbase$depthlayerno, na.rm = TRUE) #min is 1
 unique_cell_xyz <- mcp_unique_cell
 unique_cell_xyz$depthlayerno <- NA
-unique_cell_xyz <- unique_cell_xyz[rep(seq_len(nrow(unique_cell_xyz)), each=50),] #this generates 50 repetitions of each row
-unique_cell_xyz$depthlayerno <- rep(1:50) #assign 1:50 on a repeating cycle to the depth column. 50 is chosen because there are 50 depth layers
-unique_cell_xyz$id_depth <- paste(unique_cell_xyz$glo_unique_cell, unique_cell_xyz$depthlayerno, sep="") #create a new column that is a unique glo_unique_cell & depth ID. This is to help remove cells later and randomise
+unique_cell_xyz <- unique_cell_xyz[rep(seq_len(nrow(unique_cell_xyz)), each=47),] #this generates 47  repetitions of each row 47 is chosen because there are 47 sampled depth layers
+unique_cell_xyz$depthlayerno <- rep(1:47) #assign 1:47 on a repeating cycle to the depth column. 47 is chosen because there are 50 depth layers
+unique_cell_xyz$id_depth <- paste(unique_cell_xyz$cell_id, unique_cell_xyz$depthlayerno, sep="") #create a new column that is a unique glo_unique_cell & depth ID. This is to help remove cells later and randomise
 ```
 
 
@@ -120,7 +201,7 @@ Split the data_aea into timeslices (year/month).
 All you need is the year, month, cell_id, and depthlayerno
 ```{r}
 data_aea <- mcpbase
-cell_yymm <- subset(data_aea, select= c(cell_id, depthlayerno, year, month)) #create a new df with just cell_id, yr, month
+cell_yymm <- subset(data_aea, select= c(cell_id, depthlayerno, year, month)) #create a new df with just cell_id, yr, month, depthlayer no
 cell_yymm$id_depth <- paste(cell_yymm$cell_id, cell_yymm$depthlayerno, sep="") #create a new column that is a unique cell_id & depth ID. This is to help remove cells later and randomise
 split_cell_yymm <- split(cell_yymm, list(cell_yymm$year, cell_yymm$month), drop = TRUE)
 ```
@@ -203,7 +284,31 @@ back_rowcount <- nrow(background_all)
 back_rowcount
 ```
 
+ok lets start by getting rid of some of the duplicated columns right now (put in by arc, various processes..)
 
+```{r}
+head(background_all)
+```
+remove
+FID
+optional
+
+rename
+longitude_ to longitude_meters
+latitude_m to latitude_meters
+decimalLon to decimalLongitude
+decimalLat to decimalLatitude
+
+```{r}
+background_all <- subset(background_all, select = -c(optional, FID))
+names(background_all)[names(background_all)=="longitude_"] <- "longitude_meters"
+names(background_all)[names(background_all)=="latitude_m"] <- "latitude_meters"
+names(background_all)[names(background_all)=="decimalLon"] <- "decimalLongitude"
+names(background_all)[names(background_all)=="decimalLat"] <- "decimalLatitude"
+head(background_all)
+```
+
+# what data to add
 
 get the columns from the occurence data so you know what to add
 ```{r}
@@ -213,123 +318,12 @@ occ_column
 
 ok so have cell_id, year, month, decimalLongitude.1(meters - in background_all its longitude), decimalLatitude.1 (meters - in background_all its latitude), depth_layer_no.
 
+# create unique observation ID
+
 Easy first one - add an id based on id_depth
 ```{r}
-background_all$id <- background_all$id_depth
+names(background_all)[names(background_all)=="id_depth"] <- "id"
 write.csv(background_all, "../output/bio/background_all.csv", row.names = FALSE)
-head(background_all)
-```
-
-ok lets's get the real decimalLatitude and decimalLongitude.
-Will need to plot all point, extract the lonlat coordinates
-
-1) load the file as a spatialdatapointframe. give it the aea coordinate
-
-```{r}
-background_all <- as.data.frame(background_all)
-xy <- background_all[ ,c(2,3)] #lon lat in col 1 and 2
-sp_background <- SpatialPointsDataFrame(coords = xy, data = background_all, proj4string = CRS("+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-60 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs"))
-head(sp_background)
-```
-
-```{r}
-plot(sp_background)
-```
-
-2) reproject to a wgs (use an existing file as a mask)
-
-```{r}
-sp_background <- spTransform(sp_background, CRS = "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0")
-plot(sp_background)
-```
-3) extract lonlat, add to dataframe
-
-```{r}
-sp_background <- data.frame(sp_background, long=coordinates(sp_background)[,1], lat=coordinates(sp_background)[,2])
-head(sp_background)
-```
-
-remove existing decimlalLongitude and decimlalLongitude, and long and lat, and optional (duplicate columns) and change name of longitude.2 & latitude.2 columns to decimalLongitude and decimalLatitude respectively
-```{r}
-sp_background <- as.data.frame(sp_background) #need to go back to a 'normal' dataframe to change col names
-head(sp_background) 
-sp_background <- subset(sp_background, select = -c(decimalLongitude, decimalLatitude, long, lat, optional))
-colnames(sp_background)[colnames(sp_background)=="longitude.2"] <- "decimalLongitude"
-colnames(sp_background)[colnames(sp_background)=="latitude.2"] <- "decimalLatitude"
-head(sp_background)
-```
-
-
-save as csv
-```{r}
-write.csv(sp_background, file = "../output/bio/background_all_lonlat.csv", row.names = FALSE)
-```
-
-
-# Add NAFO Region background point is in
-NAFO Zones shapefile obtained from [NAFO](https://www.nafo.int/Data/GIS)
-
-```{r NAFO shapefile extraction}
-coordinates(sp_background) <- c("decimalLongitude", "decimalLatitude") 
-nafo_zones <- readOGR(dsn=path.expand("../data/bio/nafo_zones"), layer = "nafo_zones_wgs84") #this loads the shapefile
-proj4string(sp_background) <- proj4string(nafo_zones) #tells R that the occurrence data is the same projection as the shapefile
-sp_background$nafo_zone <- over(sp_background, nafo_zones)$ZONE #ZONE is where the zone data is held in teh shapefiles' attributes
-head(sp_background) #just to check it worked
-```
-
-Great. Lets see if any are missing a NAFO Zone. But first, write to a csv and reload as the data is now some wierd 'spatial points dataframe'...
-```{r}
-write.csv(sp_background, "../output/bio/background_all_lonlat_nafo.csv", row.names=FALSE)
-sp_background <- as.data.frame(sp_background) 
-bc_nafo_na <- subset(sp_background, is.na(sp_background$nafo_zone))
-bc_nafo_na
-```
-ok lots don't have a NAFO region attached. This is probably the Hudson Bay issue again...
-
-Uh oh there is a lot. A bet a bunch of them are in the Hudson Strait (which is outside the NAFO Zone).Map the nafo_na points...
-```{r}
-map2 <- getMap(resolution = "low") #creates an object called map at low resoultion
-plot(map2, xlim = c(-65, -40), ylim =c(30, 70), asp = 1, main = "Background missing a NAFO Zone", col = "cornsilk") #the x and y lim are the long-lat bounds of the map
-points(bc_nafo_na$decimalLongitude, bc_nafo_na$decimalLatitude, col = "red") #this adds points to the mapet", xlab = "Longitude", ylab = "Latitude")
-dev.copy(png, "../output/bio/background_missing_nafo.png") #this prints a png of the plot
-dev.off() #this turns off the print comman
-```
-
-Indeed the many of the missing background points are in the hudson strait. Others are near the coast and thus probably just call outside the NAFO shapefiles (remember the smapefiles are not all super-perfectly fitting).
-Think I will take this to arcgis for fixing....
-
-basically what I did was use the selection -> select by attributes tool to find the points where NAFO_region = NA and then manually recode them (using the field calculator), and exported as a .csv.
-
-just double-check they are all gone
-```{r}
-background_all <- read.csv("../output/bio/background_all_lonlat_nafo2.csv", header = TRUE)
-bc_nafo2_na <- subset(background_all, is.na(background_all$nafo_zone))
-bc_nafo2_na
-```
-great none!
-
-
-```{r}
-head(background_all)
-```
-ok so some more crap has been added - the year and month both have _ appended.... change this. Also change 
-- glo_unique_cell to cell_id
-- longitude to longitude_meters
-- latitude to latitude_meters
-
-and remove
-- optional
-- x.1
-- x
-- id_depth
-
-```{r}
-names(background_all)[names(background_all)=="year_"] <- "year"
-names(background_all)[names(background_all)=="month_"] <- "month"
-names(background_all)[names(background_all)=="glo_unique_cell"] <- "cell_id"
-names(background_all)[names(background_all)=="longitude"] <- "longitude_meters"
-names(background_all)[names(background_all)=="latitude"] <- "latitude_meters"
-background_all <- subset(background_all, select = -c(optional, X.1, X, id_depth))
 head(background_all)
 ```
 
@@ -451,7 +445,7 @@ names(depthbin)[names(depthbin)=="layer_name"] <- "depth_layer" #this one is jus
 head(depthbin)
 ```
 ```{r}
-background_all <- merge(x = background_all, y = depthbin[ , c("depthlayerno", "depth_layer")], by.x = ("depthlayerno"), all.x = TRUE)
+background_all <- merge(background_all, y = depthbin[ , c("depthlayerno", "depth_layer")], by = "depthlayerno", all.x = TRUE)
 head(background_all)
 ```
 
@@ -477,22 +471,18 @@ bat <-readGEBCO.bathy("../data/env/GEBCO_2014_2D_-70.0_34.0_-43.0_70.0.nc")
 summary(bat)
 ```
 
-create pretty custom color palette and then plot the bathy laye
+create pretty custom color palette and then plot the bathy layer with species data
 ```{r}
 blues <- colorRampPalette(c("lightblue", "cadetblue2", "cadetblue1", "white"))
 plot(bat, n = 1, image = TRUE, bpal = blues(100))
+points(background_all$decimalLongitude, background_all$decimalLatitude, pch = 20, col = "yellow") #note these are both the wgs84 images
 ```
 lovely jubbely
 
-add the species data...
-```{r}
-plot(bat, n = 1, image = TRUE, bpal = blues(100))
-points(background_all$decimalLongitude, background_all$decimalLatitude, pch = 20, col = "yellow") #note these are both the wgs84 images
-```
 and now get depth... note all the points and bathy data is wgs!
 
 ```{r}
-background_all$bottom_depth <- get.depth(bat, background_all[ ,10:11], locator = FALSE)
+background_all$bottom_depth <- get.depth(bat, background_all[ ,8:9], locator = FALSE)
 background_all$bottom_depth <- background_all$bottom_depth[, 3] #this step is because get.bath actually produces it's own dataframe with long, lat, and depth. This is extracting the depth column and deplacing data_aea$bottom_depth with the correct data.
 write.csv(background_all,"../output/bio/background_all_lonlat_nafo2_sciname_amo_nao_depthname_bath.csv", row.names = FALSE)
 head(background_all)
@@ -502,7 +492,7 @@ head(background_all)
 
 as the title says... how many observations happeend in each cell:
 - in total
-- in each yyyymm
+
 
 ```{r observation by cell - total}
 obs_by_cell_back <- count(background_all, "cell_id")
@@ -510,13 +500,14 @@ write.csv(obs_by_cell_back, file = "../output/bio/back_no_observations_cell.csv"
 head(obs_by_cell_back)
 ```
 
-
+- in each yyyymm
 ```{r}
 obs_cell_yymm_back <- count(background_all, c("cell_id", "year", "month"))
 write.csv(obs_cell_yymm_back, file = "../output/bio/back_no_observations_cell_yymm.csv")
 head(obs_cell_yymm_back)
 ```
 
+- in each yyyymm at depth
 ```{r}
 obs_cell_yymm_depth_back <- count(background_all, c("cell_id", "year", "month", "depthlayerno"))
 write.csv(obs_cell_yymm_depth_back, file = "../output/bio/back_no_observations_cell_yymm_depth.csv")
@@ -524,7 +515,7 @@ head(obs_cell_yymm_depth_back)
 ```
 
 
-Now attach these values to data_aea....
+Now attach these values 
 
 total obs for the whole time period
 ```{r}
@@ -534,7 +525,7 @@ head(background_all)
 
 rename freq column to something meaningful
 ```{r}
-names(background_all)[names(background_all)=="freq"] <- "total_cell_obs"
+names(background_all)[names(background_all)=="freq"] <- "total_cell_obs_xy"
 head(background_all)
 ```
 
@@ -549,9 +540,9 @@ all good
 time-sliced
 ```{r}
 background_all <- merge(background_all, obs_cell_yymm_back, by.x=c("cell_id", "year", "month"), by.y=c("cell_id", "year", "month"))
+names(background_all)[names(background_all)=="freq"] <- "total_cell_obs_xyt"
 background_all <- merge(background_all, obs_cell_yymm_depth_back, by.x=c("cell_id", "year", "month", "depthlayerno"), by.y=c("cell_id", "year", "month", "depthlayerno"))
-names(background_all)[names(background_all)=="freq"] <- "yymm_cell_obs"
-names(background_all)[names(background_all)=="freq"] <- "yymmdepth_cell_obs"
+names(background_all)[names(background_all)=="freq"] <- "total_cell_obs_xyzt"
 write.csv(background_all,"../output/bio/background_all_lonlat_nafo2_sciname_amo_nao_depthname_bath_cellobs.csv", row.names = FALSE)
 head(background_all)
 ```
@@ -562,3 +553,82 @@ and just check some random rows...
 randcheckyymm <- background_all[sample(nrow(background_all), 10), ]
 randcheckyymm
 ```
+
+# attach environmental correlates
+
+This loop runs through the netcdf files and then looks for which rows in data_aea it should extract the value to point from, and at what depth (netcDF layer)
+
+First you need to put the background (background_all) into a spatialpointsdataframe.
+```{r}
+background_all2 <- subset(background_all[1:6, ])
+xy <- background_all2[ ,c(7,8)] # This is to tell R where the coordinates are (in column 18 and 19). Note that the column order needs to be longitude, latitude
+background_all_sp <- SpatialPointsDataFrame(coords = xy, data = background_all2, proj4string = CRS("+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-60 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")) # The CRS is used here is for the albers equal area projection.
+head(background_all_sp)
+```
+
+```{r}
+netcdf_list <- list.files("../data/env/netcdf", pattern = '*.nc', full.names = TRUE) #true means the full path is included
+no_netcdf <- length(netcdf_list) #for the loop - need to know how many files to cycle through
+netcdf_name <- list.files("../data/env/netcdf", pattern = '*.nc', full.names = FALSE) #false means the path is not included
+aea <- raster("../output/env/aea.tif") 
+for (i in 1:no_netcdf) {  
+  print(netcdf_name[i]) #this just prints the name of the netCDF R is working one
+  brkyr <- as.integer(sapply(strsplit(netcdf_name[i], "_"), "[[", 1)) # extracting the first part of the netcdf filename (which is the year)
+  brkmth <- as.integer(sapply(strsplit(netcdf_name[i], "_"), "[[", 2)) # extracting the second part of the netcdf filename (which is the month)
+  brkvar <- (sapply(strsplit(netcdf_name[i], "_"), "[[", 3)) # extracting the third part of the netcdf (inc.nc)
+  temp_brick <- brick(netcdf_list[i], lvar = 4)
+  temp_brick <- projectRaster(temp_brick, aea) 
+    for (j in 1:nrow(background_all_sp)) {  
+      de <- background_all_sp$depthlayerno[[j]]  # a variable for the observation depth layer
+      yr <- (background_all_sp$year[j])  # a variable for the observation year
+      mth <- (background_all_sp$month[j])  # a variable for the observation month
+          if (brkyr == yr & brkmth == mth & brkvar == "temp.nc"){
+              background_all_sp$temp_surface[j] <- extract(x=temp_brick[[1]], y = background_all_sp[j, ]) 
+              if (is.na(de)){
+                background_all_sp$temp_depth[j] <- NA
+              } else  
+                background_all_sp$temp_depth[j] <- extract(x=temp_brick[[de]], y = background_all_sp[j, ])
+          } else if (brkyr == yr & brkmth == mth & brkvar == "salinity.nc") {
+              background_all_sp$salinity_surface[j] <- extract(x=temp_brick[[1]], y = background_all_sp[j, ]) 
+              if (is.na(de)){
+                background_all_sp$salinity_depth[j] <- NA
+              } else  
+                background_all_sp$salinity_depth[j] <- extract(x=temp_brick[[de]], y = background_all_sp[j, ]) 
+          } else if (brkyr == yr & brkmth == mth & brkvar == "chl.nc") {
+              background_all_sp$chl_surface[j] <- extract(x=temp_brick[[1]], y = background_all_sp[j, ]) 
+              if (is.na(de)){
+                background_all_sp$chl_depth[j] <- NA
+              } else  
+                background_all_sp$chl_depth[j] <- extract(x=temp_brick[[de]], y = background_all_sp[j, ]) 
+          } else if (brkyr == yr & brkmth == mth & brkvar == "o2.nc") {
+              background_all_sp$o2_surface[j] <- extract(x=temp_brick[[1]], y = background_all_sp[j, ]) 
+              if (is.na(de)){
+                background_all_sp$o2_depth[j] <- NA
+              } else  
+                background_all_sp$o2_depth[j] <- extract(x=temp_brick[[de]], y = background_all_sp[j, ]) 
+          } else if (brkyr == yr & brkmth == mth & brkvar == "mlp.nc") {
+              background_all_sp$mlp_surface[j] <- extract(x=temp_brick[[1]], y = background_all_sp[j, ])
+          } else if (brkyr == yr & brkmth == mth & brkvar == "ssh.nc") {
+              background_all_sp$ssh_surface[j] <- extract(x=temp_brick[[1]], y = background_all_sp[j, ]) 
+            
+          }
+     
+    }
+}
+head(background_all_sp)
+```
+
+
+and just check some random rows...
+
+```{r}
+randcheck <- background_all[sample(nrow(background_all), 5), ]
+randcheck
+```
+
+
+
+
+
+
+
