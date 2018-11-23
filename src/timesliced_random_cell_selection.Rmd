@@ -560,9 +560,8 @@ This loop runs through the netcdf files and then looks for which rows in data_ae
 
 First you need to put the background (background_all) into a spatialpointsdataframe.
 ```{r}
-background_all2 <- subset(background_all[1:6, ])
-xy <- background_all2[ ,c(7,8)] # This is to tell R where the coordinates are (in column 18 and 19). Note that the column order needs to be longitude, latitude
-background_all_sp <- SpatialPointsDataFrame(coords = xy, data = background_all2, proj4string = CRS("+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-60 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")) # The CRS is used here is for the albers equal area projection.
+xy <- background_all[ ,c("longitude_meters","latitude_meters")] # This is to tell R where the coordinates are. Note that the column order needs to be longitude, latitude
+background_all_sp <- SpatialPointsDataFrame(coords = xy, data = background_all, proj4string = CRS("+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-60 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")) # The CRS is used here is for the albers equal area projection.
 head(background_all_sp)
 ```
 
@@ -615,6 +614,7 @@ for (i in 1:no_netcdf) {
      
     }
 }
+write.csv(background_all, "../output/bio/background_complete.csv", row.names = FALSE)
 head(background_all_sp)
 ```
 
