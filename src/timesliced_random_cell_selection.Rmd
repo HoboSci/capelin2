@@ -614,7 +614,8 @@ for (i in 1:no_netcdf) {
      
     }
 }
-write.csv(background_all, "../output/bio/background_complete.csv", row.names = FALSE)
+write.csv(background_all_sp, "../output/bio/background_complete.csv", row.names = FALSE)
+background_all <- as.data.frame(background_all_sp)
 head(background_all_sp)
 ```
 
@@ -626,6 +627,186 @@ randcheck <- background_all[sample(nrow(background_all), 5), ]
 randcheck
 ```
 
+```{r}
+randchkxy <- randcheck[ , c("longitude_meters", "latitude_meters")] 
+randchsp <- SpatialPointsDataFrame(coords = randchkxy, data = randcheck, proj4string = CRS("+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-60 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")) # The CRS is used here is for the albers equal area projection.
+
+#row 1
+temp_brick <-  brick("../data/env/netcdf/2002_03_chl.nc", lvar = 4)
+t200203chl <- projectRaster(temp_brick, aea)
+chls <- extract(x=t200203chl[[1]], y = randchsp[1, ]) 
+chls
+chld <- extract(x=t200203chl[[23]], y = randchsp[1, ]) 
+chld 
+temp_brick <-  brick("../data/env/netcdf/2002_03_mlp.nc", lvar = 4)
+tempbrick <- projectRaster(temp_brick, aea)
+mlps <- extract(x=tempbrick[[1]], y = randchsp[1, ]) 
+mlps
+temp_brick <-  brick("../data/env/netcdf/2002_03_o2.nc", lvar = 4)
+tempbrick <- projectRaster(temp_brick, aea)
+o2s <- extract(x=tempbrick[[1]], y = randchsp[1, ]) 
+o2s
+o2d <- extract(x=tempbrick[[23]], y = randchsp[1, ]) 
+o2d
+temp_brick <-  brick("../data/env/netcdf/2002_03_salinity.nc", lvar = 4)
+tempbrick <- projectRaster(temp_brick, aea)
+sals <- extract(x=tempbrick[[1]], y = randchsp[1, ]) 
+sals
+sald <- extract(x=tempbrick[[23]], y = randchsp[1, ]) 
+sald
+temp_brick <-  brick("../data/env/netcdf/2002_03_temp.nc", lvar = 4)
+tempbrick <- projectRaster(temp_brick, aea)
+temps <- extract(x=tempbrick[[1]], y = randchsp[1, ]) 
+temps
+tempd <- extract(x=tempbrick[[23]], y = randchsp[1, ]) 
+tempd
+temp_brick <-  brick("../data/env/netcdf/2002_03_ssh.nc", lvar = 4)
+tempbrick <- projectRaster(temp_brick, aea)
+sshs <- extract(x=tempbrick[[1]], y = randchsp[1, ]) 
+sshs
+
+#row 2
+temp_brick <-  brick("../data/env/netcdf/2007_07_chl.nc", lvar = 4)
+tempbrick <- projectRaster(temp_brick, aea)
+tempbrick
+chls <- extract(x=tempbrick[[1]], y = randchsp[2, ]) 
+chls
+chld <- extract(x=tempbrick[[13]], y = randchsp[2, ]) 
+chld 
+temp_brick <-  brick("../data/env/netcdf/2007_07_mlp.nc", lvar = 4)
+tempbrick <- projectRaster(temp_brick, aea)
+mlps <- extract(x=tempbrick[[1]], y = randchsp[2, ]) 
+mlps
+temp_brick <-  brick("../data/env/netcdf/2007_07_o2.nc", lvar = 4)
+tempbrick <- projectRaster(temp_brick, aea)
+o2s <- extract(x=tempbrick[[1]], y = randchsp[2, ]) 
+o2s
+o2d <- extract(x=tempbrick[[13]], y = randchsp[2, ]) 
+o2d
+temp_brick <-  brick("../data/env/netcdf/2007_07_salinity.nc", lvar = 4)
+tempbrick <- projectRaster(temp_brick, aea)
+sals <- extract(x=tempbrick[[1]], y = randchsp[2, ]) 
+sals
+sald <- extract(x=tempbrick[[13]], y = randchsp[2, ]) 
+sald
+temp_brick <-  brick("../data/env/netcdf/2007_07_temp.nc", lvar = 4)
+tempbrick <- projectRaster(temp_brick, aea)
+temps <- extract(x=tempbrick[[1]], y = randchsp[2, ]) 
+temps
+tempd <- extract(x=tempbrick[[13]], y = randchsp[2, ]) 
+tempd
+temp_brick <-  brick("../data/env/netcdf/2007_07_ssh.nc", lvar = 4)
+tempbrick <- projectRaster(temp_brick, aea)
+sshs <- extract(x=tempbrick[[1]], y = randchsp[2, ]) 
+sshs
+
+#row 3
+temp_brick <-  brick("../data/env/netcdf/2011_08_chl.nc", lvar = 4)
+tempbrick <- projectRaster(temp_brick, aea)
+tempbrick
+chls <- extract(x=tempbrick[[1]], y = randchsp[3, ]) 
+chls
+chld <- extract(x=tempbrick[[13]], y = randchsp[3, ]) 
+chld 
+temp_brick <-  brick("../data/env/netcdf/2011_08_mlp.nc", lvar = 4)
+tempbrick <- projectRaster(temp_brick, aea)
+mlps <- extract(x=tempbrick[[1]], y = randchsp[3, ]) 
+mlps
+temp_brick <-  brick("../data/env/netcdf/2011_08_o2.nc", lvar = 4)
+tempbrick <- projectRaster(temp_brick, aea)
+o2s <- extract(x=tempbrick[[1]], y = randchsp[3, ]) 
+o2s
+o2d <- extract(x=tempbrick[[13]], y = randchsp[3, ]) 
+o2d
+temp_brick <-  brick("../data/env/netcdf/2011_08_salinity.nc", lvar = 4)
+tempbrick <- projectRaster(temp_brick, aea)
+sals <- extract(x=tempbrick[[1]], y = randchsp[3, ]) 
+sals
+sald <- extract(x=tempbrick[[13]], y = randchsp[3, ]) 
+sald
+temp_brick <-  brick("../data/env/netcdf/2011_08_temp.nc", lvar = 4)
+tempbrick <- projectRaster(temp_brick, aea)
+temps <- extract(x=tempbrick[[1]], y = randchsp[3, ]) 
+temps
+tempd <- extract(x=tempbrick[[13]], y = randchsp[3, ]) 
+tempd
+temp_brick <-  brick("../data/env/netcdf/2011_08_ssh.nc", lvar = 4)
+tempbrick <- projectRaster(temp_brick, aea)
+sshs <- extract(x=tempbrick[[1]], y = randchsp[3, ]) 
+sshs
+
+#row 4
+temp_brick <-  brick("../data/env/netcdf/2000_05_chl.nc", lvar = 4)
+tempbrick <- projectRaster(temp_brick, aea)
+tempbrick
+chls <- extract(x=tempbrick[[1]], y = randchsp[4, ]) 
+chls
+chld <- extract(x=tempbrick[[2]], y = randchsp[4, ]) 
+chld 
+temp_brick <-  brick("../data/env/netcdf/2000_05_mlp.nc", lvar = 4)
+tempbrick <- projectRaster(temp_brick, aea)
+mlps <- extract(x=tempbrick[[1]], y = randchsp[4, ]) 
+mlps
+temp_brick <-  brick("../data/env/netcdf/2000_05_o2.nc", lvar = 4)
+tempbrick <- projectRaster(temp_brick, aea)
+o2s <- extract(x=tempbrick[[1]], y = randchsp[4, ]) 
+o2s
+o2d <- extract(x=tempbrick[[2]], y = randchsp[4, ]) 
+o2d
+temp_brick <-  brick("../data/env/netcdf/2000_05_salinity.nc", lvar = 4)
+tempbrick <- projectRaster(temp_brick, aea)
+sals <- extract(x=tempbrick[[1]], y = randchsp[4, ]) 
+sals
+sald <- extract(x=tempbrick[[2]], y = randchsp[4, ]) 
+sald
+temp_brick <-  brick("../data/env/netcdf/2000_05_temp.nc", lvar = 4)
+tempbrick <- projectRaster(temp_brick, aea)
+temps <- extract(x=tempbrick[[1]], y = randchsp[4, ]) 
+temps
+tempd <- extract(x=tempbrick[[2]], y = randchsp[4, ]) 
+tempd
+temp_brick <-  brick("../data/env/netcdf/2000_05_ssh.nc", lvar = 4)
+tempbrick <- projectRaster(temp_brick, aea)
+sshs <- extract(x=tempbrick[[1]], y = randchsp[4, ]) 
+sshs
+
+#row 5
+temp_brick <-  brick("../data/env/netcdf/2012_06_chl.nc", lvar = 4)
+tempbrick <- projectRaster(temp_brick, aea)
+tempbrick
+chls <- extract(x=tempbrick[[1]], y = randchsp[5, ]) 
+chls
+chld <- extract(x=tempbrick[[25]], y = randchsp[5, ]) 
+chld 
+temp_brick <-  brick("../data/env/netcdf/2012_06_mlp.nc", lvar = 4)
+tempbrick <- projectRaster(temp_brick, aea)
+mlps <- extract(x=tempbrick[[1]], y = randchsp[5, ]) 
+mlps
+temp_brick <-  brick("../data/env/netcdf/2012_06_o2.nc", lvar = 4)
+tempbrick <- projectRaster(temp_brick, aea)
+o2s <- extract(x=tempbrick[[1]], y = randchsp[5, ]) 
+o2s
+o2d <- extract(x=tempbrick[[25]], y = randchsp[5, ]) 
+o2d
+temp_brick <-  brick("../data/env/netcdf/2012_06_salinity.nc", lvar = 4)
+tempbrick <- projectRaster(temp_brick, aea)
+sals <- extract(x=tempbrick[[1]], y = randchsp[5, ]) 
+sals
+sald <- extract(x=tempbrick[[25]], y = randchsp[5, ]) 
+sald
+temp_brick <-  brick("../data/env/netcdf/2012_06_temp.nc", lvar = 4)
+tempbrick <- projectRaster(temp_brick, aea)
+temps <- extract(x=tempbrick[[1]], y = randchsp[5, ]) 
+temps
+tempd <- extract(x=tempbrick[[25]], y = randchsp[5, ]) 
+tempd
+temp_brick <-  brick("../data/env/netcdf/2012_06_ssh.nc", lvar = 4)
+tempbrick <- projectRaster(temp_brick, aea)
+sshs <- extract(x=tempbrick[[1]], y = randchsp[5, ]) 
+sshs
+```
+
+it worked!
 
 
 
