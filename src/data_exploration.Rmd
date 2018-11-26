@@ -21,6 +21,8 @@ source("../src/ipak.R")
 ipak(packages)
 ```
 
+
+# presence points
 Read in the presence points
 
 ```{r}
@@ -28,7 +30,7 @@ presence <- read.csv("../output/bio/data_aea_cell_amo_nao_bins_env_depth_cellobn
 head(presence)
 ```
 
-# Update: Who sampled in which year and which month:
+## Update: Who sampled in which year and which month:
 
 year
 ```{r}
@@ -44,7 +46,7 @@ write.csv(inst_by_mt, file = "../output/bio/institutioncode_by_mth.csv")
 inst_by_mt
 ```
 
-# environmental correlates
+## environmental correlates
 
 1) Get the max, min, an mean values and add into a dataframe
 
@@ -168,7 +170,7 @@ ok again...
 
 Leave the rest
 
-#simple plots of env. correlates
+## simple plots of env. correlates
 
 temperature
 ```{r}
@@ -306,11 +308,11 @@ dev.off() # stops automatic saving of the plot to a png
 ```
 
 
-# simple boxplots of env. corr
+## simple boxplots of env. corr
 
 Same as above but with boxplots (may provide some more useful info)
 
-XXX SAM YOU WANT TO PUT THE TWO LAYERS ON THE ONE PLOT - NOT TWO SIDE BY SIDE
+
 
 temperature
 ```{r}
@@ -454,4 +456,87 @@ dev.off() # stops automatic saving of the plot to a png
 ```
 
 
+# background points
+Read in the presence points
 
+```{r}
+background <- read.csv("../output/bio/background_complete_obs_cels.csv", header = TRUE)
+head(background)
+```
+
+# environmental correlates
+
+1) Get the max, min, an mean values and add into a dataframe
+
+Temperature
+```{r}
+temp_depth_max_back <- max(background$temp_depth, na.rm = TRUE)
+temp_depth_min_back <- min(background$temp_depth, na.rm = TRUE)
+temp_depth_mean_back <- mean(background$temp_depth, na.rm = TRUE)
+temp_surface_max_back <- max(background$temp_surface, na.rm = TRUE)
+temp_surface_min_back <- min(background$temp_surface, na.rm = TRUE)
+temp_surface_mean_back <- mean(background$temp_surface, na.rm = TRUE)
+```
+
+Salinity
+```{r}
+sal_depth_max_back <- max(background$salinity_depth, na.rm = TRUE)
+sal_depth_min_back <- min(background$salinity_depth, na.rm = TRUE)
+sal_depth_mean_back <- mean(background$salinity_depth, na.rm = TRUE)
+sal_surface_max_back <- max(background$salinity_surface, na.rm = TRUE)
+sal_surface_min_back <- min(background$salinity_surface, na.rm = TRUE)
+sal_surface_mean_back <- mean(background$salinity_surface, na.rm = TRUE)
+```
+
+Chl
+```{r}
+chl_depth_max_back <- max(background$chl_depth, na.rm = TRUE)
+chl_depth_min_back <- min(background$chl_depth, na.rm = TRUE)
+chl_depth_mean_back <- mean(background$chl_depth, na.rm = TRUE)
+chl_surface_max_back <- max(background$chl_surface, na.rm = TRUE)
+chl_surface_min_back <- min(background$chl_surface, na.rm = TRUE)
+chl_surface_mean_back <- mean(background$chl_surface, na.rm = TRUE)
+```
+
+O2
+```{r}
+o2_depth_max_back <- max(background$o2_depth, na.rm = TRUE)
+o2_depth_min_back <- min(background$o2_depth, na.rm = TRUE)
+o2_depth_mean_back <- mean(background$o2_depth, na.rm = TRUE)
+o2_surface_max_back <- max(background$o2_surface, na.rm = TRUE)
+o2_surface_min_back <- min(background$o2_surface, na.rm = TRUE)
+o2_surface_mean_back <- mean(background$o2_surface, na.rm = TRUE)
+```
+
+MLP
+```{r}
+mlp_surface_max_back <- max(background$mlp_surface, na.rm = TRUE)
+mlp_surface_min_back <- min(background$mlp_surface, na.rm = TRUE)
+mlp_surface_mean_back <- mean(background$mlp_surface, na.rm = TRUE)
+```
+
+SSH
+```{r}
+ssh_surface_max_back <- max(background$ssh_surface, na.rm = TRUE)
+ssh_surface_min_back <- min(background$ssh_surface, na.rm = TRUE)
+ssh_surface_mean_back <- mean(background$ssh_surface, na.rm = TRUE)
+```
+
+create matrix
+```{r}
+tdb <- c(temp_depth_max_back, temp_depth_min_back, temp_depth_mean_back)
+tsb <- c(temp_surface_max_back, temp_surface_min_back, temp_surface_mean_back)
+sdb <- c(sal_depth_max_back, sal_depth_min_back, sal_depth_mean_back)
+ssb <- c(sal_surface_max_back, sal_surface_min_back, sal_surface_mean_back)
+cdb <- c(sal_depth_max_back, sal_depth_min_back, sal_depth_mean_back)
+csb <- c(sal_surface_max_back, sal_surface_min_back, sal_surface_mean_back)
+odb <- c(o2_depth_max_back, o2_depth_min_back, o2_depth_mean_back)
+osb <- c(o2_surface_max_back, o2_surface_min_back, o2_surface_mean_back)
+mlpb <- c(mlp_surface_max_back, mlp_surface_min_back, mlp_surface_mean_back)
+sshb <- c(ssh_surface_max_back, ssh_surface_min_back, ssh_surface_mean_back)
+env_stats_back <- rbind(tdb, tsb, sdb, ssb, cdb, csb, odb, osb, mlpb, sshb)
+row.names(env_stats_back) <- c("Temp Depth", "Temp Surface", "Salinity Depth", "Salinity Surface", "Chl Depth", "Chl Surface", "Oxygen Depth", "Oxygen Surface", "MLP", "SSH") 
+colnames(env_stats_back) <- c("Max", "Min", "Mean")
+write.csv(env_stats_back, "../output/env/env_correlates_background_basic_stats.csv", row.names = TRUE)
+env_stats_back
+```

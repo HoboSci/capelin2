@@ -810,6 +810,7 @@ it worked!
 
 create a new column for Occurence, and populate with "0" (because these are all background)
 ```{r}
+background_all <- read.csv("../output/bio/background_complete.csv")
 background_all$occurrence <- "0"
 write.csv(background_all, "../output/bio/background_complete_obs.csv", row.names = FALSE)
 head(background_all)
