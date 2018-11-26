@@ -238,7 +238,6 @@ ouch - 40 layers... a job for a boxplot probably
 
 # frequency plots of env. corr
 
-just do surface layers for now
 
 temperature
 ```{r}
@@ -252,6 +251,60 @@ hist(presence$temp_dept, main = "Temp at Depth", xlab = "Kelvin")
 dev.copy(png, "../output/env/simple_plots/temperature_depth_histogram.png") # to automatically save the plot to a png AND show it inline
 dev.off() # stops automatic saving of the plot to a png
 ```
+
+chl
+```{r}
+hist(presence$chl_surface, main = "Chlorophyll at Surface", xlab = "Chlorophyll Concentrations (mmol.m-3)")
+dev.copy(png, "../output/env/simple_plots/chl_surface_histogram.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+```
+
+```{r}
+hist(presence$chl_depth, main = "Chlorophyll at Observation Depth", xlab = "Chlorophyll Concentrations (mmol.m-3)")
+dev.copy(png, "../output/env/simple_plots/chl_depth_histogram.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+```
+
+salinity
+```{r}
+hist(presence$salinity_surface, main = "Salinity at Surface", xlab = "Salinity Practical Salinity Unit (PSU)")
+dev.copy(png, "../output/env/simple_plots/sal_surface_histogram.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+```
+
+```{r}
+hist(presence$salinity_depth, main = "Salinity at Observation Depth", xlab = "Salinity Practical Salinity Unit (PSU)")
+dev.copy(png, "../output/env/simple_plots/sal_depth_histogram.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+```
+
+oxygen
+```{r}
+hist(presence$o2_surface, main = "Dissolved Oxygen at Surface", xlab = "Mole Concentration of Dissolved Oxygen in Sea Water (mmol.m-3)")
+dev.copy(png, "../output/env/simple_plots/o2_surface_histogram.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+```
+
+```{r}
+hist(presence$o2_depth, main = "Dissolved Oxygen at Observation Depth", xlab = "Mole Concentration of Dissolved Oxygen in Sea Water (mmol.m-3)")
+dev.copy(png, "../output/env/simple_plots/o2_depth_histogram.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+```
+
+MLP
+```{r}
+hist(presence$mlp, main = "Mixed Layer Thickness at Observation", xlab = "Mixed Layer Thickness (m)")
+dev.copy(png, "../output/env/simple_plots/mlp_surface_histogram.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+```
+
+ssh
+```{r}
+hist(presence$ssh, main = "Sea Surface Height at Observation", xlab = "Sea Surface Height (m)")
+dev.copy(png, "../output/env/simple_plots/ssh_surface_histogram.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+```
+
 
 # simple boxplots of env. corr
 
