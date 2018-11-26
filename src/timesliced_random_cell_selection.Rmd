@@ -21,11 +21,9 @@ packages <- c("raster", "dplyr", "data.table", "sp", "adehabitatHR", "maptools")
 source("../src/ipak.R")
 ipak(packages)
 
-
 ```{r pre-install & load packages, include=FALSE}
-install.packages("pacman")
-library(pacman)
-p_load(raster, dplyr, data.table, sp, adehabitatHR, rgdal, rworldmap, ncdf4, marmap, plyr)
+if (!require("pacman")) install.packages("pacman")
+p_load(raster, dplyr, data.table, sp, adehabitatHR, rgdal, rworldmap, ncdf4, marmap, plyr, weathermetrics)
 ```
 
 # the show
@@ -817,6 +815,14 @@ write.csv(background_all, "../output/bio/background_complete_obs.csv", row.names
 head(background_all)
 ```
 
+# add a col for temp variable in celsius (every-day person readable)
 
+Uses the weathermetrics package
+
+```{r}
+background_all$temp_celsius_depth <- kelvin.to.celsius(background_all$temp_depth, round = 4) # 4 is the number of decimal places. the values are expressed to 4
+background_all$temp_celsius_surface <- kelvin.to.celsius(background_all$temp_surface, round = 4)
+write.csv(background_all, "../output/bio/background_complete_obs_cels.csv", row.names = FALSE)
+```
 
 
