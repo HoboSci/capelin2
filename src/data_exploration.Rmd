@@ -16,7 +16,7 @@ You can load them using the following code which uses a function called [ipak](h
 Note this function checks to see if the packages are installed first.
 The "include=FALSE" supresses the package installation text appearing in the document...
 ```{r pre-install packages, include=FALSE}
-packages <- c("plyr", "graphics") 
+packages <- c("plyr", "graphics", "ggplot2") 
 source("../src/ipak.R")
 ipak(packages)
 ```
@@ -24,7 +24,7 @@ ipak(packages)
 Read in the presence points
 
 ```{r}
-presence <- read.csv("../output/bio/data_aea_cell_amo_nao_bins_env_depth_cellobno_env.csv", header = TRUE)
+presence <- read.csv("../output/bio/data_aea_cell_amo_nao_bins_env_depth_cellobno_env_naocor_cels.csv", header = TRUE)
 head(presence)
 ```
 
@@ -247,7 +247,11 @@ dev.copy(png, "../output/env/simple_plots/temperature_surface_histogram.png") # 
 dev.off() # stops automatic saving of the plot to a png
 ```
 
-
+```{r}
+hist(presence$temp_dept, main = "Temp at Depth", xlab = "Kelvin")
+dev.copy(png, "../output/env/simple_plots/temperature_depth_histogram.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+```
 
 # simple boxplots of env. corr
 
@@ -261,5 +265,48 @@ par(mfrow=c(1,2))
 boxplot(presence$temp_depth, main = "Temp at Depth (Various)", ylab = "Kelvin")
 boxplot(presence$temp_surface, main = "Temp at Surface", ylab = "Kelvin")
 dev.copy(png, "../output/env/simple_plots/temperature_boxplot.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+```
+
+```{r}
+boxplot(presence$temp_depth ~ presence$month, xlab = "month", ylab = "Temperature (Kelvin)", main = "Temperature at Observation Depth per Month")
+dev.copy(png, "../output/env/simple_plots/temperature_boxplot_dept_month.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+```
+
+```{r}
+boxplot(presence$chl_depth ~ presence$month, xlab = "month", ylab = "Chlorophyll Concentrations (mmol.m-3)", main = "Chlorophyll at Observation Depth per Month")
+dev.copy(png, "../output/env/simple_plots/chlorophyll_boxplot_dept_month.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+```
+
+```{r}
+boxplot(presence$salinity_depth ~ presence$month, xlab = "month", ylab = "Salinity Practical Salinity Unit (PSU)", main = "Salinity at Observation Depth per Month")
+dev.copy(png, "../output/env/simple_plots/salinity_boxplot_dept_month.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+```
+
+o2
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+xxxx
+```{r}
+boxplot(presence$temp_depth ~ presence$year, xlab = "Year", ylab = "Temperature (Kelvin)", main = "Temperature at Observation Depth")
+dev.copy(png, "../output/env/simple_plots/temperature_boxplot_dept_year.png") # to automatically save the plot to a png AND show it inline
 dev.off() # stops automatic saving of the plot to a png
 ```
