@@ -810,14 +810,26 @@ first subset the env.correlate columns (you don't need everything)
 ```{r}
 str(background)
 background_env <- subset(background, select = c(amo_sample, amo_winter, amo_prev, nao_sample, nao_winter, nao_prev, chl_surface, chl_depth, mlp_surface, ssh_surface, temp_surface, temp_depth, o2_surface, o2_depth, salinity_surface, salinity_depth))
+dev.copy(png, "../output/env/simple_plots/background_corr.png") # to automatically save the plot to a png AND show it inline
 backpairs <- pairs(background_env)
 dev.copy(png, "../output/env/simple_plots/background_corr.png") # to automatically save the plot to a png AND show it inline
 dev.off() # stops automatic saving of the plot to a png
-
-
 ```
 
+## correlations between presence points
 
+check to see if there are any correlations in the env. variables
+
+
+first subset the env.correlate columns (you don't need everything)
+
+```{r}
+str(presence)
+pres_env <- subset(presence, select = c(amo_sample, amo_winter, amo_prev, nao_sample, nao_winter, nao_prev, chl_surface, chl_depth, mlp_surface, ssh_surface, temp_surface, temp_depth, o2_surface, o2_depth, salinity_surface, salinity_depth))
+png("../output/env/simple_plots/presence_corr.png") # to automatically save the plot to a png AND show it inline
+pairs(pres_env)
+dev.off() # stops automatic saving of the plot to a png
+```
 
 
 
