@@ -1082,6 +1082,15 @@ names(data_aea)[names(data_aea)=="freq"] <- "yymm_cell_obs"
 head(data_aea)
 ```
 
+time-sliced by depth
+
+```{r}
+obs_cell_yymm_depth <- count(data_aea, c("cell_id", "year", "month", "depthlayerno"))
+data_aea <- merge(data_aea, obs_cell_yymm_depth, by.x=c("cell_id", "year", "month", "depthlayerno"), by.y=c("cell_id", "year", "month", "depthlayerno"))
+names(data_aea)[names(data_aea)=="freq"] <- "total_cell_obs_xyzt"
+```
+
+
 write to .csv
 ```{r}
 write.csv(data_aea,"../output/bio/data_aea_cell_amo_nao_bins_env_depth_cellobno.csv", row.names = FALSE)
