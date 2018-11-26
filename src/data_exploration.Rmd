@@ -540,3 +540,269 @@ colnames(env_stats_back) <- c("Max", "Min", "Mean")
 write.csv(env_stats_back, "../output/env/env_correlates_background_basic_stats.csv", row.names = TRUE)
 env_stats_back
 ```
+
+temperature
+```{r}
+par(mfrow=c(1,2))
+plot(background$temp_depth, main = "Background Points Temp at Depth (Various)", ylab = "Kelvin")
+plot(background$temp_surface, main = "Background Points Temp at Surface", ylab = "Kelvin")
+dev.copy(png, "../output/env/simple_plots/temperature_background_simpleplot.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+```
+
+
+salinity
+```{r}
+par(mfrow=c(1,2))
+plot(background$salinity_depth, main = "Background Points Salinity at Depth (Various)", ylab = "Practical Salinity Units")
+plot(background$salinity_surface, main = "Background Points Salinity at Surface", ylab = "Practical Salinity Units")
+dev.copy(png,"../output/env/simple_plots/salinity_background_simpleplot.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+```
+
+Chlorophyll
+```{r}
+par(mfrow=c(1,2))
+plot(background$chl_depth, main = "Background Points Chl at Depth (Various)", ylab = "Chl (mmol.m-3)")
+plot(background$chl_surface, main = "Background Points Chl at Surface", ylab = "Chl (mmol.m-3)")
+dev.copy(png,"../output/env/simple_plots/chl_background_simpleplot.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+```
+
+O2
+```{r}
+par(mfrow=c(1,2))
+plot(background$o2_depth, main = "Background Points Dissolved Oxygen at Depth (Various)", ylab = "Chl (mmol.m-3)")
+plot(background$o2_surface, main = "Background Points Dissolved Oxygen at Surface", ylab = "O2 (mmol.m-3)")
+dev.copy(png,"../output/env/simple_plots/o2_background_simpleplot.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+```
+
+mlp
+```{r}
+plot(background$mlp_surface, main = "Background Points Mixed Layer Thickness", ylab = "Depth (m)")
+dev.copy(png,"../output/env/simple_plots/mlp_background_simpleplot.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+```
+
+SSH
+```{r}
+plot(background$ssh_surface, main = "Background Points Sea Surface Height", ylab = "Height (m)")
+dev.copy(png,"../output/env/simple_plots/ssh_background_simpleplot.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+```
+
+## frequency plots of env. corr
+
+
+temperature
+```{r}
+hist(background$temp_surface, main = "Background Temp at Surface", xlab = "Kelvin")
+dev.copy(png, "../output/env/simple_plots/temperature_background_surface_histogram.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+```
+
+```{r}
+hist(background$temp_dept, main = "Background Temp at Depth", xlab = "Kelvin")
+dev.copy(png, "../output/env/simple_plots/temperature_background_depth_histogram.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+```
+
+chl
+```{r}
+hist(background$chl_surface, main = "Background Chlorophyll at Surface", xlab = "Chlorophyll Concentrations (mmol.m-3)")
+dev.copy(png, "../output/env/simple_plots/chl_background_surface_histogram.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+```
+
+```{r}
+hist(background$chl_depth, main = "Background Chlorophyll at Observation Depth", xlab = "Chlorophyll Concentrations (mmol.m-3)")
+dev.copy(png, "../output/env/simple_plots/chl_background_depth_histogram.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+```
+
+salinity
+```{r}
+hist(background$salinity_surface, main = "Background Salinity at Surface", xlab = "Salinity Practical Salinity Unit (PSU)")
+dev.copy(png, "../output/env/simple_plots/sal_background_surface_histogram.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+```
+
+```{r}
+hist(background$salinity_depth, main = "Background Salinity at Observation Depth", xlab = "Salinity Practical Salinity Unit (PSU)")
+dev.copy(png, "../output/env/simple_plots/sal_background_depth_histogram.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+```
+
+oxygen
+```{r}
+hist(background$o2_surface, main = "Background Dissolved Oxygen at Surface", xlab = "Mole Concentration of Dissolved Oxygen in Sea Water (mmol.m-3)")
+dev.copy(png, "../output/env/simple_plots/o2_background_surface_histogram.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+```
+
+```{r}
+hist(background$o2_depth, main = "Background Dissolved Oxygen at Observation Depth", xlab = "Mole Concentration of Dissolved Oxygen in Sea Water (mmol.m-3)")
+dev.copy(png, "../output/env/simple_plots/o2_background_depth_histogram.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+```
+
+MLP
+```{r}
+hist(background$mlp, main = "Background Mixed Layer Thickness at Observation", xlab = "Mixed Layer Thickness (m)")
+dev.copy(png, "../output/env/simple_plots/mlp_background_surface_histogram.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+```
+
+ssh
+```{r}
+hist(background$ssh, main = "Background Sea Surface Height at Observation", xlab = "Sea Surface Height (m)")
+dev.copy(png, "../output/env/simple_plots/ssh_background_surface_histogram.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+```
+
+## simple boxplots of env. corr
+
+Same as above but with boxplots (may provide some more useful info)
+
+temperature
+
+
+```{r}
+boxplot(background$temp_depth ~ background$month, xlab = "month", ylab = "Temperature (Kelvin)", main = "Temperature at Background Depth per Month")
+dev.copy(png, "../output/env/simple_plots/temperature_background_boxplot_dept_month.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+```
+
+```{r}
+boxplot(background$chl_depth ~ background$month, xlab = "month", ylab = "Chlorophyll Concentrations (mmol.m-3)", main = "Chlorophyll at Background Depth per Month")
+dev.copy(png, "../output/env/simple_plots/chlorophyll_background_boxplot_dept_month.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+```
+
+```{r}
+boxplot(background$salinity_depth ~ background$month, xlab = "month", ylab = "Salinity Practical Salinity Unit (PSU)", main = "Salinity at Background Depth per Month")
+dev.copy(png, "../output/env/simple_plots/salinity_background_boxplot_dept_month.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+```
+
+```{r}
+boxplot(background$o2_depth ~ background$month, xlab = "month", ylab = "Mole Concentration of Dissolved Oxygen in Sea Water (mmol.m-3)", main = "Dissolved Oxygen at Background Depth per Month")
+dev.copy(png, "../output/env/simple_plots/o2_background_boxplot_dept_month.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+```
+
+```{r}
+boxplot(background$mlp_surface ~ background$month, xlab = "month", ylab = "Mixed Layer Thickness (m)", main = "Mixed Layer Thickness at Background per Month")
+dev.copy(png, "../output/env/simple_plots/mlp_background_boxplot_dept_month.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+```
+
+```{r}
+boxplot(background$ssh_surface ~ background$month, xlab = "month", ylab = "Sea Surface Height (m)", main = "Sea Surface Height at Background per Month")
+dev.copy(png, "../output/env/simple_plots/ssh_background_boxplot_dept_month.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+```
+
+```{r}
+boxplot(background$temp_depth ~ background$year, xlab = "Year", ylab = "Temperature (Kelvin)", main = "Temperature at Background Depth per Year")
+dev.copy(png, "../output/env/simple_plots/temperature_background_boxplot_dept_year.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+```
+
+```{r}
+boxplot(background$chl_depth ~ background$year, xlab = "Year", ylab = "Chlorophyll Concentrations (mmol.m-3)", main = "Chlorophyll at Background Depth per Year")
+dev.copy(png, "../output/env/simple_plots/chl_background_boxplot_dept_year.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+```
+
+```{r}
+boxplot(background$salinity_depth ~ background$year, xlab = "Year", ylab = "Salinity Practical Salinity Unit (PSU)", main = "Salinity at Background Depth per Year")
+dev.copy(png, "../output/env/simple_plots/salinity_background_boxplot_dept_year.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+```
+
+```{r}
+boxplot(background$o2_depth ~ background$year, xlab = "Year", ylab = "Mole Concentration of Dissolved Oxygen in Sea Water (mmol.m-3)", main = "Dissolved Oxygen at Background Depth per Year")
+dev.copy(png, "../output/env/simple_plots/oxygen_background_boxplot_dept_year.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+```
+
+```{r}
+boxplot(background$mlp ~ background$year, xlab = "Year", ylab = "Mixed Layer Thickness (m)", main = "Mixed Layer Thickness at Background per Year")
+dev.copy(png, "../output/env/simple_plots/mlp_background_boxplot_dept_year.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+```
+
+```{r}
+boxplot(background$ssh ~ background$year, xlab = "Year", ylab = "Sea Surface Height (m)", main = "Sea Surface Height at Background per Year")
+dev.copy(png, "../output/env/simple_plots/ssh_background_boxplot_dept_year.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+```
+
+```{r}
+boxplot(background$temp_surface ~ background$month, xlab = "month", ylab = "Temperature (Kelvin)", main = "Temperature at Background (Surface) per Month")
+dev.copy(png, "../output/env/simple_plots/temperature_background_boxplot_surface_month.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+```
+
+```{r}
+boxplot(background$chl_surface ~ background$month, xlab = "month", ylab = "Chlorophyll Concentrations (mmol.m-3)", main = "Chlorophyll at Background (Surface) per Month")
+dev.copy(png, "../output/env/simple_plots/chlorophyll_background_boxplot_surface_month.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+```
+
+```{r}
+boxplot(background$salinity_surface ~ background$month, xlab = "month", ylab = "Salinity Practical Salinity Unit (PSU)", main = "Salinity at Background (Surface) per Month")
+dev.copy(png, "../output/env/simple_plots/salinity_background_boxplot_surface_month.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+```
+
+```{r}
+boxplot(background$o2_surface ~ background$month, xlab = "month", ylab = "Mole Concentration of Dissolved Oxygen in Sea Water (mmol.m-3)", main = "Dissolved Oxygen at Background (Surface) per Month")
+dev.copy(png, "../output/env/simple_plots/o2_background_boxplot_surface_month.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+```
+
+```{r}
+boxplot(background$mlp_surface ~ background$month, xlab = "month", ylab = "Mixed Layer Thickness (m)", main = "Mixed Layer Thickness at Background per Month")
+dev.copy(png, "../output/env/simple_plots/mlp_background_boxplot_surface_month.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+```
+
+```{r}
+boxplot(background$ssh_surface ~ background$month, xlab = "month", ylab = "Sea Surface Height (m)", main = "Sea Surface Height at Background per Month")
+dev.copy(png, "../output/env/simple_plots/ssh_background_boxplot_surface_month.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+```
+
+```{r}
+boxplot(background$temp_surface ~ background$year, xlab = "Year", ylab = "Temperature (Kelvin)", main = "Temperature at Background (Surface) per Year")
+dev.copy(png, "../output/env/simple_plots/temperature_background_boxplot_surface_year.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+```
+
+```{r}
+boxplot(background$chl_surface ~ background$year, xlab = "Year", ylab = "Chlorophyll Concentrations (mmol.m-3)", main = "Chlorophyll at Background (Surface) per Year")
+dev.copy(png, "../output/env/simple_plots/chl_background_boxplot_surface_year.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+```
+
+```{r}
+boxplot(background$salinity_surface ~ background$year, xlab = "Year", ylab = "Salinity Practical Salinity Unit (PSU)", main = "Salinity at Background (Surface) per Year")
+dev.copy(png, "../output/env/simple_plots/salinity_background_boxplot_surface_year.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+```
+
+```{r}
+boxplot(background$o2_surface ~ background$year, xlab = "Year", ylab = "Mole Concentration of Dissolved Oxygen in Sea Water (mmol.m-3)", main = "Dissolved Oxygen at Background (Surface) per Year")
+dev.copy(png, "../output/env/simple_plots/oxygen_background_boxplot_surface_year.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+```
+
+
+
+
+
+
+
