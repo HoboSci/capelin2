@@ -853,3 +853,68 @@ for(i in 1:16){
 }
 ```
 PUT THE CHUNK OUTPUT BACK TO INLINE
+
+
+## density plot with background and presence env. data
+
+Inspired by Merrow 2013 - top paragraph of page 1063 (are the species observations uniformly distributed over the background, or are they skewed)
+
+```{r}
+ggplot(pres_env, aes(x = temp_depth)) + geom_density(na.rm = TRUE, colour = "red") + geom_density(data=background_env, na.rm = TRUE, colour = "blue")
+dev.copy(png,"../output/env/simple_plots/temp_depth_backvspres.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+```
+
+```{r}
+ggplot(pres_env, aes(x = temp_surface)) + geom_density(na.rm = TRUE, colour = "red") + geom_density(data=background_env, na.rm = TRUE, colour = "blue")
+dev.copy(png,"../output/env/simple_plots/temp_surface_backvspres.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+```
+
+```{r}
+ggplot(pres_env, aes(x = chl_surface)) + geom_density(na.rm = TRUE, colour = "red") + geom_density(data=background_env, na.rm = TRUE, colour = "blue")
+dev.copy(png,"../output/env/simple_plots/chl_surface_backvspres.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+```
+
+```{r}
+ggplot(pres_env, aes(x = chl_depth)) + geom_density(na.rm = TRUE, colour = "red") + geom_density(data=background_env, na.rm = TRUE, colour = "blue")
+dev.copy(png,"../output/env/simple_plots/chl_depth_backvspres.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+```
+
+```{r}
+ggplot(pres_env, aes(x = salinity_surface)) + geom_density(na.rm = TRUE, colour = "red") + geom_density(data=background_env, na.rm = TRUE, colour = "blue")
+dev.copy(png,"../output/env/simple_plots/salinity_surface_backvspres.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+```
+
+```{r}
+ggplot(pres_env, aes(x = salinity_depth)) + geom_density(na.rm = TRUE, colour = "red") + geom_density(data=background_env, na.rm = TRUE, colour = "blue")
+dev.copy(png,"../output/env/simple_plots/salinity_depth_backvspres.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+```
+
+```{r}
+ggplot(pres_env, aes(x = o2_surface)) + geom_density(na.rm = TRUE, colour = "red") + geom_density(data=background_env, na.rm = TRUE, colour = "blue")
+dev.copy(png,"../output/env/simple_plots/o2_surface_backvspres.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+```
+
+```{r}
+ggplot(pres_env, aes(x = o2_depth)) + geom_density(na.rm = TRUE, colour = "red") + geom_density(data=background_env, na.rm = TRUE, colour = "blue")
+dev.copy(png,"../output/env/simple_plots/o2_depth_backvspres.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+```
+
+```{r}
+ggplot(pres_env, aes(x = mlp_surface)) + geom_density(na.rm = TRUE, colour = "red") + geom_density(data=background_env, na.rm = TRUE, colour = "blue")
+dev.copy(png,"../output/env/simple_plots/mlp_backvspres.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+```
+
+```{r}
+ggplot(pres_env, aes(x = ssh_surface)) + geom_density(na.rm = TRUE, colour = "red") + geom_density(data=background_env, na.rm = TRUE, colour = "blue")
+dev.copy(png,"../output/env/simple_plots/ssh_backvspres.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+```
