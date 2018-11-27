@@ -16,7 +16,7 @@ You can load them using the following code which uses a function called [ipak](h
 Note this function checks to see if the packages are installed first.
 The "include=FALSE" supresses the package installation text appearing in the document...
 ```{r pre-install packages, include=FALSE}
-packages <- c("plyr", "graphics", "ggplot2") 
+packages <- c("plyr", "graphics", "ggplot2", "corrplot") 
 source("../src/ipak.R")
 ipak(packages)
 ```
@@ -808,11 +808,11 @@ check to see if there are any correlations in the env. variables
 first subset the env.correlate columns (you don't need everything)
 
 ```{r}
-str(background)
 background_env <- subset(background, select = c(amo_sample, amo_winter, amo_prev, nao_sample, nao_winter, nao_prev, chl_surface, chl_depth, mlp_surface, ssh_surface, temp_surface, temp_depth, o2_surface, o2_depth, salinity_surface, salinity_depth))
-dev.copy(png, "../output/env/simple_plots/background_corr.png") # to automatically save the plot to a png AND show it inline
-backpairs <- pairs(background_env)
-dev.copy(png, "../output/env/simple_plots/background_corr.png") # to automatically save the plot to a png AND show it inline
+background_env_cor <- cor(background_env, use="complete.obs", method = "spearman") #need to create a correlation using cor to plot. complete.obs means na.rm in this package. #using spearmans as suitable for non-linear relationships
+write.csv(background_env_cor, "../output/env/background_env_corr.csv", row.names = TRUE)
+background_corrplot <- corrplot(background_env_cor , method = "color", type = "upper", order = "alphabet", tl.cex = 0.8) 
+dev.copy(png,"../output/env/simple_plots/background_envcorr.png") # to automatically save the plot to a png AND show it inline
 dev.off() # stops automatic saving of the plot to a png
 ```
 
@@ -820,16 +820,18 @@ dev.off() # stops automatic saving of the plot to a png
 
 check to see if there are any correlations in the env. variables
 
-
-first subset the env.correlate columns (you don't need everything)
+first subset the env.correlate columns (you don't need everything) then use cor to get the correlation values, and then corrplot for a visual
 
 ```{r}
-str(presence)
 pres_env <- subset(presence, select = c(amo_sample, amo_winter, amo_prev, nao_sample, nao_winter, nao_prev, chl_surface, chl_depth, mlp_surface, ssh_surface, temp_surface, temp_depth, o2_surface, o2_depth, salinity_surface, salinity_depth))
-png("../output/env/simple_plots/presence_corr.png") # to automatically save the plot to a png AND show it inline
-pairs(pres_env)
+pres_env_cor <- cor(pres_env, use="complete.obs", method = "spearman") #need to create a correlation using cor to plot. complete.obs means na.rm in this package. #using spearmans as suitable for non-linear relationships
+write.csv(pres_env_cor, "../output/env/pres_env_corr.csv", row.names = TRUE)
+pres_corrplot <- corrplot(pres_env_cor , method = "color", type = "upper", order = "alphabet", tl.cex = 0.8) 
+dev.copy(png,"../output/env/simple_plots/pres_envcorr.png") # to automatically save the plot to a png AND show it inline
 dev.off() # stops automatic saving of the plot to a png
 ```
 
-
+```{r}
+pairs.panels(pres_env_cor)
+```
 
