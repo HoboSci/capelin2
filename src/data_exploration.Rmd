@@ -1,7 +1,12 @@
 ---
 title: "Data Exploration"
 author: "Samantha Andrews"
-output: html_notebook
+output: 
+  html_notebook: 
+    fig_height: 7
+    fig_width: 10
+editor_options: 
+  chunk_output_type: inline
 ---
 
 # Overview
@@ -816,6 +821,15 @@ dev.copy(png,"../output/env/simple_plots/background_envcorr.png") # to automatic
 dev.off() # stops automatic saving of the plot to a png
 ```
 
+to get some density plots all in one graphic, you need to change chunk output to in console, then go to the plot tab, make it fill the screen, then run then make bigger then save :( (probably a better way - this seems to be an issue with RStudio)
+```{r}
+par(mfrow=c(4,4))
+for(i in 1:16){
+  plot(density(background_env[,i], na.rm=T), main = names(background_env)[i])
+}
+```
+PUT THE CHUNK OUTPUT BACK TO INLINE
+
 ## correlations between presence points
 
 check to see if there are any correlations in the env. variables
@@ -831,7 +845,11 @@ dev.copy(png,"../output/env/simple_plots/pres_envcorr.png") # to automatically s
 dev.off() # stops automatic saving of the plot to a png
 ```
 
+to get some density plots all in one graphic, you need to change chunk output to in console, then go to the plot tab, make it fill the screen, then run then make bigger then save :( (probably a better way - this seems to be an issue with RStudio)
 ```{r}
-pairs.panels(pres_env_cor)
+par(mfrow=c(4,4))
+for(i in 1:16){
+  plot(density(pres_env[,i], na.rm=T), main = names(pres_env)[i])
+}
 ```
-
+PUT THE CHUNK OUTPUT BACK TO INLINE
