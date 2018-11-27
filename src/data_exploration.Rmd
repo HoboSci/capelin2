@@ -467,6 +467,8 @@ Read in the presence points
 ```{r}
 background <- read.csv("../output/bio/background_complete_obs_cels.csv", header = TRUE)
 head(background)
+test <- background[245:250, ]
+test
 ```
 
 # environmental correlates
@@ -918,3 +920,5 @@ ggplot(pres_env, aes(x = ssh_surface)) + geom_density(na.rm = TRUE, colour = "re
 dev.copy(png,"../output/env/simple_plots/ssh_backvspres.png") # to automatically save the plot to a png AND show it inline
 dev.off() # stops automatic saving of the plot to a png
 ```
+
+

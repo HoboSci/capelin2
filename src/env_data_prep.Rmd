@@ -280,9 +280,9 @@ colnames(naoraw) <- c("year","1", "2", "3", "4", "5", "6", "7", "8", "9", "10", 
 head(naoraw)
 ```
  
- NA values are represented by -99.99. Change these to NA
+ NA values are represented by -999. Change these to NA
 ```{r}
-naoraw <- replace(naoraw,naoraw==-99.99, NA)
+naoraw <- replace(naoraw,naoraw==-999, NA)
 ```
  
 Now subset the dataset to start in 1996 (the capelin data starts in 1998, but you want some previous time period stuff)
@@ -290,12 +290,13 @@ Now subset the dataset to start in 1996 (the capelin data starts in 1998, but yo
 ```{r}
 nao <- naoraw[naoraw$year >= 1996, ]
 head(nao) 
+summary(nao)
 ```
 
 And just for fun, plot the NAO follow the tutorial here
 
 ```{r}
-naocolumn <- matrix(t(amoraw[ ,2:13]), ncol=1) #month data is in col 2 - 13
+naocolumn <- matrix(t(nao[ ,2:13]), ncol=1) #month data is in col 2 - 13 
 naocolumn1 <- as.vector(naocolumn)
 naotimeseries <- ts(naocolumn1, frequency = 12, start = c(1996,1))
 plot.ts(naotimeseries)
