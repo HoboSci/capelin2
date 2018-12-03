@@ -3,8 +3,6 @@ title: "parallel for the env. data grab"
 author: "Samantha Andrews"
 output: 
   html_notebook: 
-    fig_height: 7
-    fig_width: 10
 editor_options: 
   chunk_output_type: inline
 ---
@@ -21,9 +19,16 @@ You can load them using the following code which uses a function called [ipak](h
 Note this function checks to see if the packages are installed first.
 The "include=FALSE" supresses the package installation text appearing in the document...
 ```{r pre-install packages, include=FALSE}
-packages <- c("plyr", "graphics", "ggplot2", "corrplot") 
+packages <- c("ncdf4", "raster", "foreach", "doParallel") 
 source("../src/ipak.R")
 ipak(packages)
+```
+
+# this test will use a shorter dataset and a smaller number of netcdfs
+
+```{r}
+test_back <- read.csv("../data/looptest.csv", header = TRUE) #test dataset
+
 ```
 
 
@@ -31,15 +36,9 @@ ipak(packages)
 
 This loop runs through the netcdf files and then looks for which rows in data_aea it should extract the value to point from, and at what depth (netcDF layer)
 
-First you need to put the background (background_all) into a spatialpointsdataframe.
 ```{r}
-xy <- background_all[ ,c("longitude_meters","latitude_meters")] # This is to tell R where the coordinates are. Note that the column order needs to be longitude, latitude
-background_all_sp <- SpatialPointsDataFrame(coords = xy, data = background_all, proj4string = CRS("+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-60 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")) # The CRS is used here is for the albers equal area projection.
-head(background_all_sp)
-```
-
-```{r}
-netcdf_list <- list.files("../data/env/netcdf", pattern = '*.nc', full.names = TRUE) #true means the full path is included
+strt <- Sys.time() #get the start time
+netcdf_list <- list.files("../data/testloopnetcdf", pattern = '*.nc', full.names = TRUE) #true means the full path is included
 no_netcdf <- length(netcdf_list) #for the loop - need to know how many files to cycle through
 netcdf_name <- list.files("../data/env/netcdf", pattern = '*.nc', full.names = FALSE) #false means the path is not included
 aea <- raster("../output/env/aea.tif") 
@@ -50,44 +49,46 @@ for (i in 1:no_netcdf) {
   brkvar <- (sapply(strsplit(netcdf_name[i], "_"), "[[", 3)) # extracting the third part of the netcdf (inc.nc)
   temp_brick <- brick(netcdf_list[i], lvar = 4)
   temp_brick <- projectRaster(temp_brick, aea) 
-    for (j in 1:nrow(background_all_sp)) {  
-      de <- background_all_sp$depthlayerno[[j]]  # a variable for the observation depth layer
-      yr <- (background_all_sp$year[j])  # a variable for the observation year
-      mth <- (background_all_sp$month[j])  # a variable for the observation month
+    for (j in 1:nrow(test_back)) {  
+      de <- test_back$depthlayerno[[j]]  # a variable for the observation depth layer
+      yr <- (test_back$year[j])  # a variable for the observation year
+      mth <- (test_back$month[j])  # a variable for the observation month
           if (brkyr == yr & brkmth == mth & brkvar == "temp.nc"){
-              background_all_sp$temp_surface[j] <- extract(x=temp_brick[[1]], y = background_all_sp[j, ]) 
+              test_back$temp_surface[j] <- extract(x=temp_brick[[1]], y = test_back[j, ]) 
               if (is.na(de)){
-                background_all_sp$temp_depth[j] <- NA
+                test_back$temp_depth[j] <- NA
               } else  
-                background_all_sp$temp_depth[j] <- extract(x=temp_brick[[de]], y = background_all_sp[j, ])
+                test_back$temp_depth[j] <- extract(x=temp_brick[[de]], y = test_back[j, ])
           } else if (brkyr == yr & brkmth == mth & brkvar == "salinity.nc") {
-              background_all_sp$salinity_surface[j] <- extract(x=temp_brick[[1]], y = background_all_sp[j, ]) 
+              test_back$salinity_surface[j] <- extract(x=temp_brick[[1]], y = test_back[j, ]) 
               if (is.na(de)){
-                background_all_sp$salinity_depth[j] <- NA
+                test_back$salinity_depth[j] <- NA
               } else  
-                background_all_sp$salinity_depth[j] <- extract(x=temp_brick[[de]], y = background_all_sp[j, ]) 
+                test_back$salinity_depth[j] <- extract(x=temp_brick[[de]], y = test_back[j, ]) 
           } else if (brkyr == yr & brkmth == mth & brkvar == "chl.nc") {
-              background_all_sp$chl_surface[j] <- extract(x=temp_brick[[1]], y = background_all_sp[j, ]) 
+              test_back$chl_surface[j] <- extract(x=temp_brick[[1]], y = test_back[j, ]) 
               if (is.na(de)){
-                background_all_sp$chl_depth[j] <- NA
+                test_back$chl_depth[j] <- NA
               } else  
-                background_all_sp$chl_depth[j] <- extract(x=temp_brick[[de]], y = background_all_sp[j, ]) 
+                test_back$chl_depth[j] <- extract(x=temp_brick[[de]], y = test_back[j, ]) 
           } else if (brkyr == yr & brkmth == mth & brkvar == "o2.nc") {
-              background_all_sp$o2_surface[j] <- extract(x=temp_brick[[1]], y = background_all_sp[j, ]) 
+              test_back$o2_surface[j] <- extract(x=temp_brick[[1]], y = test_back[j, ]) 
               if (is.na(de)){
-                background_all_sp$o2_depth[j] <- NA
+                test_back$o2_depth[j] <- NA
               } else  
-                background_all_sp$o2_depth[j] <- extract(x=temp_brick[[de]], y = background_all_sp[j, ]) 
+                test_back$o2_depth[j] <- extract(x=temp_brick[[de]], y = test_back[j, ]) 
           } else if (brkyr == yr & brkmth == mth & brkvar == "mlp.nc") {
-              background_all_sp$mlp_surface[j] <- extract(x=temp_brick[[1]], y = background_all_sp[j, ])
+              test_back$mlp_surface[j] <- extract(x=temp_brick[[1]], y = test_back[j, ])
           } else if (brkyr == yr & brkmth == mth & brkvar == "ssh.nc") {
-              background_all_sp$ssh_surface[j] <- extract(x=temp_brick[[1]], y = background_all_sp[j, ]) 
+              test_back$ssh_surface[j] <- extract(x=temp_brick[[1]], y = test_back[j, ]) 
             
           }
      
     }
 }
-write.csv(background_all_sp, "../output/bio/background_complete.csv", row.names = FALSE)
-background_all <- as.data.frame(background_all_sp)
-head(background_all)
+write.csv(test_back, "../data/testloopoutput.csv", row.names = FALSE)
+test_back_df <- as.data.frame(test_back)
+head(test_back_df)
+print(Sys.time()-strt) #time it took to run
 ```
+
