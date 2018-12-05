@@ -19,7 +19,7 @@ You can load them using the following code which uses a function called [ipak](h
 Note this function checks to see if the packages are installed first.
 The "include=FALSE" supresses the package installation text appearing in the document...
 ```{r pre-install packages, include=FALSE}
-packages <- c("ncdf4", "raster", "ggplot2") 
+packages <- c("ncdf4", "raster", "ggplot2", "plotly") 
 source("../src/ipak.R")
 ipak(packages)
 ```
@@ -410,3 +410,12 @@ ggplot(testbk100002014, aes(x = o2_depth)) + geom_density(na.rm = TRUE, colour =
 dev.copy(png,"../data/o2_depth_back_no_2014.png") # to automatically save the plot to a png AND show it inline
 dev.off() # stops automatic saving of the plot to a png
 ```
+
+
+
+# 3d plot background points
+
+```{r}
+bck2014_06_3d <- plot_ly(x= testbk100002014$longitude_, y = testbk100002014$latitude_m, z = testbk100002014$depthlayerno)
+```
+
