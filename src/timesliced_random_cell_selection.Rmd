@@ -189,17 +189,17 @@ unique_cell_xyz$depthlayerno <- NA
 unique_cell_xyz <- unique_cell_xyz[rep(seq_len(nrow(unique_cell_xyz)), each=47),] #this generates 47  repetitions of each row 47 is chosen because there are 47 sampled depth layers
 unique_cell_xyz$depthlayerno <- rep(1:47) #assign 1:47 on a repeating cycle to the depth column. 47 is chosen because there are 50 depth layers
 unique_cell_xyz$id_depth <- paste(unique_cell_xyz$cell_id, unique_cell_xyz$depthlayerno, sep="") #create a new column that is a unique glo_unique_cell & depth ID. This is to help remove cells later and randomise
+write.csv(unique_cell_xyz, "../output/env/unique_cell_centroid_lonlat_nafo2_depth.csv", row.names = FALSE)
 ```
 
 
 
 What I want to do is for each time slice, create a list of all cells (xyz), then remove the ones where observations occurred and create a .csv with the name of the level being worked on
 
-Split the data_aea into timeslices (year/month).
+Split the mcpbase into timeslices (year/month).
 All you need is the year, month, cell_id, and depthlayerno
 ```{r}
-data_aea <- mcpbase
-cell_yymm <- subset(data_aea, select= c(cell_id, depthlayerno, year, month)) #create a new df with just cell_id, yr, month, depthlayer no
+cell_yymm <- subset(mcpbase, select= c(cell_id, depthlayerno, year, month)) #create a new df with just cell_id, yr, month, depthlayer no
 cell_yymm$id_depth <- paste(cell_yymm$cell_id, cell_yymm$depthlayerno, sep="") #create a new column that is a unique cell_id & depth ID. This is to help remove cells later and randomise
 split_cell_yymm <- split(cell_yymm, list(cell_yymm$year, cell_yymm$month), drop = TRUE)
 ```
