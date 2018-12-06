@@ -233,10 +233,10 @@ randbckoutput <- "../output/bio/background/rand/" #where the files are to be sav
 # read in each .csv file in file_list and create a data frame with the same name as the .csv file
 for (i in 1:length(bckrnd_list)){
   sel <- read.csv(paste(bckrnd_folder, bckrnd_list[i], sep=''))
-  sel <- sample_n(sel, 10000) #where 10000 = number of rows to sample (large sample as per maxent)
+  sel <- sample_n(sel, 20000) #where 20000 = number of rows to sample (more than 10k as some points will have NA values due to depth - I will select 10000 of these without NA values to create a large sample as per maxent)
   write.csv(sel, file = paste0(randbckoutput, bckrnd_list[i]), row.names = FALSE) #dont need to add .csv as it's already in the filename
 }
-head(sel)  
+head(sel)
 ```
 
 ok now i have a ton of files for random background points broken into timeslices. I'd like to add a colum for year and one for month to each of these datasets. They should be populated based on the name of the file (e.g. 1998.4.csv would have year = 1998 and month = 4)
@@ -277,7 +277,7 @@ back_mt_uniq <- unique(background_all$month)
 back_mt_uniq
 ```
 
-check number of observations 
+check number of background points in total 
 ```{r}
 back_rowcount <- nrow(background_all)
 back_rowcount
@@ -443,6 +443,8 @@ names(depthbin)[names(depthbin)=="layer_no"] <- "depthlayerno"
 names(depthbin)[names(depthbin)=="layer_name"] <- "depth_layer" #this one is just so i don't have to change the column name in the background_all file later
 head(depthbin)
 ```
+
+
 ```{r}
 background_all <- merge(background_all, y = depthbin[ , c("depthlayerno", "depth_layer")], by = "depthlayerno", all.x = TRUE)
 head(background_all)
@@ -484,7 +486,7 @@ and now get depth... note all the points and bathy data is wgs!
 background_all$bottom_depth <- get.depth(bat, background_all[ ,8:9], locator = FALSE)
 background_all$bottom_depth <- background_all$bottom_depth[, 3] #this step is because get.bath actually produces it's own dataframe with long, lat, and depth. This is extracting the depth column and deplacing data_aea$bottom_depth with the correct data.
 write.csv(background_all,"../output/bio/background_all_lonlat_nafo2_sciname_amo_nao_depthname_bath.csv", row.names = FALSE)
-head(background_all)
+head(background_all$bottom_depth)
 ```
 
 # observations by cell (in total, and also by time step)
@@ -827,4 +829,11 @@ background_all$temp_celsius_surface <- kelvin.to.celsius(background_all$temp_sur
 write.csv(background_all, "../output/bio/background_complete_obs_cels.csv", row.names = FALSE)
 ```
 
+
+```{r}
+comback <- read.csv("../output/bio/background_complete_obs_cels.csv", header = TRUE)
+backtempna <- subset(comback, is.na(comback$temp_depth))
+backtempna
+backtempnasplit <- split(backtempna, list(backtempna$year, backtempna$month), drop = TRUE)
+```
 
