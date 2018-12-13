@@ -417,5 +417,14 @@ dev.off() # stops automatic saving of the plot to a png
 
 ```{r}
 bck2014_06_3d <- plot_ly(x= testbk100002014$longitude_, y = testbk100002014$latitude_m, z = testbk100002014$depthlayerno)
+bck2014_06_3d
 ```
 
+# 2d plot background points
+
+```{r}
+bck2014_06_2d <- plot(x= testbk100002014$longitude_, y = testbk100002014$latitude_m)
+dev.copy(png,"../data/env/background_point_check/bck10000_2d.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+
+```

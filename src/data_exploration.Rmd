@@ -21,7 +21,7 @@ You can load them using the following code which uses a function called [ipak](h
 Note this function checks to see if the packages are installed first.
 The "include=FALSE" supresses the package installation text appearing in the document...
 ```{r pre-install packages, include=FALSE}
-packages <- c("plyr", "graphics", "ggplot2", "corrplot") 
+packages <- c("plyr", "graphics", "ggplot2", "corrplot", "FSA") 
 source("../src/ipak.R")
 ipak(packages)
 ```
@@ -921,4 +921,80 @@ dev.copy(png,"../output/env/simple_plots/ssh_backvspres.png") # to automatically
 dev.off() # stops automatic saving of the plot to a png
 ```
 
+
+
+# NAFO Regions
+
+compare the environmental correlates between different NAFO regions
+
+first see which nafo zones were sampled in each year
+```{r}
+nafo_by_yr <- with(presence, table(year, nafo_zone))
+write.csv(inst_by_yr, file = "../output/bio/nafozone_by_yr.csv")
+nafo_by_yr
+```
+
+and by month
+```{r}
+nafo_by_mth <- with(presence, table(month, nafo_zone))
+write.csv(inst_by_yr, file = "../output/bio/nafozone_by_mth.csv")
+nafo_by_mth
+```
+
+Interesting that there is a point in 1C - this is outside Canadian waters.... anyway
+```{r}
+onec <-  subset(presence, nafo_zone == "1C")
+onec
+```
+
+Let's plot the variables by nafo region/year then by month
+
+
+```{r}
+pr98 <- subset(presence, year == "1998")
+boxplot(pr98$temp_depth ~ pr98$nafo_zone, xlab = "NAFO Region", ylab = "Temperature (Kelvin)", main = "Temperature at Observation Depth per NAFO Zone")
+```
+
+```{r}
+pr98 <- subset(presence, year == "1998")
+pr11 <- subset(presence, year == "2011")
+par(mfrow=c(2,1))
+boxplot(pr98$temp_depth ~ pr98$nafo_zone, xlab = "NAFO Region", ylab = "Temperature (Kelvin)", main = "Temperature at Observation Depth per NAFO Zone")
+boxplot(pr11$temp_depth ~ pr11$nafo_zone, xlab = "NAFO Region", ylab = "Temperature (Kelvin)", main = "Temperature at Observation Depth per NAFO Zone")
+```
+
+ok scrap the nafo region analysis - it is too mixed up with month (so seeing if region or month is a factor that needs to be factored in to the model is not appropriate)
+
+# check for gear type
+
+what are the unique gear types you have in your presence data, and how many?
+
+```{r observation by cell - total}
+gear_count <- count(presence, "gear")
+write.csv(gear_count, file = "../output/bio/gear_count.csv")
+gear_count
+```
+
+so the vast majority are trawls of some type. 
+
+```{r}
+par(mar=c(7,5,1,1))
+boxplot(presence$temp_depth ~ presence$gear, ylab = "Temperature (Kelvin)", main = "Temperature at Observation Depth by gear type", las = 2)
+dev.copy(png, "../output/env/simple_plots/temperature_boxplot_dept_gear.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+```
+
+looks like not much difference... what about a kruskal wallace test?
+
+```{r}
+kruskal.test(presence$temp_celsius_depth ~ presence$gear)
+```
+Ok so there is a statistically sig difference somewhere in the temp at depth reported by the gear type (Kruskal-Wallis chi-squared = 248.27, df = 7, p-value < 2.2e-16)
+
+To see where the difference(s) are run a Dunn test Zar (2010) states that the Dunn test (in the FSA package) is appropriate for groups with unequal numbers of observations.(Zar, J.H. 2010. Biostatistical Analysis, 5th ed.  Pearson Prentice Hall: Upper Saddle River, NJ.)
+
+SAM WHEN DUNN IS INSTALLED, GO TO RCOMPANIONS.ORG AND LOOK FOR DUNN - CHECK CHROME HISTORY (PROBABLY UNDER KRUSKAL WALLIS) ALSO MAP THE DISTRIBUTION OF THESE GEAR TYPES
+```{r}
+pairwise.wilcox.test(presence$temp_celsius_depth, presence$gear, p.adj='bonferroni', exact=F)
+```
 
