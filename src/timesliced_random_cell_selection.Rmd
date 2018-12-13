@@ -559,10 +559,36 @@ randcheckyymm
 
 This loop runs through the netcdf files and then looks for which rows in data_aea it should extract the value to point from, and at what depth (netcDF layer)
 
-First you need to put the background (background_all) into a spatialpointsdataframe.
+First you need to create columns for the data to be added to
+
+```{r}
+background_all$temp_depth <- NA
+background_all$temp_surface <- NA
+background_all$salinity_depth <- NA
+background_all$salinity_surface <- NA
+background_all$chl_depth <- NA
+background_all$chl_surface <- NA
+background_all$o2_depth <- NA
+background_all$o2_surface <- NA
+background_all$mlp_surface <- NA
+background_all$ssh_surface <- NA
+```
+
+
+Second you need to put the background (background_all) into a spatialpointsdataframe.
 ```{r}
 xy <- background_all[ ,c("longitude_meters","latitude_meters")] # This is to tell R where the coordinates are. Note that the column order needs to be longitude, latitude
 background_all_sp <- SpatialPointsDataFrame(coords = xy, data = background_all, proj4string = CRS("+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-60 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")) # The CRS is used here is for the albers equal area projection.
+head(background_all_sp)
+```
+
+background_all <- read.csv("./output/bio/background_all_lonlat_nafo2_sciname_amo_nao_depthname_bath_cellobs.csv", header = TRUE
+ 
+XXXXXXXXXXX split
+```{r}
+background_all2 <- background_all[background_all$year == 1999, ]
+xy <- background_all2[ ,c("longitude_meters","latitude_meters")] # This is to tell R where the coordinates are. Note that the column order needs to be longitude, latitude
+background_all_sp <- SpatialPointsDataFrame(coords = xy, data = background_all2, proj4string = CRS("+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-60 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")) # The CRS is used here is for the albers equal area projection.
 head(background_all_sp)
 ```
 
@@ -615,9 +641,9 @@ for (i in 1:no_netcdf) {
      
     }
 }
-write.csv(background_all_sp, "../output/bio/background_complete.csv", row.names = FALSE)
-background_all <- as.data.frame(background_all_sp)
-head(background_all)
+write.csv(background_all_sp, "../output/bio/background_complete_1999.csv", row.names = FALSE)
+#background_all <- as.data.frame(background_all_sp)
+head(background_all_sp)
 ```
 
 
