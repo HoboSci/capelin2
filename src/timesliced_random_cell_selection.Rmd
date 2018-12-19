@@ -229,7 +229,7 @@ load the .csvs... [code](https://www.reed.edu/data-at-reed/software/R/reading_an
 ```{r}
 bckrnd_folder <- "../output/bio/background/raw/"      # path to folder that holds multiple .csv files
 bckrnd_list <- list.files(path = bckrnd_folder, pattern="*.csv") # create list of all .csv files in folder
-randbckoutput <- "../output/bio/background/rand/" #where the files are to be saved to
+randbckoutput <- "../output/bio/background/rand20k/" #where the files are to be saved to
 # read in each .csv file in file_list and create a data frame with the same name as the .csv file
 for (i in 1:length(bckrnd_list)){
   sel <- read.csv(paste(bckrnd_folder, bckrnd_list[i], sep=''))
@@ -242,9 +242,9 @@ head(sel)
 ok now i have a ton of files for random background points broken into timeslices. I'd like to add a colum for year and one for month to each of these datasets. They should be populated based on the name of the file (e.g. 1998.4.csv would have year = 1998 and month = 4)
 
 ```{r}
-rand_folder <- "../output/bio/background/rand/"      # path to folder that holds multiple .csv files
+rand_folder <- "../output/bio/background/rand20k/"      # path to folder that holds multiple .csv files
 rand_list <- list.files(path = rand_folder, pattern="*.csv") # create list of all .csv files in folder
-randbckoutput <- "../output/bio/background/rand/" #where the files are to be saved to
+randbckoutput <- "../output/bio/background/rand20k/" #where the files are to be saved to
 for(i in 1:length(rand_list)){
   randtemp <- read.csv(paste(rand_folder, rand_list[i], sep=''))
   randtemp$year <- substr(rand_list[i], 1, 4) #the year is characters 1-4 in the filename
@@ -559,7 +559,7 @@ randcheckyymm
 
 This loop runs through the netcdf files and then looks for which rows in data_aea it should extract the value to point from, and at what depth (netcDF layer)
 
-First you need to create columns for the data to be added to
+First you need to create columns for the data to be added to (otherwise the loop doesn't always work - notably on one PC but not another)
 
 ```{r}
 background_all$temp_depth <- NA
@@ -582,15 +582,6 @@ background_all_sp <- SpatialPointsDataFrame(coords = xy, data = background_all, 
 head(background_all_sp)
 ```
 
-background_all <- read.csv("./output/bio/background_all_lonlat_nafo2_sciname_amo_nao_depthname_bath_cellobs.csv", header = TRUE
- 
-XXXXXXXXXXX split
-```{r}
-background_all2 <- background_all[background_all$year == 1999, ]
-xy <- background_all2[ ,c("longitude_meters","latitude_meters")] # This is to tell R where the coordinates are. Note that the column order needs to be longitude, latitude
-background_all_sp <- SpatialPointsDataFrame(coords = xy, data = background_all2, proj4string = CRS("+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-60 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")) # The CRS is used here is for the albers equal area projection.
-head(background_all_sp)
-```
 
 ```{r}
 netcdf_list <- list.files("../data/env/netcdf", pattern = '*.nc', full.names = TRUE) #true means the full path is included
@@ -641,8 +632,8 @@ for (i in 1:no_netcdf) {
      
     }
 }
-write.csv(background_all_sp, "../output/bio/background_complete_1999.csv", row.names = FALSE)
-#background_all <- as.data.frame(background_all_sp)
+write.csv(background_all_sp, "../output/bio/background_complete.csv", row.names = FALSE)
+background_all <- as.data.frame(background_all_sp)
 head(background_all_sp)
 ```
 
@@ -834,6 +825,58 @@ sshs
 ```
 
 it worked!
+
+# remove rows with NA values at depth
+
+first rbind... (this you can delete if you had run the code at once)
+```{r}
+back1998 <- read.csv("../output/bio/background_complete_1998.csv", header = TRUE)
+back1999 <- read.csv("../output/bio/background_complete_1999.csv", header = TRUE)
+back2000_2003 <- read.csv("../output/bio/background_complete_2000_2003.csv", header = TRUE)
+back2004_2006 <- read.csv("../output/bio/background_complete_2004_2006.csv", header = TRUE)
+back2007_2011 <- read.csv("../output/bio/background_complete_2007_2011.csv", header = TRUE)
+back2012_2016 <- read.csv("../output/bio/background_complete_2012_2016.csv", header = TRUE)
+
+background_all <- rbind(back1998, back1999, back2000_2003, back2004_2006, back2007_2011, back2012_2016)
+head(background_all)
+```
+
+remove all na values
+
+```{r}
+backna <- sum(!complete.cases(background_all)) #this just counts the number of rows that contain NA values
+backna
+background_all[complete.cases(background_all), ] #removes NA values
+write.csv(background_all, "../output/bio/background_complete_na.csv", row.names = FALSE)
+```
+
+randomly select 10000 rows from each timeslice
+```{r}
+#background_all <- read.csv("../output/bio/background_complete_na.csv", header = TRUE)
+#split_cell_back <- split(background_all, list(background_all$year, background_all$month), drop = TRUE)
+
+
+no_timeslices <- length(split_cell_back) # how many levels (time slices) are in the list
+bckoutput <- "../output/bio/background/rand20k/no_na/" #where the files are to be saved to
+for (i in 1:no_timeslices){
+  timeslice <- split_cell_back[[i]]
+  timeslice <- as.data.frame(timeslice)
+  write.csv(timeslice, paste0(bckoutput, names(lapply(split_cell_back, names))[i], ".csv"), row.names = FALSE) 
+}
+```
+
+```{r}
+bckrnd_folder <- "../output/bio/background/rand20k/no_na/"      # path to folder that holds multiple .csv files
+bckrnd_list <- list.files(path = bckrnd_folder, pattern="*.csv") # create list of all .csv files in folder
+randbckoutput <- ". ./output/bio/background/rand20k/no_na_10krand/" #where the files are to be saved to
+# read in each .csv file in file_list and create a data frame with the same name as the .csv file
+for (i in 1:length(bckrnd_list)){
+  sel <- read.csv(paste(bckrnd_folder, bckrnd_list[i], sep=''))
+  sel <- sample_n(sel, 10000) #where 10000 = number of rows to sample 
+  write.csv(sel, file = paste0(randbckoutput, bckrnd_list[i]), row.names = FALSE) #dont need to add .csv as it's already in the filename
+}
+head(sel)
+```
 
 # observation occurrence yes or no
 
