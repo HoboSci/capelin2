@@ -233,7 +233,7 @@ randbckoutput <- "../output/bio/background/rand20k/" #where the files are to be 
 # read in each .csv file in file_list and create a data frame with the same name as the .csv file
 for (i in 1:length(bckrnd_list)){
   sel <- read.csv(paste(bckrnd_folder, bckrnd_list[i], sep=''))
-  sel <- sample_n(sel, 20000) #where 20000 = number of rows to sample (more than 10k as some points will have NA values due to depth - I will select 10000 of these without NA values to create a large sample as per maxent)
+  sel <- sample_n(sel, 10000) #where 20000 = number of rows to sample (more than 10k as some points will have NA values due to depth - I will select 10000 of these without NA values to create a large sample as per maxent)
   write.csv(sel, file = paste0(randbckoutput, bckrnd_list[i]), row.names = FALSE) #dont need to add .csv as it's already in the filename
 }
 head(sel)
@@ -577,8 +577,11 @@ background_all$ssh_surface <- NA
 
 Second you need to put the background (background_all) into a spatialpointsdataframe.
 ```{r}
-xy <- background_all[ ,c("longitude_meters","latitude_meters")] # This is to tell R where the coordinates are. Note that the column order needs to be longitude, latitude
-background_all_sp <- SpatialPointsDataFrame(coords = xy, data = background_all, proj4string = CRS("+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-60 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")) # The CRS is used here is for the albers equal area projection.
+background_all2 <- background_all[background_all$year == 2007, ]
+xy <- background_all2[ ,c("longitude_meters","latitude_meters")] # This is to tell R where the coordinates are. Note that the column order needs to be longitude, latitude
+
+#xy <- background_all[ ,c("longitude_meters","latitude_meters")] # This is to tell R where the coordinates are. Note that the column order needs to be longitude, latitude
+background_all_sp <- SpatialPointsDataFrame(coords = xy, data = background_all2, proj4string = CRS("+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-60 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")) # The CRS is used here is for the albers equal area projection.
 head(background_all_sp)
 ```
 
@@ -632,7 +635,7 @@ for (i in 1:no_netcdf) {
      
     }
 }
-write.csv(background_all_sp, "../output/bio/background_complete.csv", row.names = FALSE)
+write.csv(background_all_sp, "../output/bio/background_complete_2007.csv", row.names = FALSE)
 background_all <- as.data.frame(background_all_sp)
 head(background_all_sp)
 ```
@@ -846,14 +849,16 @@ remove all na values
 ```{r}
 backna <- sum(!complete.cases(background_all)) #this just counts the number of rows that contain NA values
 backna
-background_all[complete.cases(background_all), ] #removes NA values
+background_all <- background_all[complete.cases(background_all), ] #removes NA values
+backna2 <- sum(!complete.cases(background_all)) #this just counts the number of rows that contain NA values
+backna2
 write.csv(background_all, "../output/bio/background_complete_na.csv", row.names = FALSE)
 ```
 
 randomly select 10000 rows from each timeslice
 ```{r}
 #background_all <- read.csv("../output/bio/background_complete_na.csv", header = TRUE)
-#split_cell_back <- split(background_all, list(background_all$year, background_all$month), drop = TRUE)
+split_cell_back <- split(background_all, list(background_all$year, background_all$month), drop = TRUE)
 
 
 no_timeslices <- length(split_cell_back) # how many levels (time slices) are in the list
@@ -868,7 +873,7 @@ for (i in 1:no_timeslices){
 ```{r}
 bckrnd_folder <- "../output/bio/background/rand20k/no_na/"      # path to folder that holds multiple .csv files
 bckrnd_list <- list.files(path = bckrnd_folder, pattern="*.csv") # create list of all .csv files in folder
-randbckoutput <- ". ./output/bio/background/rand20k/no_na_10krand/" #where the files are to be saved to
+randbckoutput <- "../output/bio/background/rand20k/no_na_10krand/" #where the files are to be saved to
 # read in each .csv file in file_list and create a data frame with the same name as the .csv file
 for (i in 1:length(bckrnd_list)){
   sel <- read.csv(paste(bckrnd_folder, bckrnd_list[i], sep=''))
@@ -878,11 +883,21 @@ for (i in 1:length(bckrnd_list)){
 head(sel)
 ```
 
+crap - the years from 2007 onwards have less than 10k points to choose from...
+create a random 30k for each of these month/year periods
+
+
+
+```{r}
+filenames  <- list.files(path = randbckoutput, pattern="*.csv", full.names = TRUE) 
+background_all <- rbindlist(lapply(filenames,fread, fill = TRUE))
+write.csv(background_all, "../output/bio/background_all_complete_na2.csv", row.names = FALSE)
+head(background_all)
+```
 # observation occurrence yes or no
 
 create a new column for Occurence, and populate with "0" (because these are all background)
 ```{r}
-background_all <- read.csv("../output/bio/background_complete.csv")
 background_all$occurrence <- "0"
 write.csv(background_all, "../output/bio/background_complete_obs.csv", row.names = FALSE)
 head(background_all)

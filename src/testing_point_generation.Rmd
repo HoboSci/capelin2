@@ -1,0 +1,152 @@
+---
+title: "pooint extraction test"
+output: html_notebook
+---
+
+
+```{r}
+testbackground_all <- read.csv("../output/bio/background/raw/2007.3.csv", header = TRUE)
+testbackground_all
+```
+
+First you need to create columns for the data to be added to (otherwise the loop doesn't always work - notably on one PC but not another)
+
+```{r}
+testbackground_all$temp_depth <- NA
+testbackground_all$temp_surface <- NA
+testbackground_all$salinity_depth <- NA
+testbackground_all$salinity_surface <- NA
+testbackground_all$chl_depth <- NA
+testbackground_all$chl_surface <- NA
+testbackground_all$o2_depth <- NA
+testbackground_all$o2_surface <- NA
+testbackground_all$mlp_surface <- NA
+testbackground_all$ssh_surface <- NA
+```
+
+
+Second you need to put the background (testbackground_all) into a spatialpointsdataframe.
+```{r}
+xy <- testbackground_all[ ,c("longitude_","latitude_m")] # This is to tell R where the coordinates are. Note that the column order needs to be longitude, latitude
+
+#xy <- testbackground_all[ ,c("longitude_meters","latitude_meters")] # This is to tell R where the coordinates are. Note that the column order needs to be longitude, latitude
+testbackground_all_sp <- SpatialPointsDataFrame(coords = xy, data = testbackground_all, proj4string = CRS("+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-60 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")) # The CRS is used here is for the albers equal area projection.
+head(testbackground_all_sp)
+```
+
+
+```{r}
+netcdf_list <- list.files("../data/env/netcdfbase", pattern = '*.nc', full.names = TRUE) #true means the full path is included
+no_netcdf <- length(netcdf_list) #for the loop - need to know how many files to cycle through
+netcdf_name <- list.files("../data/env/netcdfbase", pattern = '*.nc', full.names = FALSE) #false means the path is not included
+aea <- raster("../output/env/aea.tif") 
+for (i in 1:no_netcdf) {  
+  print(netcdf_name[i]) #this just prints the name of the netCDF R is working one
+  brkvar <- (sapply(strsplit(netcdf_name[i], "_"), "[[", 3)) # extracting the third part of the netcdf (inc.nc)
+  temp_brick <- brick(netcdf_list[i], lvar = 4)
+  temp_brick <- projectRaster(temp_brick, aea) 
+    for (j in 1:nrow(testbackground_all_sp)) {  
+      de <- testbackground_all_sp$depthlayerno[[j]]  # a variable for the observation depth layer
+          if (brkvar == "temp.nc"){
+              if (is.na(de)){
+                testbackground_all_sp$temp_depth[j] <- NA
+              } else  
+                testbackground_all_sp$temp_depth[j] <- extract(x=temp_brick[[de]], y = testbackground_all_sp[j, ])
+          } else if (brkvar == "salinity.nc") {
+              if (is.na(de)){
+                testbackground_all_sp$salinity_depth[j] <- NA
+              } else  
+                testbackground_all_sp$salinity_depth[j] <- extract(x=temp_brick[[de]], y = testbackground_all_sp[j, ]) 
+          } else if (brkvar == "chl.nc") {
+              if (is.na(de)){
+                testbackground_all_sp$chl_depth[j] <- NA
+              } else  
+                testbackground_all_sp$chl_depth[j] <- extract(x=temp_brick[[de]], y = testbackground_all_sp[j, ]) 
+          } else if (brkvar == "o2.nc") {
+              if (is.na(de)){
+                testbackground_all_sp$o2_depth[j] <- NA
+              } else  
+                testbackground_all_sp$o2_depth[j] <- extract(x=temp_brick[[de]], y = testbackground_all_sp[j, ]) 
+          }
+     
+    }
+}
+write.csv(testbackground_all_sp, "../output/bio/background_point_na_removal.csv", row.names = FALSE)
+testbackground_all <- as.data.frame(testbackground_all_sp)
+head(testbackground_all_sp)
+```
+
+
+```{r}
+backna <- sum(!complete.cases(background_all)) #this just counts the number of rows that contain NA values
+backna
+background_all <- background_all[complete.cases(background_all), ] #removes NA values
+backna2 <- sum(!complete.cases(background_all)) #this just counts the number of rows that contain NA values
+backna2
+write.csv(background_all, "../output/bio/background_point_na_removal_nona", row.names = FALSE)
+head(testbackground_all)
+```
+
+```{r}
+testbackground_all <- subset(testbackground_all, select = -c(temp_depth, temp_surface, salinity_depth, salinity_surface, o2_depth, o2_surface, chl_depth, chl_surface, ssh_surface, mlp_surface))
+head(testbackground_all)
+```
+```{r}
+testbackground_all <- subset(testbackground_all, select = -c(longitude_.1, latitude_m.1, optional))
+head(testbackground_all)
+```
+
+```{r}
+colnames(testbackground_all)[colnames(testbackground_all)=="decimalLon"] <- "decimalLongitude"
+colnames(testbackground_all)[colnames(testbackground_all)=="decimalLat"] <- "decimalLatitude"
+colnames(testbackground_all)[colnames(testbackground_all)=="longitude_"] <- "longitude_meters"
+colnames(testbackground_all)[colnames(testbackground_all)=="latitude_m"] <- "latitude_meters"
+head(testbackground_all)
+```
+
+save as csv
+```{r}
+write.csv(testbackground_all, file = "../output/bio/background_point_na_removal_nona.csv", row.names = FALSE)
+```
+
+```{r timesliced unique unsampled}
+no_timeslices <- length(split_cell_yymm) # how many levels (time slices) are in the list
+bckoutput <- "../output/bio/background/raw/" #where the files are to be saved to
+for (i in 1:no_timeslices){
+  timeslice <- split_cell_yymm[[i]]
+  timeslice <- as.data.frame(timeslice)
+  time_cell <- unique_cell_xyz
+  #time_cell <- time_cell[!time_cell$id_depth %in% timeslice$id_depth, , drop = FALSE]
+  write.csv(time_cell, paste0(bckoutput, names(lapply(split_cell_yymm, names))[i], ".csv"), row.names = FALSE) 
+}
+```
+
+```{r}
+bckrnd_folder <- "../output/bio/background/raw/"      # path to folder that holds multiple .csv files
+bckrnd_list <- list.files(path = bckrnd_folder, pattern="*.csv") # create list of all .csv files in folder
+randbckoutput <- "../output/bio/background/rand10kreboot/" #where the files are to be saved to
+# read in each .csv file in file_list and create a data frame with the same name as the .csv file
+for (i in 1:length(bckrnd_list)){
+  sel <- read.csv(paste(bckrnd_folder, bckrnd_list[i], sep=''))
+  sel <- sample_n(sel, 10000) #where 10000 = number of rows to sample 
+  write.csv(sel, file = paste0(randbckoutput, bckrnd_list[i]), row.names = FALSE) #dont need to add .csv as it's already in the filename
+}
+head(sel)
+```
+
+```{r}
+rand_folder <- "../output/bio/background/rand10kreboot/"      # path to folder that holds multiple .csv files
+rand_list <- list.files(path = rand_folder, pattern="*.csv") # create list of all .csv files in folder
+randbckoutput <- "../output/bio/background/rand10kreboot/" #where the files are to be saved to
+for(i in 1:length(rand_list)){
+  randtemp <- read.csv(paste(rand_folder, rand_list[i], sep=''))
+  randtemp$year <- substr(rand_list[i], 1, 4) #the year is characters 1-4 in the filename
+  randtemp$month <- substr(rand_list[i], 6, 7) #the month is characters 6 & 7 in the filename (except where the month is a single digit)
+  write.csv(randtemp, file = paste0(randbckoutput, bckrnd_list[i]), row.names = FALSE) #dont need to add .csv as it's already in the filename
+}
+head(randtemp)
+```
+
+
+
+
