@@ -110,12 +110,13 @@ write.csv(testbackground_all, file = "../output/bio/background_point_na_removal_
 ```
 
 ```{r timesliced unique unsampled}
+testbackground_all <- read.csv("../output/bio/background_point_na_removal_nona.csv", header = TRUE)
 no_timeslices <- length(split_cell_yymm) # how many levels (time slices) are in the list
 bckoutput <- "../output/bio/background/raw/" #where the files are to be saved to
 for (i in 1:no_timeslices){
   timeslice <- split_cell_yymm[[i]]
   timeslice <- as.data.frame(timeslice)
-  time_cell <- unique_cell_xyz
+  time_cell <- testbackground_all
   #time_cell <- time_cell[!time_cell$id_depth %in% timeslice$id_depth, , drop = FALSE]
   write.csv(time_cell, paste0(bckoutput, names(lapply(split_cell_yymm, names))[i], ".csv"), row.names = FALSE) 
 }
