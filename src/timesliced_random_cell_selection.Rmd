@@ -260,6 +260,7 @@ note that in the output temp file in R shows a . after the month if that month i
 ok now you can start to populate the rest of the background point information. The background points file should mirror as much as possible the occurence file. Maybe it would be best to merge the files together, and them split them again later? would save looping everything to repeat the process through multiple files...
 
 ```{r}
+rand_folder <- "../output/bio/background/rand10kreboot/"      # path to folder that holds multiple .csv files
 filenames  <- list.files(path = rand_folder, pattern="*.csv", full.names = TRUE) 
 background_all <- rbindlist(lapply(filenames,fread, fill = TRUE))
 write.csv(background_all, "../output/bio/background_all.csv", row.names = FALSE)
@@ -483,10 +484,11 @@ lovely jubbely
 and now get depth... note all the points and bathy data is wgs!
 
 ```{r}
+background_all <- read.csv("../output/bio/background_all_lonlat_nafo2_sciname_amo_nao_depthname.csv", header = TRUE)
 background_all$bottom_depth <- get.depth(bat, background_all[ ,8:9], locator = FALSE)
 background_all$bottom_depth <- background_all$bottom_depth[, 3] #this step is because get.bath actually produces it's own dataframe with long, lat, and depth. This is extracting the depth column and deplacing data_aea$bottom_depth with the correct data.
 write.csv(background_all,"../output/bio/background_all_lonlat_nafo2_sciname_amo_nao_depthname_bath.csv", row.names = FALSE)
-head(background_all$bottom_depth)
+head(background_all)
 ```
 
 # observations by cell (in total, and also by time step)
@@ -636,7 +638,7 @@ for (i in 1:no_netcdf) {
     }
 }
 write.csv(background_all_sp, "../output/bio/background_complete_2007.csv", row.names = FALSE)
-background_all <- as.data.frame(background_all_sp)
+background_all2 <- as.data.frame(background_all_sp)
 head(background_all_sp)
 ```
 
@@ -844,12 +846,12 @@ background_all <- rbind(back1998, back1999, back2000_2003, back2004_2006, back20
 head(background_all)
 ```
 
-remove all na values
+remove all na values THIS CAN BE EDITED TO DOUBLE CHECK FOR NA VALUES
 
 ```{r}
-backna <- sum(!complete.cases(background_all)) #this just counts the number of rows that contain NA values
+backna <- sum(!complete.cases(background_all2)) #this just counts the number of rows that contain NA values
 backna
-background_all <- background_all[complete.cases(background_all), ] #removes NA values
+background_all2 <- background_all2[complete.cases(background_all2), ] #removes NA values
 backna2 <- sum(!complete.cases(background_all)) #this just counts the number of rows that contain NA values
 backna2
 write.csv(background_all, "../output/bio/background_complete_na.csv", row.names = FALSE)

@@ -78,21 +78,23 @@ head(testbackground_all_sp)
 
 
 ```{r}
-backna <- sum(!complete.cases(background_all)) #this just counts the number of rows that contain NA values
+testbackground_all <- read.csv("../output/bio/background_point_na_removal.csv", header = TRUE)
+backna <- count(rowSums(!is.na(testbackground_all)))
+backna <- sum(!complete.cases(testbackground_all)) #this just counts the number of rows that contain NA values
 backna
-background_all <- background_all[complete.cases(background_all), ] #removes NA values
-backna2 <- sum(!complete.cases(background_all)) #this just counts the number of rows that contain NA values
+testbackground_all <- testbackground_all[complete.cases(testbackground_all), ] #removes NA values
+backna2 <- sum(complete.cases(testbackground_all)) #this just counts the number of rows that contain NA values
 backna2
-write.csv(background_all, "../output/bio/background_point_na_removal_nona", row.names = FALSE)
+write.csv(testbackground_all, "../output/bio/background_point_na_removal_nona.csv", row.names = FALSE)
 head(testbackground_all)
 ```
 
 ```{r}
-testbackground_all <- subset(testbackground_all, select = -c(temp_depth, temp_surface, salinity_depth, salinity_surface, o2_depth, o2_surface, chl_depth, chl_surface, ssh_surface, mlp_surface))
+testbackground_all <- subset(testbackground_all, select = -c(temp_depth, salinity_depth, o2_depth, chl_depth))
 head(testbackground_all)
 ```
 ```{r}
-testbackground_all <- subset(testbackground_all, select = -c(longitude_.1, latitude_m.1, optional))
+testbackground_all <- subset(testbackground_all, select = -c(longitude_.1, latitude_m.1, optional, optional.1))
 head(testbackground_all)
 ```
 
