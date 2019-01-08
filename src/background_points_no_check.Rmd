@@ -53,9 +53,9 @@ xy <- testbglist[ ,c("longitude_","latitude_m")] # This is to tell R where the c
 testbglistsp <- SpatialPointsDataFrame(coords = xy, data = testbglist, proj4string = CRS("+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-60 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")) # The CRS is used here is for the albers equal area projection.
 
 
-netcdf_list <- list.files("../data/bktstncdf", pattern = '*.nc', full.names = TRUE) #true means the full path is included
+netcdf_list <- list.files("../data/env/bktstncdf", pattern = '*.nc', full.names = TRUE) #true means the full path is included
 no_netcdf <- length(netcdf_list) #for the loop - need to know how many files to cycle through
-netcdf_name <- list.files("../data/bktstncdf", pattern = '*.nc', full.names = FALSE) #false means the path is not included
+netcdf_name <- list.files("../data/env/bktstncdf", pattern = '*.nc', full.names = FALSE) #false means the path is not included
 aea <- raster("../output/env/aea.tif") 
 yr <- 2007  # a variable for the observation year
 mth <- 10  # a variable for the observation month
@@ -67,36 +67,36 @@ for (i in 1:no_netcdf) {
   brkvar <- (sapply(strsplit(netcdf_name[i], "_"), "[[", 3)) # extracting the third part of the netcdf (inc.nc)
   temp_brick <- brick(netcdf_list[i], lvar = 4)
   temp_brick <- projectRaster(temp_brick, aea) 
-    for (j in 1:nrow(testbk190000sp)) {  
-      de <- testbk190000sp$depthlayerno[[j]]  # a variable for the observation depth layer
+    for (j in 1:nrow(testbglistsp)) {  
+      de <- testbglistsp$depthlayerno[[j]]  # a variable for the observation depth layer
           if (brkyr == yr & brkmth == mth & brkvar == "temp.nc"){
-              testbk190000sp$temp_surface[j] <- extract(x=temp_brick[[1]], y = testbk190000sp[j, ]) 
+              testbglistsp$temp_surface[j] <- extract(x=temp_brick[[1]], y = testbglistsp[j, ]) 
               if (is.na(de)){
-                testbk190000sp$temp_depth[j] <- NA
+                testbglistsp$temp_depth[j] <- NA
               } else  
-                testbk190000sp$temp_depth[j] <- extract(x=temp_brick[[de]], y = testbk190000sp[j, ])
+                testbglistsp$temp_depth[j] <- extract(x=temp_brick[[de]], y = testbglistsp[j, ])
           } else if (brkyr == yr & brkmth == mth & brkvar == "salinity.nc") {
-              testbk190000sp$salinity_surface[j] <- extract(x=temp_brick[[1]], y = testbk190000sp[j, ]) 
+              testbglistsp$salinity_surface[j] <- extract(x=temp_brick[[1]], y = testbglistsp[j, ]) 
               if (is.na(de)){
-                testbk190000sp$salinity_depth[j] <- NA
+                testbglistsp$salinity_depth[j] <- NA
               } else  
-                testbk190000sp$salinity_depth[j] <- extract(x=temp_brick[[de]], y = testbk190000sp[j, ]) 
+                testbglistsp$salinity_depth[j] <- extract(x=temp_brick[[de]], y = testbglistsp[j, ]) 
           } else if (brkyr == yr & brkmth == mth & brkvar == "chl.nc") {
-              testbk190000sp$chl_surface[j] <- extract(x=temp_brick[[1]], y = testbk190000sp[j, ]) 
+              testbglistsp$chl_surface[j] <- extract(x=temp_brick[[1]], y = testbglistsp[j, ]) 
               if (is.na(de)){
-                testbk190000sp$chl_depth[j] <- NA
+                testbglistsp$chl_depth[j] <- NA
               } else  
-                testbk190000sp$chl_depth[j] <- extract(x=temp_brick[[de]], y = testbk190000sp[j, ]) 
+                testbglistsp$chl_depth[j] <- extract(x=temp_brick[[de]], y = testbglistsp[j, ]) 
           } else if (brkyr == yr & brkmth == mth & brkvar == "o2.nc") {
-              testbk190000sp$o2_surface[j] <- extract(x=temp_brick[[1]], y = testbk190000sp[j, ]) 
+              testbglistsp$o2_surface[j] <- extract(x=temp_brick[[1]], y = testbglistsp[j, ]) 
               if (is.na(de)){
-                testbk190000sp$o2_depth[j] <- NA
+                testbglistsp$o2_depth[j] <- NA
               } else  
-                testbk190000sp$o2_depth[j] <- extract(x=temp_brick[[de]], y = testbk190000sp[j, ]) 
+                testbglistsp$o2_depth[j] <- extract(x=temp_brick[[de]], y = testbglistsp[j, ]) 
           } else if (brkyr == yr & brkmth == mth & brkvar == "mlp.nc") {
-              testbk190000sp$mlp_surface[j] <- extract(x=temp_brick[[1]], y = testbk190000sp[j, ])
+              testbglistsp$mlp_surface[j] <- extract(x=temp_brick[[1]], y = testbglistsp[j, ])
           } else if (brkyr == yr & brkmth == mth & brkvar == "ssh.nc") {
-              testbk190000sp$ssh_surface[j] <- extract(x=temp_brick[[1]], y = testbk190000sp[j, ]) 
+              testbglistsp$ssh_surface[j] <- extract(x=temp_brick[[1]], y = testbglistsp[j, ]) 
             
           }
      
@@ -177,9 +177,9 @@ xy <- testbglist[ ,c("longitude_","latitude_m")] # This is to tell R where the c
 testbglistsp <- SpatialPointsDataFrame(coords = xy, data = testbglist, proj4string = CRS("+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-60 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")) # The CRS is used here is for the albers equal area projection.
 
 
-netcdf_list <- list.files("../data/bktstncdf", pattern = '*.nc', full.names = TRUE) #true means the full path is included
+netcdf_list <- list.files("../data/env/bktstncdf", pattern = '*.nc', full.names = TRUE) #true means the full path is included
 no_netcdf <- length(netcdf_list) #for the loop - need to know how many files to cycle through
-netcdf_name <- list.files("../data/bktstncdf", pattern = '*.nc', full.names = FALSE) #false means the path is not included
+netcdf_name <- list.files("../data/env/bktstncdf", pattern = '*.nc', full.names = FALSE) #false means the path is not included
 aea <- raster("../output/env/aea.tif") 
 yr <- 1999  # a variable for the observation year
 mth <- 02  # a variable for the observation month
@@ -298,9 +298,9 @@ xy <- testbglist[ ,c("longitude_","latitude_m")] # This is to tell R where the c
 testbglistsp <- SpatialPointsDataFrame(coords = xy, data = testbglist, proj4string = CRS("+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-60 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")) # The CRS is used here is for the albers equal area projection.
 
 
-netcdf_list <- list.files("../data/bktstncdf", pattern = '*.nc', full.names = TRUE) #true means the full path is included
+netcdf_list <- list.files("../data/env/bktstncdf", pattern = '*.nc', full.names = TRUE) #true means the full path is included
 no_netcdf <- length(netcdf_list) #for the loop - need to know how many files to cycle through
-netcdf_name <- list.files("../data/bktstncdf", pattern = '*.nc', full.names = FALSE) #false means the path is not included
+netcdf_name <- list.files("../data/env/bktstncdf", pattern = '*.nc', full.names = FALSE) #false means the path is not included
 aea <- raster("../output/env/aea.tif") 
 yr <- 2014  # a variable for the observation year
 mth <- 06  # a variable for the observation month
