@@ -690,7 +690,11 @@ background_all$ssh_surface <- NA
 
 Second you need to put the background (background_all) into a spatialpointsdataframe.
 ```{r}
+<<<<<<< HEAD
+background_all2 <- background_all[background_all$year == 2009, ]
+=======
 background_all2 <- background_all[background_all$year == 1999 & background_all$month == 7, ]
+>>>>>>> 046838528c0b1f64fae8e0f2134dc995971d5a11
 xy <- background_all2[ ,c("longitude_meters","latitude_meters")] # This is to tell R where the coordinates are. Note that the column order needs to be longitude, latitude
 
 #xy <- background_all[ ,c("longitude_meters","latitude_meters")] # This is to tell R where the coordinates are. Note that the column order needs to be longitude, latitude
@@ -748,7 +752,11 @@ for (i in 1:no_netcdf) {
      
     }
 }
+<<<<<<< HEAD
+write.csv(background_all_sp, "../output/bio/background_complete_2009.csv", row.names = FALSE)
+=======
 write.csv(background_all_sp, "../output/bio/background_all_complete.csv", row.names = FALSE)
+>>>>>>> 046838528c0b1f64fae8e0f2134dc995971d5a11
 background_all2 <- as.data.frame(background_all_sp)
 head(background_all_sp)
 ```
