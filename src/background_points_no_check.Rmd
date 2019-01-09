@@ -110,12 +110,11 @@ print(Sys.time()-strt) #time it took to run
 ok now create the first lot of random for 2007_10
 
 ```{r}
-testbk100001999 <- test_back_df[sample(nrow(test_back_df), 10000), ]  #where 10000 = number of rows to sample (large sample as per maxent)
-testbk200001999 <- test_back_df[sample(nrow(test_back_df), 20000), ]  
-testbk300001999 <- test_back_df[sample(nrow(test_back_df), 30000), ]  
-testbk500001999 <- test_back_df[sample(nrow(test_back_df), 50000), ]  
-testbk1000001999 <- test_back_df[sample(nrow(test_back_df), 100000), ]  
-testbk1900001999 <- test_back_df[sample(nrow(test_back_df), 190000), ]  
+testbk10000 <- test_back_df[sample(nrow(test_back_df), 10000), ]  #where 10000 = number of rows to sample (large sample as per maxent)
+testbk20000 <- test_back_df[sample(nrow(test_back_df), 20000), ]  
+testbk50000 <- test_back_df[sample(nrow(test_back_df), 50000), ]  
+testbk100000 <- test_back_df[sample(nrow(test_back_df), 100000), ]  
+testbk190000 <- test_back_df[sample(nrow(test_back_df), 190000), ]  
 ```
 
 
@@ -125,43 +124,43 @@ plot each variable against the different no of background points
 
 
 ```{r}
-ggplot(test10000, aes(x = ssh_surface)) + geom_density(na.rm = TRUE, colour = "red") + geom_density(data=test20000 , na.rm = TRUE, colour = "blue") + geom_density(data=test50000 , na.rm = TRUE, colour = "green") + geom_density(data=test100000 , na.rm = TRUE, colour = "orange") + geom_density(data=test190000 , na.rm = TRUE, colour = "pink")
-dev.copy(png,"../output/env/background_point_check/200710_ssh_back_no.png") # to automatically save the plot to a png AND show it inline
+ggplot(testbk10000, aes(x = ssh_surface)) + geom_density(na.rm = TRUE, colour = "red") + geom_density(data=testbk20000 , na.rm = TRUE, colour = "blue") + geom_density(data=testbk50000 , na.rm = TRUE, colour = "green") + geom_density(data=testbk100000 , na.rm = TRUE, colour = "orange") + geom_density(data=testbk190000 , na.rm = TRUE, colour = "pink")
+dev.copy(png, "../output/env/background_point_check/200710_ssh_back_no.png") # to automatically save the plot to a png AND show it inline
 dev.off() # stops automatic saving of the plot to a png
 
-ggplot(test10000, aes(x = mlp_surface)) + geom_density(na.rm = TRUE, colour = "red") + geom_density(data=test20000 , na.rm = TRUE, colour = "blue") + geom_density(data=test50000 , na.rm = TRUE, colour = "green") + geom_density(data=test100000 , na.rm = TRUE, colour = "orange") + geom_density(data=test190000 , na.rm = TRUE, colour = "pink")
+ggplot(testbk10000, aes(x = mlp_surface)) + geom_density(na.rm = TRUE, colour = "red") + geom_density(data=testbk20000 , na.rm = TRUE, colour = "blue") + geom_density(data=testbk50000 , na.rm = TRUE, colour = "green") + geom_density(data=testbk100000 , na.rm = TRUE, colour = "orange") + geom_density(data=testbk190000 , na.rm = TRUE, colour = "pink")
 dev.copy(png,"../output/env/background_point_check/200710_mlp_back_no.png") # to automatically save the plot to a png AND show it inline
 dev.off() # stops automatic saving of the plot to a png
 
-ggplot(test10000, aes(x = temp_surface)) + geom_density(na.rm = TRUE, colour = "red") + geom_density(data=test20000 , na.rm = TRUE, colour = "blue") + geom_density(data=test50000 , na.rm = TRUE, colour = "green") + geom_density(data=test100000 , na.rm = TRUE, colour = "orange") + geom_density(data=test190000 , na.rm = TRUE, colour = "pink")
+ggplot(testbk10000, aes(x = temp_surface)) + geom_density(na.rm = TRUE, colour = "red") + geom_density(data=testbk20000 , na.rm = TRUE, colour = "blue") + geom_density(data=testbk50000 , na.rm = TRUE, colour = "green") + geom_density(data=testbk100000 , na.rm = TRUE, colour = "orange") + geom_density(data=testbk190000 , na.rm = TRUE, colour = "pink")
 dev.copy(png,"../output/env/background_point_check/200710_temp_surface_back_no.png") # to automatically save the plot to a png AND show it inline
 dev.off() # stops automatic saving of the plot to a png
 
-ggplot(test10000, aes(x = temp_depth)) + geom_density(na.rm = TRUE, colour = "red") + geom_density(data=test20000 , na.rm = TRUE, colour = "blue") + geom_density(data=test50000 , na.rm = TRUE, colour = "green") + geom_density(data=test100000 , na.rm = TRUE, colour = "orange") + geom_density(data=test190000 , na.rm = TRUE, colour = "pink")
+ggplot(testbk10000, aes(x = temp_depth)) + geom_density(na.rm = TRUE, colour = "red") + geom_density(data=testbk20000 , na.rm = TRUE, colour = "blue") + geom_density(data=testbk50000 , na.rm = TRUE, colour = "green") + geom_density(data=testbk100000 , na.rm = TRUE, colour = "orange") + geom_density(data=testbk190000 , na.rm = TRUE, colour = "pink")
 dev.copy(png,"../output/env/background_point_check/200710_temp_depth_back_no.png") # to automatically save the plot to a png AND show it inline
 dev.off() # stops automatic saving of the plot to a png
 
-ggplot(test10000, aes(x = salinity_surface)) + geom_density(na.rm = TRUE, colour = "red") + geom_density(data=test20000 , na.rm = TRUE, colour = "blue") + geom_density(data=test50000 , na.rm = TRUE, colour = "green") + geom_density(data=test100000 , na.rm = TRUE, colour = "orange") + geom_density(data=test190000 , na.rm = TRUE, colour = "pink")
+ggplot(testbk10000, aes(x = salinity_surface)) + geom_density(na.rm = TRUE, colour = "red") + geom_density(data=testbk20000 , na.rm = TRUE, colour = "blue") + geom_density(data=testbk50000 , na.rm = TRUE, colour = "green") + geom_density(data=testbk100000 , na.rm = TRUE, colour = "orange") + geom_density(data=testbk190000 , na.rm = TRUE, colour = "pink")
 dev.copy(png,"../output/env/background_point_check/200710_salinity_surface_back_no.png") # to automatically save the plot to a png AND show it inline
 dev.off() # stops automatic saving of the plot to a png
 
-ggplot(test10000, aes(x = salinity_depth)) + geom_density(na.rm = TRUE, colour = "red") + geom_density(data=test20000 , na.rm = TRUE, colour = "blue") + geom_density(data=test50000 , na.rm = TRUE, colour = "green") + geom_density(data=test100000 , na.rm = TRUE, colour = "orange") + geom_density(data=test190000 , na.rm = TRUE, colour = "pink")
+ggplot(testbk10000, aes(x = salinity_depth)) + geom_density(na.rm = TRUE, colour = "red") + geom_density(data=testbk20000 , na.rm = TRUE, colour = "blue") + geom_density(data=testbk50000 , na.rm = TRUE, colour = "green") + geom_density(data=testbk100000 , na.rm = TRUE, colour = "orange") + geom_density(data=testbk190000 , na.rm = TRUE, colour = "pink")
 dev.copy(png,"../output/env/background_point_check/200710_salinity_depth_back_no.png") # to automatically save the plot to a png AND show it inline
 dev.off() # stops automatic saving of the plot to a png
 
-ggplot(test10000, aes(x = chl_surface)) + geom_density(na.rm = TRUE, colour = "red") + geom_density(data=test20000 , na.rm = TRUE, colour = "blue") + geom_density(data=test50000 , na.rm = TRUE, colour = "green") + geom_density(data=test100000 , na.rm = TRUE, colour = "orange") + geom_density(data=test190000 , na.rm = TRUE, colour = "pink")
+ggplot(testbk10000, aes(x = chl_surface)) + geom_density(na.rm = TRUE, colour = "red") + geom_density(data=testbk20000 , na.rm = TRUE, colour = "blue") + geom_density(data=testbk50000 , na.rm = TRUE, colour = "green") + geom_density(data=testbk100000 , na.rm = TRUE, colour = "orange") + geom_density(data=testbk190000 , na.rm = TRUE, colour = "pink")
 dev.copy(png,"../output/env/background_point_check/200710_chl_surface_back_no.png") # to automatically save the plot to a png AND show it inline
 dev.off() # stops automatic saving of the plot to a png
 
-ggplot(test10000, aes(x = chl_depth)) + geom_density(na.rm = TRUE, colour = "red") + geom_density(data=test20000 , na.rm = TRUE, colour = "blue") + geom_density(data=test50000 , na.rm = TRUE, colour = "green") + geom_density(data=test100000 , na.rm = TRUE, colour = "orange") + geom_density(data=test190000 , na.rm = TRUE, colour = "pink")
+ggplot(testbk10000, aes(x = chl_depth)) + geom_density(na.rm = TRUE, colour = "red") + geom_density(data=testbk20000 , na.rm = TRUE, colour = "blue") + geom_density(data=testbk50000 , na.rm = TRUE, colour = "green") + geom_density(data=testbk100000 , na.rm = TRUE, colour = "orange") + geom_density(data=testbk190000 , na.rm = TRUE, colour = "pink")
 dev.copy(png,"../output/env/background_point_check/200710_chl_depth_back_no.png") # to automatically save the plot to a png AND show it inline
 dev.off() # stops automatic saving of the plot to a png
 
-ggplot(test10000, aes(x = o2_surface)) + geom_density(na.rm = TRUE, colour = "red") + geom_density(data=test20000 , na.rm = TRUE, colour = "blue") + geom_density(data=test50000 , na.rm = TRUE, colour = "green") + geom_density(data=test100000 , na.rm = TRUE, colour = "orange") + geom_density(data=test190000 , na.rm = TRUE, colour = "pink")
+ggplot(testbk10000, aes(x = o2_surface)) + geom_density(na.rm = TRUE, colour = "red") + geom_density(data=testbk20000 , na.rm = TRUE, colour = "blue") + geom_density(data=testbk50000 , na.rm = TRUE, colour = "green") + geom_density(data=testbk100000 , na.rm = TRUE, colour = "orange") + geom_density(data=testbk190000 , na.rm = TRUE, colour = "pink")
 dev.copy(png,"../output/env/background_point_check/200710_o2_surface_back_no.png") # to automatically save the plot to a png AND show it inline
 dev.off() # stops automatic saving of the plot to a png
 
-ggplot(test10000, aes(x = o2_depth)) + geom_density(na.rm = TRUE, colour = "red") + geom_density(data=test20000 , na.rm = TRUE, colour = "blue") + geom_density(data=test50000 , na.rm = TRUE, colour = "green") + geom_density(data=test100000 , na.rm = TRUE, colour = "orange") + geom_density(data=test190000 , na.rm = TRUE, colour = "pink")
+ggplot(testbk10000, aes(x = o2_depth)) + geom_density(na.rm = TRUE, colour = "red") + geom_density(data=testbk20000 , na.rm = TRUE, colour = "blue") + geom_density(data=testbk50000 , na.rm = TRUE, colour = "green") + geom_density(data=testbk100000 , na.rm = TRUE, colour = "orange") + geom_density(data=testbk190000 , na.rm = TRUE, colour = "pink")
 dev.copy(png,"../output/env/background_point_check/200710_o2_depth_back_no.png") # to automatically save the plot to a png AND show it inline
 dev.off() # stops automatic saving of the plot to a png
 ```
@@ -234,56 +233,55 @@ print(Sys.time()-strt) #time it took to run
 ok now create the first lot of random for 1999_02
 
 ```{r}
-testbk100001999 <- test_back_df[sample(nrow(test_back_df), 10000), ]  #where 10000 = number of rows to sample (large sample as per maxent)
-testbk200001999 <- test_back_df[sample(nrow(test_back_df), 20000), ]  
-testbk300001999 <- test_back_df[sample(nrow(test_back_df), 30000), ]  
-testbk500001999 <- test_back_df[sample(nrow(test_back_df), 50000), ]  
-testbk1000001999 <- test_back_df[sample(nrow(test_back_df), 100000), ]  
-testbk1900001999 <- test_back_df[sample(nrow(test_back_df), 190000), ]  
+testbk10000 <- test_back_df[sample(nrow(test_back_df), 10000), ]  #where 10000 = number of rows to sample (large sample as per maxent)
+testbk20000 <- test_back_df[sample(nrow(test_back_df), 20000), ]  
+testbk50000 <- test_back_df[sample(nrow(test_back_df), 50000), ]  
+testbk100000 <- test_back_df[sample(nrow(test_back_df), 100000), ]  
+testbk190000 <- test_back_df[sample(nrow(test_back_df), 190000), ]  
 ```
 
 and plot
 
 
 ```{r}
-ggplot(testbk100001999, aes(x = ssh_surface)) + geom_density(na.rm = TRUE, colour = "red") + geom_density(data=testbk200001999 , na.rm = TRUE, colour = "blue") + geom_density(data=testbk500002014 , na.rm = TRUE, colour = "green") + geom_density(data=testbk1900001999 , na.rm = TRUE, colour = "orange") + geom_density(data=testbk1900001999 , na.rm = TRUE, colour = "pink")
-dev.copy(png,".../output/env/background_point_check/199902_ssh_back.png") # to automatically save the plot to a png AND show it inline
+ggplot(testbk10000, aes(x = ssh_surface)) + geom_density(na.rm = TRUE, colour = "red") + geom_density(data=testbk20000 , na.rm = TRUE, colour = "blue") + geom_density(data=testbk50000 , na.rm = TRUE, colour = "green") + geom_density(data=testbk100000 , na.rm = TRUE, colour = "orange") + geom_density(data=testbk190000 , na.rm = TRUE, colour = "pink")
+dev.copy(png,"../output/env/background_point_check/199902_ssh_back.png") # to automatically save the plot to a png AND show it inline
 dev.off() # stops automatic saving of the plot to a png
 
-ggplot(testbk100001999, aes(x = mlp_surface)) + geom_density(na.rm = TRUE, colour = "red") + geom_density(data=testbk200001999 , na.rm = TRUE, colour = "blue") + geom_density(data=testbk500002014 , na.rm = TRUE, colour = "green") + geom_density(data=testbk1900001999 , na.rm = TRUE, colour = "orange") + geom_density(data=testbk1900001999 , na.rm = TRUE, colour = "pink")
-dev.copy(png,".../output/env/background_point_check/199902_mlp.png") # to automatically save the plot to a png AND show it inline
+ggplot(testbk10000, aes(x = mlp_surface)) + geom_density(na.rm = TRUE, colour = "red") + geom_density(data=testbk20000 , na.rm = TRUE, colour = "blue") + geom_density(data=testbk50000 , na.rm = TRUE, colour = "green") + geom_density(data=testbk100000 , na.rm = TRUE, colour = "orange") + geom_density(data=testbk190000 , na.rm = TRUE, colour = "pink")
+dev.copy(png,"../output/env/background_point_check/199902_mlp.png") # to automatically save the plot to a png AND show it inline
 dev.off() # stops automatic saving of the plot to a png
 
-ggplot(testbk100001999, aes(x = temp_surface)) + geom_density(na.rm = TRUE, colour = "red") + geom_density(data=testbk200001999 , na.rm = TRUE, colour = "blue") + geom_density(data=testbk500002014 , na.rm = TRUE, colour = "green") + geom_density(data=testbk1000001999 , na.rm = TRUE, colour = "orange") + geom_density(data=testbk1900001999 , na.rm = TRUE, colour = "pink")
-dev.copy(png,".../output/env/background_point_check/199902_temp_surface.png") # to automatically save the plot to a png AND show it inline
+ggplot(testbk10000, aes(x = temp_surface)) + geom_density(na.rm = TRUE, colour = "red") + geom_density(data=testbk20000 , na.rm = TRUE, colour = "blue") + geom_density(data=testbk50000 , na.rm = TRUE, colour = "green") + geom_density(data=testbk100000 , na.rm = TRUE, colour = "orange") + geom_density(data=testbk190000 , na.rm = TRUE, colour = "pink")
+dev.copy(png,"../output/env/background_point_check/199902_temp_surface.png") # to automatically save the plot to a png AND show it inline
 dev.off() # stops automatic saving of the plot to a png
 
-ggplot(testbk100001999, aes(x = temp_depth)) + geom_density(na.rm = TRUE, colour = "red") + geom_density(data=testbk200001999 , na.rm = TRUE, colour = "blue") + geom_density(data=testbk500002014 , na.rm = TRUE, colour = "green") + geom_density(data=testbk1000001999 , na.rm = TRUE, colour = "orange") + geom_density(data=testbk1900001999 , na.rm = TRUE, colour = "pink")
-dev.copy(png,".../output/env/background_point_check/199902_temp_depth.png") # to automatically save the plot to a png AND show it inline
+ggplot(testbk10000, aes(x = temp_depth)) + geom_density(na.rm = TRUE, colour = "red") + geom_density(data=testbk20000 , na.rm = TRUE, colour = "blue") + geom_density(data=testbk50000 , na.rm = TRUE, colour = "green") + geom_density(data=testbk100000 , na.rm = TRUE, colour = "orange") + geom_density(data=testbk190000 , na.rm = TRUE, colour = "pink")
+dev.copy(png,"../output/env/background_point_check/199902_temp_depth.png") # to automatically save the plot to a png AND show it inline
 dev.off() # stops automatic saving of the plot to a png
 
-ggplot(testbk100001999, aes(x = salinity_surface)) + geom_density(na.rm = TRUE, colour = "red") + geom_density(data=testbk200001999 , na.rm = TRUE, colour = "blue") + geom_density(data=testbk500002014 , na.rm = TRUE, colour = "green") + geom_density(data=testbk1000001999 , na.rm = TRUE, colour = "orange") + geom_density(data=testbk1900001999 , na.rm = TRUE, colour = "pink")
-dev.copy(png,".../output/env/background_point_check/199902_salinity_surface.png") # to automatically save the plot to a png AND show it inline
+ggplot(testbk10000, aes(x = salinity_surface)) + geom_density(na.rm = TRUE, colour = "red") + geom_density(data=testbk20000 , na.rm = TRUE, colour = "blue") + geom_density(data=testbk50000 , na.rm = TRUE, colour = "green") + geom_density(data=testbk100000 , na.rm = TRUE, colour = "orange") + geom_density(data=testbk190000 , na.rm = TRUE, colour = "pink")
+dev.copy(png,"../output/env/background_point_check/199902_salinity_surface.png") # to automatically save the plot to a png AND show it inline
 dev.off() # stops automatic saving of the plot to a png
 
-ggplot(testbk100001999, aes(x = salinity_depth)) + geom_density(na.rm = TRUE, colour = "red") + geom_density(data=testbk200001999 , na.rm = TRUE, colour = "blue") + geom_density(data=testbk500002014 , na.rm = TRUE, colour = "green") + geom_density(data=testbk1000001999 , na.rm = TRUE, colour = "orange") + geom_density(data=testbk1900001999 , na.rm = TRUE, colour = "pink")
-dev.copy(png,".../output/env/background_point_check/199902_salinity_depth.png") # to automatically save the plot to a png AND show it inline
+ggplot(testbk10000, aes(x = salinity_depth)) + geom_density(na.rm = TRUE, colour = "red") + geom_density(data=testbk20000 , na.rm = TRUE, colour = "blue") + geom_density(data=testbk50000 , na.rm = TRUE, colour = "green") + geom_density(data=testbk100000 , na.rm = TRUE, colour = "orange") + geom_density(data=testbk190000 , na.rm = TRUE, colour = "pink")
+dev.copy(png,"../output/env/background_point_check/199902_salinity_depth.png") # to automatically save the plot to a png AND show it inline
 dev.off() # stops automatic saving of the plot to a png
 
-ggplot(testbk100001999, aes(x = chl_surface)) + geom_density(na.rm = TRUE, colour = "red") + geom_density(data=testbk200001999 , na.rm = TRUE, colour = "blue") + geom_density(data=testbk500002014 , na.rm = TRUE, colour = "green") + geom_density(data=testbk1000001999 , na.rm = TRUE, colour = "orange") + geom_density(data=testbk1900001999 , na.rm = TRUE, colour = "pink")
-dev.copy(png,".../output/env/background_point_check/199902_chl_surface.png") # to automatically save the plot to a png AND show it inline
+ggplot(testbk10000, aes(x = chl_surface)) + geom_density(na.rm = TRUE, colour = "red") + geom_density(data=testbk20000 , na.rm = TRUE, colour = "blue") + geom_density(data=testbk50000 , na.rm = TRUE, colour = "green") + geom_density(data=testbk100000 , na.rm = TRUE, colour = "orange") + geom_density(data=testbk190000 , na.rm = TRUE, colour = "pink")
+dev.copy(png,"../output/env/background_point_check/199902_chl_surface.png") # to automatically save the plot to a png AND show it inline
 dev.off() # stops automatic saving of the plot to a png
 
-ggplot(testbk100001999, aes(x = chl_depth)) + geom_density(na.rm = TRUE, colour = "red") + geom_density(data=testbk200001999 , na.rm = TRUE, colour = "blue") + geom_density(data=testbk500002014 , na.rm = TRUE, colour = "green") + geom_density(data=testbk1000001999 , na.rm = TRUE, colour = "orange") + geom_density(data=testbk1900001999 , na.rm = TRUE, colour = "pink")
-dev.copy(png,".../output/env/background_point_check/199902_chl_depth.png") # to automatically save the plot to a png AND show it inline
+ggplot(testbk10000, aes(x = chl_depth)) + geom_density(na.rm = TRUE, colour = "red") + geom_density(data=testbk20000 , na.rm = TRUE, colour = "blue") + geom_density(data=testbk50000 , na.rm = TRUE, colour = "green") + geom_density(data=testbk1000001999 , na.rm = TRUE, colour = "orange") + geom_density(data=testbk190000 , na.rm = TRUE, colour = "pink")
+dev.copy(png,"../output/env/background_point_check/199902_chl_depth.png") # to automatically save the plot to a png AND show it inline
 dev.off() # stops automatic saving of the plot to a png
 
-ggplot(testbk100001999, aes(x = o2_surface)) + geom_density(na.rm = TRUE, colour = "red") + geom_density(data=testbk200001999 , na.rm = TRUE, colour = "blue") + geom_density(data=testbk500001999 , na.rm = TRUE, colour = "green") + geom_density(data=testbk1000001999 , na.rm = TRUE, colour = "orange") + geom_density(data=testbk1900001999 , na.rm = TRUE, colour = "pink")
-dev.copy(png,".../output/env/background_point_check/199902_o2_surface.png") # to automatically save the plot to a png AND show it inline
+ggplot(testbk10000, aes(x = o2_surface)) + geom_density(na.rm = TRUE, colour = "red") + geom_density(data=testbk20000 , na.rm = TRUE, colour = "blue") + geom_density(data=testbk500001999 , na.rm = TRUE, colour = "green") + geom_density(data=testbk100000 , na.rm = TRUE, colour = "orange") + geom_density(data=testbk190000 , na.rm = TRUE, colour = "pink")
+dev.copy(png,"../output/env/background_point_check/199902_o2_surface.png") # to automatically save the plot to a png AND show it inline
 dev.off() # stops automatic saving of the plot to a png
 
-ggplot(testbk100001999, aes(x = o2_depth)) + geom_density(na.rm = TRUE, colour = "red") + geom_density(data=testbk200001999 , na.rm = TRUE, colour = "blue") + geom_density(data=testbk500001999 , na.rm = TRUE, colour = "green") + geom_density(data=testbk1000001999 , na.rm = TRUE, colour = "orange") + geom_density(data=testbk1900001999 , na.rm = TRUE, colour = "pink")
-dev.copy(png,".../output/env/background_point_check/199902_o2_depth.png") # to automatically save the plot to a png AND show it inline
+ggplot(testbk10000, aes(x = o2_depth)) + geom_density(na.rm = TRUE, colour = "red") + geom_density(data=testbk20000 , na.rm = TRUE, colour = "blue") + geom_density(data=testbk500001999 , na.rm = TRUE, colour = "green") + geom_density(data=testbk100000 , na.rm = TRUE, colour = "orange") + geom_density(data=testbk190000 , na.rm = TRUE, colour = "pink")
+dev.copy(png,"../output/env/background_point_check/199902_o2_depth.png") # to automatically save the plot to a png AND show it inline
 dev.off() # stops automatic saving of the plot to a png
 ```
 
@@ -351,58 +349,58 @@ write.csv(testbglistsp, "../data/env/background_point_check/201406_allbackground
 test_back_df <- as.data.frame(testbglistsp)
 print(Sys.time()-strt) #time it took to run
 ```
+
 ok now create the first lot of random for 2014_06
 
 ```{r}
-testbk100002014 <- test_back_df[sample(nrow(test_back_df), 10000), ]  #where 10000 = number of rows to sample (large sample as per maxent)
-testbk200002014 <- test_back_df[sample(nrow(test_back_df), 20000), ]  
-testbk300002014 <- test_back_df[sample(nrow(test_back_df), 30000), ]  
-testbk500002014 <- test_back_df[sample(nrow(test_back_df), 50000), ]  
-testbk1000002014 <- test_back_df[sample(nrow(test_back_df), 100000), ]  
-testbk1900002014 <- test_back_df[sample(nrow(test_back_df), 190000), ]  
+testbk10000 <- test_back_df[sample(nrow(test_back_df), 10000), ]  #where 10000 = number of rows to sample (large sample as per maxent)
+testbk20000 <- test_back_df[sample(nrow(test_back_df), 20000), ]  
+testbk50000 <- test_back_df[sample(nrow(test_back_df), 50000), ]  
+testbk100000 <- test_back_df[sample(nrow(test_back_df), 100000), ]  
+testbk190000 <- test_back_df[sample(nrow(test_back_df), 190000), ]  
 ```
 
 and plot
 
 
 ```{r}
-ggplot(testbk100002014, aes(x = ssh_surface)) + geom_density(na.rm = TRUE, colour = "red") + geom_density(data=testbk200002014 , na.rm = TRUE, colour = "blue") + geom_density(data=testbk500002014 , na.rm = TRUE, colour = "green") + geom_density(data=testbk1000002014 , na.rm = TRUE, colour = "orange") + geom_density(data=testbk1900002014 , na.rm = TRUE, colour = "pink")
+ggplot(testbk10000, aes(x = ssh_surface)) + geom_density(na.rm = TRUE, colour = "red") + geom_density(data=testbk20000 , na.rm = TRUE, colour = "blue") + geom_density(data=testbk50000 , na.rm = TRUE, colour = "green") + geom_density(data=testbk100000 , na.rm = TRUE, colour = "orange") + geom_density(data=testbk190000 , na.rm = TRUE, colour = "pink")
 dev.copy(png,"../output/env/background_point_check/201406_ssh.png") # to automatically save the plot to a png AND show it inline
 dev.off() # stops automatic saving of the plot to a png
 
-ggplot(testbk100002014, aes(x = mlp_surface)) + geom_density(na.rm = TRUE, colour = "red") + geom_density(data=testbk200002014 , na.rm = TRUE, colour = "blue") + geom_density(data=testbk500002014 , na.rm = TRUE, colour = "green") + geom_density(data=testbk1000002014 , na.rm = TRUE, colour = "orange") + geom_density(data=testbk1900002014 , na.rm = TRUE, colour = "pink")
+ggplot(testbk10000, aes(x = mlp_surface)) + geom_density(na.rm = TRUE, colour = "red") + geom_density(data=testbk20000 , na.rm = TRUE, colour = "blue") + geom_density(data=testbk50000 , na.rm = TRUE, colour = "green") + geom_density(data=testbk100000 , na.rm = TRUE, colour = "orange") + geom_density(data=testbk190000 , na.rm = TRUE, colour = "pink")
 dev.copy(png,"../output/env/background_point_check/201406_mlp.png") # to automatically save the plot to a png AND show it inline
 dev.off() # stops automatic saving of the plot to a png
 
-ggplot(testbk100002014, aes(x = temp_surface)) + geom_density(na.rm = TRUE, colour = "red") + geom_density(data=testbk200002014 , na.rm = TRUE, colour = "blue") + geom_density(data=testbk500002014 , na.rm = TRUE, colour = "green") + geom_density(data=testbk1000002014 , na.rm = TRUE, colour = "orange") + geom_density(data=testbk1900002014 , na.rm = TRUE, colour = "pink")
+ggplot(testbk10000, aes(x = temp_surface)) + geom_density(na.rm = TRUE, colour = "red") + geom_density(data=testbk20000 , na.rm = TRUE, colour = "blue") + geom_density(data=testbk50000 , na.rm = TRUE, colour = "green") + geom_density(data=testbk100000 , na.rm = TRUE, colour = "orange") + geom_density(data=testbk190000 , na.rm = TRUE, colour = "pink")
 dev.copy(png,"../output/env/background_point_check/201406_temp_surface.png") # to automatically save the plot to a png AND show it inline
 dev.off() # stops automatic saving of the plot to a png
 
-ggplot(testbk100002014, aes(x = temp_depth)) + geom_density(na.rm = TRUE, colour = "red") + geom_density(data=testbk200002014 , na.rm = TRUE, colour = "blue") + geom_density(data=testbk500002014 , na.rm = TRUE, colour = "green") + geom_density(data=testbk1000002014 , na.rm = TRUE, colour = "orange") + geom_density(data=testbk1900002014 , na.rm = TRUE, colour = "pink")
+ggplot(testbk10000, aes(x = temp_depth)) + geom_density(na.rm = TRUE, colour = "red") + geom_density(data=testbk20000 , na.rm = TRUE, colour = "blue") + geom_density(data=testbk50000 , na.rm = TRUE, colour = "green") + geom_density(data=testbk100000 , na.rm = TRUE, colour = "orange") + geom_density(data=testbk190000 , na.rm = TRUE, colour = "pink")
 dev.copy(png,"../output/env/background_point_check/201406_temp_depth.png") # to automatically save the plot to a png AND show it inline
 dev.off() # stops automatic saving of the plot to a png
 
-ggplot(testbk100002014, aes(x = salinity_surface)) + geom_density(na.rm = TRUE, colour = "red") + geom_density(data=testbk200002014 , na.rm = TRUE, colour = "blue") + geom_density(data=testbk500002014 , na.rm = TRUE, colour = "green") + geom_density(data=testbk1000002014 , na.rm = TRUE, colour = "orange") + geom_density(data=testbk1900002014 , na.rm = TRUE, colour = "pink")
+ggplot(testbk10000, aes(x = salinity_surface)) + geom_density(na.rm = TRUE, colour = "red") + geom_density(data=testbk20000 , na.rm = TRUE, colour = "blue") + geom_density(data=testbk50000 , na.rm = TRUE, colour = "green") + geom_density(data=testbk100000 , na.rm = TRUE, colour = "orange") + geom_density(data=testbk190000 , na.rm = TRUE, colour = "pink")
 dev.copy(png,"../output/env/background_point_check/201406_salinity_surface.png") # to automatically save the plot to a png AND show it inline
 dev.off() # stops automatic saving of the plot to a png
 
-ggplot(testbk100002014, aes(x = salinity_depth)) + geom_density(na.rm = TRUE, colour = "red") + geom_density(data=testbk200002014 , na.rm = TRUE, colour = "blue") + geom_density(data=testbk500002014 , na.rm = TRUE, colour = "green") + geom_density(data=testbk1000002014 , na.rm = TRUE, colour = "orange") + geom_density(data=testbk1900002014 , na.rm = TRUE, colour = "pink")
+ggplot(testbk10000, aes(x = salinity_depth)) + geom_density(na.rm = TRUE, colour = "red") + geom_density(data=testbk20000 , na.rm = TRUE, colour = "blue") + geom_density(data=testbk50000 , na.rm = TRUE, colour = "green") + geom_density(data=testbk100000 , na.rm = TRUE, colour = "orange") + geom_density(data=testbk190000 , na.rm = TRUE, colour = "pink")
 dev.copy(png,"../output/env/background_point_check/201406_salinity_depth.png") # to automatically save the plot to a png AND show it inline
 dev.off() # stops automatic saving of the plot to a png
 
-ggplot(testbk100002014, aes(x = chl_surface)) + geom_density(na.rm = TRUE, colour = "red") + geom_density(data=testbk200002014 , na.rm = TRUE, colour = "blue") + geom_density(data=testbk500002014 , na.rm = TRUE, colour = "green") + geom_density(data=testbk1000002014 , na.rm = TRUE, colour = "orange") + geom_density(data=testbk1900002014 , na.rm = TRUE, colour = "pink")
+ggplot(testbk10000, aes(x = chl_surface)) + geom_density(na.rm = TRUE, colour = "red") + geom_density(data=testbk20000 , na.rm = TRUE, colour = "blue") + geom_density(data=testbk50000 , na.rm = TRUE, colour = "green") + geom_density(data=testbk100000 , na.rm = TRUE, colour = "orange") + geom_density(data=testbk190000 , na.rm = TRUE, colour = "pink")
 dev.copy(png,"../output/env/background_point_check/201406_chl_surface.png") # to automatically save the plot to a png AND show it inline
 dev.off() # stops automatic saving of the plot to a png
 
-ggplot(testbk100002014, aes(x = chl_depth)) + geom_density(na.rm = TRUE, colour = "red") + geom_density(data=testbk200002014 , na.rm = TRUE, colour = "blue") + geom_density(data=testbk500002014 , na.rm = TRUE, colour = "green") + geom_density(data=testbk1000002014 , na.rm = TRUE, colour = "orange") + geom_density(data=testbk1900002014 , na.rm = TRUE, colour = "pink")
+ggplot(testbk10000, aes(x = chl_depth)) + geom_density(na.rm = TRUE, colour = "red") + geom_density(data=testbk20000 , na.rm = TRUE, colour = "blue") + geom_density(data=testbk50000 , na.rm = TRUE, colour = "green") + geom_density(data=testbk100000 , na.rm = TRUE, colour = "orange") + geom_density(data=testbk190000 , na.rm = TRUE, colour = "pink")
 dev.copy(png,"../output/env/background_point_check/201406_chl_depth.png") # to automatically save the plot to a png AND show it inline
 dev.off() # stops automatic saving of the plot to a png
 
-ggplot(testbk100002014, aes(x = o2_surface)) + geom_density(na.rm = TRUE, colour = "red") + geom_density(data=testbk200002014 , na.rm = TRUE, colour = "blue") + geom_density(data=testbk500002014 , na.rm = TRUE, colour = "green") + geom_density(data=testbk1000002014 , na.rm = TRUE, colour = "orange") + geom_density(data=testbk1900002014 , na.rm = TRUE, colour = "pink")
+ggplot(testbk10000, aes(x = o2_surface)) + geom_density(na.rm = TRUE, colour = "red") + geom_density(data=testbk20000 , na.rm = TRUE, colour = "blue") + geom_density(data=testbk50000 , na.rm = TRUE, colour = "green") + geom_density(data=testbk100000 , na.rm = TRUE, colour = "orange") + geom_density(data=testbk190000 , na.rm = TRUE, colour = "pink")
 dev.copy(png,"../output/env/background_point_check/201406_o2_surface.png") # to automatically save the plot to a png AND show it inline
 dev.off() # stops automatic saving of the plot to a png
 
-ggplot(testbk100002014, aes(x = o2_depth)) + geom_density(na.rm = TRUE, colour = "red") + geom_density(data=testbk200002014 , na.rm = TRUE, colour = "blue") + geom_density(data=testbk500002014 , na.rm = TRUE, colour = "green") + geom_density(data=testbk1000002014 , na.rm = TRUE, colour = "orange") + geom_density(data=testbk1900002014 , na.rm = TRUE, colour = "pink")
+ggplot(testbk10000, aes(x = o2_depth)) + geom_density(na.rm = TRUE, colour = "red") + geom_density(data=testbk20000 , na.rm = TRUE, colour = "blue") + geom_density(data=testbk50000 , na.rm = TRUE, colour = "green") + geom_density(data=testbk100000 , na.rm = TRUE, colour = "orange") + geom_density(data=testbk190000 , na.rm = TRUE, colour = "pink")
 dev.copy(png,"../output/env/background_point_check/201406_o2_depth.png") # to automatically save the plot to a png AND show it inline
 dev.off() # stops automatic saving of the plot to a png
 ```
@@ -412,15 +410,14 @@ dev.off() # stops automatic saving of the plot to a png
 # 3d plot background points
 
 ```{r}
-bck2014_06_3d <- plot_ly(x= testbk100002014$longitude_, y = testbk100002014$latitude_m, z = testbk100002014$depthlayerno)
+bck2014_06_3d <- plot_ly(x= testbk10000$longitude_, y = testbk10000$latitude_m, z = testbk10000$depthlayerno)
 bck2014_06_3d
 ```
 
 # 2d plot background points
 
 ```{r}
-bck2014_06_2d <- plot(x= testbk100002014$longitude_, y = testbk100002014$latitude_m)
-dev.copy(png,"../data/env/background_point_check/bck10000_2d.png") # to automatically save the plot to a png AND show it inline
+bck10000points_2d <- plot(x= testbk10000$longitude_, y = testbk10000$latitude_m)
+dev.copy(png,"../data/env/background_point_check/bck10000points_2d.png") # to automatically save the plot to a png AND show it inline
 dev.off() # stops automatic saving of the plot to a png
-
 ```
