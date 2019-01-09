@@ -175,6 +175,7 @@ ok again...
 
 Leave the rest
 
+
 ## simple plots of env. correlates
 
 temperature
@@ -467,8 +468,8 @@ Read in the presence points
 ```{r}
 background <- read.csv("../output/bio/background_complete_obs_cels.csv", header = TRUE)
 head(background)
-test <- background[245:250, ]
-test
+#test <- background[245:250, ]
+#test
 ```
 
 # environmental correlates
@@ -809,7 +810,7 @@ dev.off() # stops automatic saving of the plot to a png
 
 ## correlations between background points
 
-check to see if there are any correlations in the env. variables
+check to see if there are any correlations in the env. variables for the background points
 
 
 first subset the env.correlate columns (you don't need everything)
@@ -987,14 +988,21 @@ dev.off() # stops automatic saving of the plot to a png
 looks like not much difference... what about a kruskal wallace test?
 
 ```{r}
-kruskal.test(presence$temp_celsius_depth ~ presence$gear)
+kruskal.test(presence$temp_depth ~ presence$gear)
 ```
 Ok so there is a statistically sig difference somewhere in the temp at depth reported by the gear type (Kruskal-Wallis chi-squared = 248.27, df = 7, p-value < 2.2e-16)
 
-To see where the difference(s) are run a Dunn test Zar (2010) states that the Dunn test (in the FSA package) is appropriate for groups with unequal numbers of observations.(Zar, J.H. 2010. Biostatistical Analysis, 5th ed.  Pearson Prentice Hall: Upper Saddle River, NJ.)
+To see where the difference(s) are run a Dunn test Zar (2010) states that the Dunn test (in the FSA package) is appropriate for groups with unequal numbers of observations.(Zar, J.H. 2010. Biostatistical Analysis, 5th ed.  Pearson Prentice Hall: Upper Saddle River, NJ.) http://rcompanion.org/rcompanion/d_06.html
 
 SAM WHEN DUNN IS INSTALLED, GO TO RCOMPANIONS.ORG AND LOOK FOR DUNN - CHECK CHROME HISTORY (PROBABLY UNDER KRUSKAL WALLIS) ALSO MAP THE DISTRIBUTION OF THESE GEAR TYPES
 ```{r}
-pairwise.wilcox.test(presence$temp_celsius_depth, presence$gear, p.adj='bonferroni', exact=F)
+pairwise.wilcox.test(presence$temp_depth, presence$gear, p.adj='bonferroni', exact=F)
+```
+
+dunn test (not working)
+```{r}
+gear_temp_depthdunn <- dunnTest(presence$temp_depth, presence$gear)
+
+write.csv(gear_temp_depthdunn, "../output/env/gear_temp_depthdunn.csv", row.names = TRUE)
 ```
 

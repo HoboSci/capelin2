@@ -9,13 +9,13 @@ Preperation of the capelin (*Mallotus villosus*) data obtained from [OBIS](www.i
 
 A note to anyone who might happen to stumble across this... I am a beginner in R and have had no exposure to similar languages. I don't know what I'm doing. The code herein is unlikely to be elegant and there area probably more efficient ways of running the code.
 
-Built with 'r getRversion()'.
+Built with 'r getRversion()'..
 
 # Package dependencies
 You can install and load them using the following code which uses a function called [ipak](https://gist.github.com/stevenworthington/3178163). Note this function checks to see if the packages are installed first before loading.
 
 
-New package attempt to do this....
+New package attempt to do this...
 old code 
 packages <- c("raster", "dplyr", "data.table", "sp", "adehabitatHR", "maptools")
 source("../src/ipak.R")
@@ -330,7 +330,7 @@ write.csv(testbackground_all, file = "../output/bio/background/background_point_
 ```
 
 now split all the data into time slices
-```{r timesliced unique unsampled}
+```{r timesliced data}
 testbackground_all <- read.csv("../output/bio/background/background_point_na_removal_nona.csv", header = TRUE)
 no_timeslices <- length(split_cell_yymm) # how many levels (time slices) are in the list
 bckoutput <- "../output/bio/background/raw/" #where the files are to be saved to
@@ -977,3 +977,4 @@ background_all$temp_celsius_surface <- kelvin.to.celsius(background_all$temp_sur
 write.csv(background_all, "../output/bio/background_complete_obs_cels.csv", row.names = FALSE)
 head(background_all)
 ```
+
