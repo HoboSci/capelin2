@@ -833,6 +833,22 @@ for(i in 1:16){
 ```
 PUT THE CHUNK OUTPUT BACK TO INLINE
 
+
+add nafo region and gear type into the mix
+
+
+first subset the env.correlate columns + bottom_depth (you don't need everything)
+
+```{r}
+background_envbotdepth <- subset(background, select = c(amo_sample, amo_winter, amo_prev, nao_sample, nao_winter, nao_prev, chl_surface, chl_depth, mlp_surface, ssh_surface, temp_surface, temp_depth, o2_surface, o2_depth, salinity_surface, salinity_depth, bottom_depth))
+background_envbotdepth_cor <- cor(background_envbotdepth, use="complete.obs", method = "spearman") #need to create a correlation using cor to plot. complete.obs means na.rm in this package. #using spearmans as suitable for non-linear relationships
+write.csv(background_envbotdepth_cor, "../output/env/background_envbotdepth_cor.csv", row.names = TRUE)
+background_corrplot <- corrplot(background_envbotdepth_cor , method = "color", type = "upper", order = "alphabet", tl.cex = 0.8) 
+dev.copy(png,"../output/env/simple_plots/background_envbotdepth_cor.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+```
+
+
 ## correlations between presence points
 
 check to see if there are any correlations in the env. variables
@@ -978,6 +994,19 @@ gear_count
 
 so the vast majority are trawls of some type. 
 
+map the gear usage in Arcgis (gear_type_map)
+
+create a table of gear use by month
+
+```{r}
+gearby_mth <- with(presence, table(month, gear))
+write.csv(gearby_mth, file = "../output/bio/gear_by_mth.csv")
+gearby_mth
+```
+
+
+
+
 ```{r}
 par(mar=c(7,5,1,1))
 boxplot(presence$temp_depth ~ presence$gear, ylab = "Temperature (Kelvin)", main = "Temperature at Observation Depth by gear type", las = 2)
@@ -999,10 +1028,13 @@ SAM WHEN DUNN IS INSTALLED, GO TO RCOMPANIONS.ORG AND LOOK FOR DUNN - CHECK CHRO
 pairwise.wilcox.test(presence$temp_depth, presence$gear, p.adj='bonferroni', exact=F)
 ```
 
-dunn test (not working)
+dunn test 
 ```{r}
-gear_temp_depthdunn <- dunnTest(presence$temp_depth, presence$gear)
+gear_temp_depthdunn <- dunnTest(presence$temp_depth, presence$gear, list = TRUE)
+gear_temp_depthdunn
 
-write.csv(gear_temp_depthdunn, "../output/env/gear_temp_depthdunn.csv", row.names = TRUE)
+
+
+write.csv(table, "../output/env/gear_temp_depthdunn.csv", row.names = TRUE)
 ```
 
