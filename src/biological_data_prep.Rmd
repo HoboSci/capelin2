@@ -1113,6 +1113,16 @@ data_aea$temp_celsius_surface <- kelvin.to.celsius(data_aea$temp_surface, round 
 write.csv(data_aea, "../output/bio/data_aea_cell_amo_nao_bins_env_depth_cellobno_env_naocor_cels.csv", row.names = FALSE)
 ```
 
+#gear type adjustment
+
+should not have gear not reported listed as NA (for some analysis). Change gear == NA to unknown
+
+```{r}
+data_aea$gear <- as.character(data_aea$gear)
+data_aea$gear[is.na(data_aea$gea)] <- "unknown"
+write.csv(data_aea, "../output/bio/data_aea_cell_amo_nao_bins_env_depth_cellobno_env_naocor_cels.csv", row.names = FALSE)
+```
+
 
 # warm/cold year
 
