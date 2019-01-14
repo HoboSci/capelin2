@@ -1272,24 +1272,258 @@ temp_depth = 3109 missing values
 This is interesting...
 chl and o2 are missing the same number of points - they come from the biomer dataset; salinity and temp come from glorys and have different values.
 
-I wonder how many of these points represent the same lat-long-depth... need to subset where chl_depth OR o2_depth OR salinity_depth OR temp_depth == OR These columns are not together
+I wonder how many of these points represent the same lat-long-depth... need to subset where chl_depth OR o2_depth OR salinity_depth OR temp_depth == NA These columns are not together
 
 ```{r}
-presence_wdepth2 <-  presence_wdepth[!(is.na(presence_wdepth$chl_depth) & is.na(presence_wdepth$o2_depth) & is.na(presence_wdepth$salinity_depth) & is.na(presence_wdepth$temp_depth)) , ]
-nrow(presence_wdepth2)
+presence_wdepth2 <-  presence_wdepth[!complete.cases(presence_wdepth[28:37]), ]
+nrow(presence_wdepth2) #3349
+```
+ok so there are 3349 points without any data.let's map these
+
+```{r map presences with depth without any env. data at depth}
+map <- getMap(resolution = "low") #creates an object called map at low resoultion
+plot(map, xlim = c(-70, -43), ylim =c(38,70), asp = 1) #the x and y lim are the long-lat bounds of the map
+points(presence_wdepth2$decimalLongitude, presence_wdepth2$decimalLatitude, col = "red") #this adds points to the mapet", xlab = "Longitude", ylab = "Latitude")
+```
+hmm everywhere...
+
+Is there a particular time-slice that the values appear in?
+
+```{r}
+npresence_wdepth2mmyy <- with(presence_wdepth2, table(year, month))
+npresence_wdepth2mmyy
 ```
 
+hmm there is a lot... how does this compare to the original dataset
+
+```{r}
+data_aeammyy <- with(data_aea, table(year, month))
+data_aeammyy
+```
+
+ok so 2014_07 and 1999_07 are both missing all data. Re-run the loop for these two time-periods (just add the nectcdfs for these files in renetcdf folder). 
+
+First you need to put the observations (data_aea) into a spatialpointsdataframe.
+
+```{r}
+fmatch("longitude_meters", names(data_aea)) #19
+fmatch("latitude_meters", names(data_aea)) #20
+```
+
+```{r}
+library(sp)
+xy <- data_aea[ ,c(19,20)] # This is to tell R where the coordinates are (in column 19 and 20). Note that the column order needs to be longitude, latitude
+data_aea_sp <- SpatialPointsDataFrame(coords = xy, data = data_aea, proj4string = CRS("+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-60 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")) # The CRS is used here is for the albers equal area projection.
+```
+
+```{r}
+netcdf_list <- list.files("../data/env/renetcdf", pattern = '*.nc', full.names = TRUE) #true means the full path is included
+no_netcdf <- length(netcdf_list) #for the loop - need to know how many files to cycle through
+netcdf_name <- list.files("../data/env/renetcdf", pattern = '*.nc', full.names = FALSE) #false means the path is not includedCores
+library (ncdf4)
+library(sp)
+library(rgdal)
+for (i in 1:no_netcdf) {  
+  library(raster)
+  print(netcdf_name[i]) #this just prints the name of the netCDF R is working one
+  brkyr <- as.integer(sapply(strsplit(netcdf_name[i], "_"), "[[", 1)) # extracting the first part of the netcdf filename (which is the year)
+  brkmth <- as.integer(sapply(strsplit(netcdf_name[i], "_"), "[[", 2)) # extracting the second part of the netcdf filename (which is the month)
+  brkvar <- (sapply(strsplit(netcdf_name[i], "_"), "[[", 3)) # extracting the third part of the netcdf (inc.nc)
+  temp_brick <- brick(netcdf_list[i], lvar = 4)
+  temp_brick <- projectRaster(temp_brick, aea) 
+    for (j in 1:nrow(data_aea_sp)) {  
+      de <- data_aea_sp$depthlayerno[[j]]  # a variable for the observation depth layer
+      yr <- (data_aea_sp$year[j])  # a variable for the observation year
+      mth <- (data_aea_sp$month[j])  # a variable for the observation month
+          if (brkyr == yr & brkmth == mth & brkvar == "temp.nc"){
+              if (is.na(de)){
+                data_aea_sp$temp_depth[j] <- NA
+              } else  
+                data_aea_sp$temp_depth[j] <- extract(x=temp_brick[[de]], y = data_aea_sp[j, ])
+          } else if (brkyr == yr & brkmth == mth & brkvar == "salinity.nc") {
+              if (is.na(de)){
+                data_aea_sp$salinity_depth[j] <- NA
+              } else  
+                data_aea_sp$salinity_depth[j] <- extract(x=temp_brick[[de]], y = data_aea_sp[j, ]) 
+          } else if (brkyr == yr & brkmth == mth & brkvar == "chl.nc") {
+              if (is.na(de)){
+                data_aea_sp$chl_depth[j] <- NA
+              } else  
+                data_aea_sp$chl_depth[j] <- extract(x=temp_brick[[de]], y = data_aea_sp[j, ]) 
+          } else if (brkyr == yr & brkmth == mth & brkvar == "o2.nc") {
+              if (is.na(de)){
+                data_aea_sp$o2_depth[j] <- NA
+              }
+          }
+     
+    }
+}
+testdata_aea <- as.data.frame(data_aea_sp)
+
+```
+
+lets see if that made any difference...
+
+now on to the data which has depth data
+
+```{r}
+presence_wdepthv2 = data_aea[!is.na(data_aea$depth), ]
+nrow(presence_wdepthv2) #10178 rows - same as before
+head(presence_wdepthv2)
+```
+
+```{r}
+npresence_wdepth2mmyy2 <- with(presence_wdepthv2, table(year, month))
+npresence_wdepth2mmyy2
+```
+
+no change...
+
+ok is there a depth layer in particular that is an issue?
+maybe some are missing a depthlayerno?
+
+```{r}
+presence_wdepth_nolayerno <- presence_wdepth2[is.na(presence_wdepth2$depthlayerno), ]
+nrow(presence_wdepth_nolayerno) #0 
+head(presence_wdepth_nolayerno)
+```
+ok so all have a depthlayerno attached
+
+check for count of each depth layer
+
+```{r}
+whichdepths <- unique(presence_wdepth2$depthlayerno) #makes a variable of institutions
+whichdepthsordered <- sort(whichdepths) #just puts the list in 
+whichdepthsordered
+```
+quite a wide group... look at frequency
+
+```{r count depthlayerno for data with depth but missing values}
+whichdepthscount <- count(presence_wdepth2, "depthlayerno")
+whichdepthscount
+```
+very variable...
+
+How many rows are missing all depth data?
+
+```{r}
+presence_wdepthonly <- subset(presence_wdepth2, select = -c(mlp_surface, ssh_surface, temp_surface, salinity_surface, o2_surface, chl_surface))
+head(presence_wdepthonly)
+```
+
+get the col numbers for the depth data
+```{r}
+fmatch("chl_depth", names(presence_wdepthonly)) #28
+fmatch("o2_depth", names(presence_wdepthonly)) #29
+fmatch("salinity_depth", names(presence_wdepthonly)) #30
+fmatch("temp_depth", names(presence_wdepthonly)) #31
+```
+
+now subset rows where all depth data is missing
+```{r}
+presence_wdepthonly_allmissing <-  presence_wdepthonly[(is.na(presence_wdepthonly$temp_depth)) & (is.na(presence_wdepthonly$o2_depth)) & (is.na(presence_wdepthonly$salinity_depth)) & (is.na(presence_wdepthonly$chl_depth)), ]
+nrow(presence_wdepthonly_allmissing) #2178
+head(presence_wdepthonly_allmissing)
+```
+
+so there are 2178 out of 3349 observations that are missing all data for depth. so what about the remaining 1171 points?
+
+want to remove from the observations in presence_wdepthonly (all 3349 observations) the ones that appear in presence_wdepthonly_allmissing (2178 observations)
+
+some code from [stack exchange](https://stackoverflow.com/questions/10907359/r-remove-rows-from-one-data-frame-that-are-in-another)
+
+```{r}
+presence_wdepthonly_somemissing <-  rbind(presence_wdepthonly_allmissing, presence_wdepthonly)
+presence_wdepthonly_somemissing <- presence_wdepthonly_somemissing[!duplicated(presence_wdepthonly_somemissing, fromLast = FALSE) & !duplicated(presence_wdepthonly_somemissing, fromLast = TRUE), ]
+nrow(presence_wdepthonly_somemissing)
+head(presence_wdepthonly_somemissing)
+```
+
+ok before going further, just rerun the loop again on all the data...
+
+First you need to put the observations (data_aea) into a spatialpointsdataframe.
+```{r}
+library(sp)
+xy <- data_aea[ ,c(19,20)] # This is to tell R where the coordinates are (in column 18 and 19). Note that the column order needs to be longitude, latitude
+data_aea_sp <- SpatialPointsDataFrame(coords = xy, data = data_aea, proj4string = CRS("+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-60 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")) # The CRS is used here is for the albers equal area projection.
+```
+
+```{r}
+netcdf_list <- list.files("../data/env/netcdf", pattern = '*.nc', full.names = TRUE) #true means the full path is included
+no_netcdf <- length(netcdf_list) #for the loop - need to know how many files to cycle through
+netcdf_name <- list.files("../data/env/netcdf", pattern = '*.nc', full.names = FALSE) #false means the path is not includedCores
+library (ncdf4)
+library(sp)
+library(rgdal)
+for (i in 1:no_netcdf) {  
+  library(raster)
+  print(netcdf_name[i]) #this just prints the name of the netCDF R is working one
+  brkyr <- as.integer(sapply(strsplit(netcdf_name[i], "_"), "[[", 1)) # extracting the first part of the netcdf filename (which is the year)
+  brkmth <- as.integer(sapply(strsplit(netcdf_name[i], "_"), "[[", 2)) # extracting the second part of the netcdf filename (which is the month)
+  brkvar <- (sapply(strsplit(netcdf_name[i], "_"), "[[", 3)) # extracting the third part of the netcdf (inc.nc)
+  temp_brick <- brick(netcdf_list[i], lvar = 4)
+  temp_brick <- projectRaster(temp_brick, aea) 
+    for (j in 1:nrow(data_aea_sp)) {  
+      de <- data_aea_sp$depthlayerno[[j]]  # a variable for the observation depth layer
+      yr <- (data_aea_sp$year[j])  # a variable for the observation year
+      mth <- (data_aea_sp$month[j])  # a variable for the observation month
+          if (brkyr == yr & brkmth == mth & brkvar == "temp.nc"){
+              data_aea_sp$temp_surface[j] <- extract(x=temp_brick[[1]], y = data_aea_sp[j, ]) 
+              if (is.na(de)){
+                data_aea_sp$temp_depth[j] <- NA
+              } else  
+                data_aea_sp$temp_depth[j] <- extract(x=temp_brick[[de]], y = data_aea_sp[j, ])
+          } else if (brkyr == yr & brkmth == mth & brkvar == "salinity.nc") {
+              data_aea_sp$salinity_surface[j] <- extract(x=temp_brick[[1]], y = data_aea_sp[j, ]) 
+              if (is.na(de)){
+                data_aea_sp$salinity_depth[j] <- NA
+              } else  
+                data_aea_sp$salinity_depth[j] <- extract(x=temp_brick[[de]], y = data_aea_sp[j, ]) 
+          } else if (brkyr == yr & brkmth == mth & brkvar == "chl.nc") {
+              data_aea_sp$chl_surface[j] <- extract(x=temp_brick[[1]], y = data_aea_sp[j, ]) 
+              if (is.na(de)){
+                data_aea_sp$chl_depth[j] <- NA
+              } else  
+                data_aea_sp$chl_depth[j] <- extract(x=temp_brick[[de]], y = data_aea_sp[j, ]) 
+          } else if (brkyr == yr & brkmth == mth & brkvar == "o2.nc") {
+              data_aea_sp$o2_surface[j] <- extract(x=temp_brick[[1]], y = data_aea_sp[j, ]) 
+              if (is.na(de)){
+                data_aea_sp$o2_depth[j] <- NA
+              } else  
+                data_aea_sp$o2_depth[j] <- extract(x=temp_brick[[de]], y = data_aea_sp[j, ]) 
+          } else if (brkyr == yr & brkmth == mth & brkvar == "mlp.nc") {
+              data_aea_sp$mlp_surface[j] <- extract(x=temp_brick[[1]], y = data_aea_sp[j, ])
+          } else if (brkyr == yr & brkmth == mth & brkvar == "ssh.nc") {
+              data_aea_sp$ssh_surface[j] <- extract(x=temp_brick[[1]], y = data_aea_sp[j, ]) 
+            
+          }
+     
+    }
+}
+data_aea <- as.data.frame(data_aea_sp)
+write.csv(data_aea,"../output/bio/presence_points_without_envdata_relooped.csv", row.names = FALSE)
+head(data_aea_sp$chl_depth)
+```
+note that if you wanted to just loop through the netcdfs and create a ton of raster bricks with the same name as the netcdf, the following code you wrote before works
+
+netcdf_list <- list.files("../data/env/netcdf", pattern = '*.nc', full.names = TRUE) #true means the full path is included
+no_netcdf <- length(netcdf_list) #for the loop - need to know how many files to cycle through
+netcdf_name <- list.files("../data/env/netcdf", pattern = '*.nc', full.names = FALSE) #false means the path is not included
+library (ncdf4)
+for (i in 1:no_netcdf) {
+  print(netcdf_name[i]) #this just prings the name of the netCDF R is working on
+  temp_brick <- brick(netcdf_list[i], lvar = 4)
+  temp_brick <- projectRaster(temp_brick, aea) #aea is an existing raster in the projection I want that I created (environmental_data_preperation)
+  assign(netcdf_name[i], temp_brick) #this asigns the netCDF name to the raster brick
+}
 
 
+```{r}
 
+```
 
+change dataset back into a dataframe and then save as a .csv
 
+```{r}
 
-
-
-
-
-
-
-
-
+```
