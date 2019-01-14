@@ -1269,7 +1269,15 @@ o2_depth = 2394 missing values
 salinity_depth = 3133 missing values
 temp_depth = 3109 missing values
 
+This is interesting...
+chl and o2 are missing the same number of points - they come from the biomer dataset; salinity and temp come from glorys and have different values.
 
+I wonder how many of these points represent the same lat-long-depth... need to subset where chl_depth OR o2_depth OR salinity_depth OR temp_depth == OR These columns are not together
+
+```{r}
+presence_wdepth2 <-  presence_wdepth[!(is.na(presence_wdepth$chl_depth) & is.na(presence_wdepth$o2_depth) & is.na(presence_wdepth$salinity_depth) & is.na(presence_wdepth$temp_depth)) , ]
+nrow(presence_wdepth2)
+```
 
 
 
