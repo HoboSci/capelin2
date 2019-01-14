@@ -16,7 +16,7 @@ You can load them using the following code which uses a function called [ipak](h
 Note this function checks to see if the packages are installed first.
 
 ```{r pre-install packages, message=FALSE}
-packages <- c("packrat", "rworldmap", "dplyr","plyr", "rgdal", "sp", "raster", "tibble", "useful", "marmap", "weathermetrics")
+packages <- c("packrat", "rworldmap", "dplyr","plyr", "rgdal", "sp", "raster", "tibble", "useful", "marmap", "weathermetrics", "fastmatch")
 source("../src/ipak.R")
 ipak(packages)
 suppressMessages(ipak)
@@ -1127,5 +1127,161 @@ write.csv(data_aea, "../output/bio/data_aea_cell_amo_nao_bins_env_depth_cellobno
 # warm/cold year
 
 The warm/cold year index will be taken from a [DFO CSAS report](http://www.dfo-mpo.gc.ca/csas-sccs/Publications/SAR-AS/2018/2018_039-eng.pdf) - Fig 8
+
+
+# checking data for NA's
+
+The presence points have a lot of NAs in the env. correlates. I want to: 
+
+-ID and remove rows where all values == NA
+-ID observations with no depth data that are missing surface values (will need to be removed)
+-ID observations with depth data but are missing some surface and/or depth values 
+
+how many rows(observations do you have)
+```{r}
+nrow(data_aea) # there are 11516 rows
+```
+
+check for no rows (observations) with NAs
+
+```{r}
+presence_noNAcount <- sum(!complete.cases(data_aea)) #this just counts the number of rows that contain NA values
+presence_noNAcount
+```
+I have 4687 observations that contain NAs
+
+1) find ones that have no env. data at all. these will need to be removed straight off.
+
+There are 11516 rows in the original presence-point dataset
+
+find the column numbers that correspond to the env. data (use fastmatch package as is quicker)
+
+```{r}
+fmatch("chl_surface", names(data_aea)) #28
+fmatch("chl_depth", names(data_aea)) #29
+fmatch("mlp_surface", names(data_aea)) #30
+fmatch("o2_surface", names(data_aea)) #31
+fmatch("o2_depth", names(data_aea)) #32
+fmatch("salinity_surface", names(data_aea)) #33
+fmatch("salinity_depth", names(data_aea)) #34
+fmatch("ssh_surface", names(data_aea)) #35
+fmatch("temp_surface", names(data_aea)) #36
+fmatch("temp_depth", names(data_aea)) #37
+```
+ok so the env. data i am intersted in is in cols 28:37
+
+Out of curiosoity, map the location of these points. Note the difference between this and the code below is the addition of ! on rowSums
+
+```{r}
+presence_novals <- data_aea[!rowSums(is.na(data_aea[ , 28:37])) !=10, ] #4:13 represent the columns w/ env. data, 10 is the number of columns to check (4 to 13 inclusive)
+write.csv(presence_novals, "../output/bio/presence_points_without_envdata.csv", row.names = FALSE)
+nrow(presence_novals) #just to check it has mapped
+```
+
+So I had 123 rows without any env. data (11516 - 11393).
+
+plot
+```{r map presences without any env. data}
+map <- getMap(resolution = "low") #creates an object called map at low resoultion
+plot(map, xlim = c(-70, -43), ylim =c(38,70), asp = 1) #the x and y lim are the long-lat bounds of the map
+points(presence_novals$decimalLongitude, presence_novals$decimalLatitude, col = "red") #this adds points to the mapet", xlab = "Longitude", ylab = "Latitude")
+```
+
+Ok so they are along the coast, so the points probably fell outside the boxes.
+
+Now remove the values
+```{r}
+data_aea <- data_aea[rowSums(is.na(data_aea[ , 28:37])) !=10, ] #4:13 represent the columns w/ env. data, 10 is the number of columns to check (4 to 13 inclusive)
+write.csv(data_aea, "../output/bio/presence_nodata_rm")
+nrow(data_aea)
+```
+
+ok so the next step is to make sure that any of the data you have without a depth value does have all relevant surface values
+
+maybe subset
+
+```{r}
+presence_nodepth = data_aea[is.na(data_aea$depth), ]
+nrow(presence_nodepth) #1215 rows
+head(presence_nodepth)
+```
+
+
+go through each value and see which are missing data
+```{r}
+presence_nodepth_nochl <- presence_nodepth[is.na(presence_nodepth$chl_surface), ]
+nrow(presence_nodepth_nochl) #just to check it has mapped
+presence_nodepth_noo2 <- presence_nodepth[is.na(presence_nodepth$o2_surface), ]
+nrow(presence_nodepth_noo2) #just to check it has mapped
+presence_nodepth_nosalinity <- presence_nodepth[is.na(presence_nodepth$salinity_surface), ]
+nrow(presence_nodepth_nosalinity) #just to check it has mapped
+presence_nodepth_notemp <- presence_nodepth[is.na(presence_nodepth$temp_surface), ]
+nrow(presence_nodepth_notemp) #just to check it has mapped
+presence_nodepth_nossh <- presence_nodepth[is.na(presence_nodepth$ssh_surface), ]
+nrow(presence_nodepth_nossh) #just to check it has mapped
+presence_nodepth_nomlp <- presence_nodepth[is.na(presence_nodepth$mlp_surface), ]
+nrow(presence_nodepth_nomlp) #just to check it has mapped
+```
+
+great! all of the values that have no depth data have surface data.
+
+now on to the data which has depth data
+
+```{r}
+presence_wdepth = data_aea[!is.na(data_aea$depth), ]
+nrow(presence_wdepth) #10178 rows
+head(presence_wdepth)
+```
+
+go through each value and see which are missing data. First the surface values
+```{r}
+presence_wdepth_nochl <- presence_wdepth[is.na(presence_wdepth$chl_surface), ]
+nrow(presence_wdepth_nochl) #just to check it has mapped
+presence_wdepth_noo2 <- presence_wdepth[is.na(presence_wdepth$o2_surface), ]
+nrow(presence_wdepth_noo2) #just to check it has mapped
+presence_wdepth_nosalinity <- presence_wdepth[is.na(presence_wdepth$salinity_surface), ]
+nrow(presence_wdepth_nosalinity) #just to check it has mapped
+presence_wdepth_notemp <- presence_wdepth[is.na(presence_wdepth$temp_surface), ]
+nrow(presence_wdepth_notemp) #just to check it has mapped
+presence_wdepth_nossh <- presence_wdepth[is.na(presence_wdepth$ssh_surface), ]
+nrow(presence_wdepth_nossh) #just to check it has mapped
+presence_wdepth_nomlp <- presence_wdepth[is.na(presence_wdepth$mlp_surface), ]
+nrow(presence_wdepth_nomlp) #just to check it has mapped
+```
+
+Great! All have surface values. now to the depth values
+
+```{r}
+presence_wdepth_nochl <- presence_wdepth[is.na(presence_wdepth$chl_depth), ]
+nrow(presence_wdepth_nochl) #just to check it has mapped
+presence_wdepth_noo2 <- presence_wdepth[is.na(presence_wdepth$o2_depth), ]
+nrow(presence_wdepth_noo2) #just to check it has mapped
+presence_wdepth_nosalinity <- presence_wdepth[is.na(presence_wdepth$salinity_depth), ]
+nrow(presence_wdepth_nosalinity) #just to check it has mapped
+presence_wdepth_notemp <- presence_wdepth[is.na(presence_wdepth$temp_depth), ]
+nrow(presence_wdepth_notemp) #just to check it has mapped
+```
+
+damn... so
+
+chl_depth = 2394 missing values
+o2_depth = 2394 missing values
+salinity_depth = 3133 missing values
+temp_depth = 3109 missing values
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
