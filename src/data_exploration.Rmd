@@ -10,7 +10,7 @@ editor_options:
 ---
 
 # Overview
-Exploration of all the data collected on the presence points
+Exploration of all the data collected on the presence points + randomly generated background points
 
 A note to anyone who might happen to stumble across this... I am a beginner in R and have had no exposure to similar languages. I don't know what I'm doing. The code herein is unlikely to be elegant and there are probably more efficient ways of running the code.
 
@@ -31,7 +31,7 @@ ipak(packages)
 Read in the presence points
 
 ```{r}
-presence <- read.csv("../output/bio/data_aea_cell_amo_nao_bins_env_depth_cellobno_env_naocor_cels.csv", header = TRUE)
+presence <- read.csv("../output/bio/presence_points_without_envdata_relooped.csv", header = TRUE)
 head(presence)
 ```
 
@@ -236,7 +236,7 @@ unique_depths <- unique(presence$depthlayerno)
 unique_depthdordered <- sort(unique_depths) #just puts the list in oder with no NA
 length(unique_depthdordered)
 ```
-ouch - 40 layers... a job for a boxplot probably
+ouch - 39 layers... a job for a boxplot probably
 
 ```{r}
 
@@ -468,8 +468,6 @@ Read in the presence points
 ```{r}
 background <- read.csv("../output/bio/background_complete_obs_cels.csv", header = TRUE)
 head(background)
-#test <- background[245:250, ]
-#test
 ```
 
 # environmental correlates
@@ -856,7 +854,7 @@ check to see if there are any correlations in the env. variables
 first subset the env.correlate columns (you don't need everything) then use cor to get the correlation values, and then corrplot for a visual
 
 ```{r}
-pres_env <- subset(presence, select = c(amo_sample, amo_winter, amo_prev, nao_sample, nao_winter, nao_prev, chl_surface, chl_depth, mlp_surface, ssh_surface, temp_surface, temp_depth, o2_surface, o2_depth, salinity_surface, salinity_depth))
+pres_env <- subset(presence, select = c(amo_sample, amo_winter, amo_prev, nao_sample, nao_winter, nao_prev, chl_surface, chl_depth, mlp_surface, ssh_surface, temp_surface, temp_depth, o2_surface, o2_depth, salinity_surface, salinity_depth, bottom_depth))
 pres_env_cor <- cor(pres_env, use="complete.obs", method = "spearman") #need to create a correlation using cor to plot. complete.obs means na.rm in this package. #using spearmans as suitable for non-linear relationships
 write.csv(pres_env_cor, "../output/env/pres_env_corr.csv", row.names = TRUE)
 pres_corrplot <- corrplot(pres_env_cor , method = "color", type = "upper", order = "alphabet", tl.cex = 0.8) 
@@ -947,14 +945,14 @@ compare the environmental correlates between different NAFO regions
 first see which nafo zones were sampled in each year
 ```{r}
 nafo_by_yr <- with(presence, table(year, nafo_zone))
-write.csv(inst_by_yr, file = "../output/bio/nafozone_by_yr.csv")
+write.csv(nafo_by_yr, file = "../output/bio/nafozone_by_yr.csv")
 nafo_by_yr
 ```
 
 and by month
 ```{r}
-nafo_by_mth <- with(presence, table(month, nafo_zone))
-write.csv(inst_by_yr, file = "../output/bio/nafozone_by_mth.csv")
+nafo_by_mth <- with(presence, table(nafo_zone, month))
+write.csv(nafo_by_mth, file = "../output/bio/nafozone_by_mth.csv")
 nafo_by_mth
 ```
 
