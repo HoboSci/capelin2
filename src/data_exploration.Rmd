@@ -320,12 +320,36 @@ Same as above but with boxplots (may provide some more useful info)
 
 
 
-temperature
+individual plots of each variable 
 ```{r}
 par(mfrow=c(1,2))
-boxplot(presence$temp_depth, main = "Temp at Depth (Various)", ylab = "Kelvin")
-boxplot(presence$temp_surface, main = "Temp at Surface", ylab = "Kelvin")
-dev.copy(png, "../output/env/simple_plots/temperature_boxplot.png") # to automatically save the plot to a png AND show it inline
+boxplot(presence$temp_depth, main = "Temperature at Depth (Various)", ylab = "Kelvin")
+boxplot(presence$temp_surface, main = "Temperature at Surface", ylab = "Kelvin")
+dev.copy(png, "../output/env/simple_plots/temp_boxplot.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+
+par(mfrow=c(1,2))
+boxplot(presence$salinity_depth, main = "Salinity at Depth (Various)", ylab = "PSU")
+boxplot(presence$salinity_surface, main = "Salinity at Surface", ylab = "PSU")
+dev.copy(png, "../output/env/simple_plots/salinity_boxplot.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+
+par(mfrow=c(1,2))
+boxplot(presence$o2_depth, main = "O2 at Depth (Various)", ylab = "mmol.m-3")
+boxplot(presence$o2_surface, main = "O2 at Surface", ylab = "mmol.m-3")
+dev.copy(png, "../output/env/simple_plots/o2_boxplot.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+
+par(mfrow=c(1,2))
+boxplot(presence$chl_depth, main = "Chlorphyll at Depth (Various)", ylab = "mmol.m-3")
+boxplot(presence$chl_surface, main = "Chlorphyll at Surface", ylab = "mmol.m-3")
+dev.copy(png, "../output/env/simple_plots/chl_boxplot.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+
+par(mfrow=c(1,2))
+boxplot(presence$mlp_surface, main = "Density Mixed Layer Thickness", ylab = "meters")
+boxplot(presence$ssh_surface, main = "Sea Surface Height", ylab = "meters")
+dev.copy(png, "../output/env/simple_plots/mlp_ssh_boxplot.png") # to automatically save the plot to a png AND show it inline
 dev.off() # stops automatic saving of the plot to a png
 ```
 
