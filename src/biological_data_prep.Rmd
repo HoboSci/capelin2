@@ -1070,7 +1070,7 @@ head(data_aea)
 rename freq column to something meaningful
 
 ```{r}
-names(data_aea)[names(data_aea)=="freq"] <- "total_cell_obs"
+names(data_aea)[names(data_aea)=="freq"] <- "total_cell_obs_xy"
 head(data_aea)
 ```
 
@@ -1078,7 +1078,7 @@ head(data_aea)
 time-sliced
 ```{r}
 data_aea <- merge(data_aea, obs_cell_yymm, by.x=c("cell_id", "year", "month"), by.y=c("cell_id", "year", "month"))
-names(data_aea)[names(data_aea)=="freq"] <- "yymm_cell_obs"
+names(data_aea)[names(data_aea)=="freq"] <- "total_cell_obs_xyt"
 head(data_aea)
 ```
 
@@ -1266,19 +1266,19 @@ damn... so
 
 chl_depth = 2394 missing values
 o2_depth = 2394 missing values
-salinity_depth = 3133 missing values
+salinity_depth = 3109 missing values
 temp_depth = 3109 missing values
 
 This is interesting...
-chl and o2 are missing the same number of points - they come from the biomer dataset; salinity and temp come from glorys and have different values.
+chl and o2 are missing the same number of points - they come from the biomer dataset; salinity and temp come from glorys and have the same number of points.
 
 I wonder how many of these points represent the same lat-long-depth... need to subset where chl_depth OR o2_depth OR salinity_depth OR temp_depth == NA These columns are not together
 
 ```{r}
 presence_wdepth2 <-  presence_wdepth[!complete.cases(presence_wdepth[28:37]), ]
-nrow(presence_wdepth2) #3349
+nrow(presence_wdepth2) #3325
 ```
-ok so there are 3349 points without any data.let's map these
+ok so there are 3325 points without any data.let's map these
 
 ```{r map presences with depth without any env. data at depth}
 map <- getMap(resolution = "low") #creates an object called map at low resoultion
@@ -1301,7 +1301,7 @@ data_aeammyy <- with(data_aea, table(year, month))
 data_aeammyy
 ```
 
-ok so 2014_07 and 1999_07 are both missing all data. Re-run the loop for these two time-periods (just add the nectcdfs for these files in renetcdf folder). 
+ok so 2014_07 and 1999_07 are both missing all data. Re-run the loop for this time-periods(just add the nectcdfs for these files in renetcdf folder). 
 
 First you need to put the observations (data_aea) into a spatialpointsdataframe.
 
@@ -1362,7 +1362,7 @@ testdata_aea <- as.data.frame(data_aea_sp)
 
 ```
 
-lets see if that made any difference...
+lets see if that made any difference... nope ok so it wasnt that i was missing the files
 
 now on to the data which has depth data
 
@@ -1426,20 +1426,8 @@ nrow(presence_wdepthonly_allmissing) #2178
 head(presence_wdepthonly_allmissing)
 ```
 
-so there are 2178 out of 3349 observations that are missing all data for depth. so what about the remaining 1171 points?
 
-want to remove from the observations in presence_wdepthonly (all 3349 observations) the ones that appear in presence_wdepthonly_allmissing (2178 observations)
-
-some code from [stack exchange](https://stackoverflow.com/questions/10907359/r-remove-rows-from-one-data-frame-that-are-in-another)
-
-```{r}
-presence_wdepthonly_somemissing <-  rbind(presence_wdepthonly_allmissing, presence_wdepthonly)
-presence_wdepthonly_somemissing <- presence_wdepthonly_somemissing[!duplicated(presence_wdepthonly_somemissing, fromLast = FALSE) & !duplicated(presence_wdepthonly_somemissing, fromLast = TRUE), ]
-nrow(presence_wdepthonly_somemissing)
-head(presence_wdepthonly_somemissing)
-```
-
-ok before going further, just rerun the loop again on all the data...
+ok before going further, just rerun the loop again on all the data just to make sure there wasn't some silly fail...
 
 First you need to put the observations (data_aea) into a spatialpointsdataframe.
 ```{r}
@@ -1528,9 +1516,13 @@ nrow(presence_wdepth_notemp3) #just to check it has mapped
 It used to be
 [1] 2394
 [1] 2394
-[1] 3133
 [1] 3109
-so actually a minor change (maybe this is because you added the dec 2015 data in - it wasn't available before). ok need to redo checks...
+[1] 3109
+so no change.
+
+
+ok well i think the answer here is that if i am going to use depth data, i should get rid of those with missing data. if i am going to use surface only data, then i can keep all points.
+
 
 
 # glorys bathymetric data
@@ -1554,24 +1546,8 @@ plot(bathyrast)
 now extract and add to data_aea
 ```{r}
 data_aea_sp$bottom_depth_glorys <- extract(x = bathyrast, y = data_aea_sp)
-head(data_aea_sp)
-```
-
-ok great - now let's do the same thing for the bottom_layer_no (yes Glorys has a layer for this as well!) 
-
- covert the netcdf with the bottom layer nor (GLO-GLO-MFC_001_025_bottomlayerno.nclonlat.nc) to a raster and project to the albers equal area
-```{r}
-botlayernorast <- raster("../data/env/GLO-MFC_001_025_bottomlayerno.nclonlat.nc") #because it is a single level file
-botlayernorast <- projectRaster(botlayernorast, aea)
-plot(botlayernorast)
-```
-
-now extract and add to data_aea_sp, but this time also change the sp to a normal dataframe and save as a .csv
-```{r}
-data_aea_sp$bottom_layerno_glorys <- extract(x = botlayernorast, y = data_aea_sp)
-write.csv(data_aea_sp, file = "presence_points_without_envdata_relooped_glbathy.csv", row.names = FALSE) # change the path to where ever you would like to save it
 data_aea <- as.data.frame(data_aea_sp) # this coverts the 'spatialpoints dataframe' to a 'normal dataframe'
+write.csv(data_aea, file = "../output/bio/presence_points_without_envdata_relooped_glbathy.csv", row.names = FALSE) # change the path to where ever you would like to save it
 head(data_aea)
 ```
 
-ok bottom layer no is not right

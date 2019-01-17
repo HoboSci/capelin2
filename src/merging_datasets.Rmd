@@ -1,0 +1,65 @@
+---
+title: "merging_datasets"
+author: "Samantha Andrews"
+output: html_notebook
+---
+
+# Overview
+merging background and presence data into one giant dataset, and timesliced subsets
+
+
+A note to anyone who might happen to stumble across this... I am a beginner in R and have had no exposure to similar languages. I don't know what I'm doing. The code herein is unlikely to be elegant and there are probably more efficient ways of running the code.
+
+Built with 'r getRversion()'.
+
+# Package dependencies
+You can load them using the following code which uses a function called [ipak](https://gist.github.com/stevenworthington/3178163). 
+Note this function checks to see if the packages are installed first.
+```{r pre-install packages, message=FALSE}
+packages <- c("plyr") 
+source("../src/ipak.R")
+ipak(packages)
+```
+
+read in the presence and background
+```{r}
+presencemerging <- read.csv("./output/bio/presence_points_without_envdata_relooped_glbathy.csv", header = TRUE)
+backgroundmerging <- read.csv("./output/bio/background_complete_obs_cels_globot.csv", header = TRUE)
+```
+
+ok so the two dataframed need a spot of cleaning
+
+```{r}
+presencemerging <- subset(presencemerging, select = -c(longitude_meters.1, latitude_meters.1, longitude_meters.2, latitude_meters.2))
+backgroundmerging <- subset(backgroundmerging, select = -c(longitude_meters.1, latitude_meters.1, longitude_meters.2, latitude_meters.2, X, optional, optional.1))
+```
+
+now check
+```{r}
+str(presencemerging)
+```
+
+```{r}
+str(backgroundmerging)
+```
+
+for consistency, rename a couple of presencemerging columns
+```{r}
+names(presencemerging)[names(presencemerging)=="total_cell_obs"] <- "total_cell_obs_xy"
+names(presencemerging)[names(presencemerging)=="yymm_cell_obs"] <- "total_cell_obs_xyt"
+```
+
+now merge the two datasets
+```{r}
+presab <- rbind.fill(presencemerging, backgroundmerging)
+write.csv(presab, "../output/bio/presab.csv", row.names = FALSE)
+head(presab)
+```
+
+lovely jubley
+
+
+
+
+
+

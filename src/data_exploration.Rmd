@@ -21,7 +21,7 @@ You can load them using the following code which uses a function called [ipak](h
 Note this function checks to see if the packages are installed first.
 The "include=FALSE" supresses the package installation text appearing in the document...
 ```{r pre-install packages, include=FALSE}
-packages <- c("plyr", "graphics", "ggplot2", "corrplot", "FSA") 
+packages <- c("plyr", "graphics", "ggplot2", "corrplot", "FSA", "car") 
 source("../src/ipak.R")
 ipak(packages)
 ```
@@ -31,7 +31,7 @@ ipak(packages)
 Read in the presence points
 
 ```{r}
-presence <- read.csv("../output/bio/presence_points_without_envdata_relooped.csv", header = TRUE)
+presence <- read.csv("../output/bio/presence_points_without_envdata_relooped_glbathy.csv", header = TRUE)
 head(presence)
 ```
 
@@ -490,7 +490,7 @@ dev.off() # stops automatic saving of the plot to a png
 Read in the presence points
 
 ```{r}
-background <- read.csv("../output/bio/background_complete_obs_cels.csv", header = TRUE)
+background <- read.csv("../output/bio/background_complete_obs_cels_globot.csv", header = TRUE)
 head(background)
 ```
 
@@ -1058,5 +1058,32 @@ gear_temp_depthdunn
 
 
 write.csv(table, "../output/env/gear_temp_depthdunn.csv", row.names = TRUE)
+```
+
+
+#vif
+
+for this you need the joined dataset. this was created under mergig_datasets.src and the file is ../output/bio/presab.csv
+
+```{r}
+presab <- read.csv("../output/bio/presab.csv", header = TRUE)
+```
+
+
+```{r}
+vif_allpresab <- vif(lm(occurrence ~ temp_surface + temp_depth + salinity_surface + salinity_depth + o2_surface + o2_depth + chl_surface + chl_depth + bottom_depth + mlp_surface + ssh_surface + gear + nao_sample + nao_prev + nao_winter + amo_sample + amo_prev + amo_winter, data = presab))
+write.csv(vif_allpresab, "../output/bio/vif_allpresab.csv", row.names = TRUE)
+vif_allpresab
+```
+interpret - see https://stats.stackexchange.com/questions/70679/which-variance-inflation-factor-should-i-be-using-textgvif-or-textgvif/96584#96584
+To make GVIFs comparable across dimensions, we suggested using GVIF^(1/(2*Df)), where Df is the number of coefficients in the subset (ref fox and motette 1992 in zotero)
+or the 2 continuous variables, GVIFˆ(1/(2*Df)) (which is basically the square root of the VIF/GVIF value as DF=1) is the proportional change of the standard error and confidence interval of their coefficients due to the level of collinearity. The GVIFˆ(1/(2*Df)) value of the categorical variable is a similar measure for the reduction in precision of the coefficients' estimation due to collinearity. 
+apparently i just need to square GVIF^(1/(2*Df)) and then use the normal VIF "rule of thumb"...
+
+```{r}
+vif_allpresab_sq <- read.csv("../output/bio/vif_allpresab.csv", header = TRUE)
+vif_allpresab_sq$GVIF2Dfsq <- vif_allpresab_sq$GVIF..1..2.Df..^2
+write.csv(vif_allpresab_sq, "../output/bio/vif_allpresab_sq.csv", row.names = TRUE)
+vif_allpresab_sq
 ```
 

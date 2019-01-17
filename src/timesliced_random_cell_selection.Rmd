@@ -978,3 +978,34 @@ write.csv(background_all, "../output/bio/background_complete_obs_cels.csv", row.
 head(background_all)
 ```
 
+# glorys bathymetric data
+
+so i just found that glorys also has a bathymetric data layer...
+
+First you need to put the observations (data_aea) into a spatialpointsdataframe.
+```{r}
+xy <- background_all[ ,c(6,7)] # This is to tell R where the coordinates are (in column 18 and 19). Note that the column order needs to be longitude, latitude
+background_all_sp <- SpatialPointsDataFrame(coords = xy, data = background_all, proj4string = CRS("+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-60 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")) # The CRS is used here is for the albers equal area projection.
+```
+
+then covert the netcdf with the bathy layer (GLO-MFC_001_025_bathy.nclonlat.nc) to a brick and project to the albers equal area
+```{r}
+bathyrast <- raster("../data/env/GLO-MFC_001_025_bathy.nclonlat.nc") #because it is a single level file
+aea <- raster("../output/env/aea.tif") 
+bathyrast <- projectRaster(bathyrast, aea)
+plot(bathyrast)
+```
+
+now extract and add to data_aea
+```{r}
+background_all_sp$bottom_depth_glorys <- extract(x = bathyrast, y = background_all_sp)
+write.csv(background_all_sp, "../output/bio/background_complete_obs_cels_globot.csv", row.names = FALSE)
+head(background_all_sp)
+```
+
+
+
+
+
+
+
