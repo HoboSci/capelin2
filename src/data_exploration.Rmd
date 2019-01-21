@@ -21,7 +21,7 @@ You can load them using the following code which uses a function called [ipak](h
 Note this function checks to see if the packages are installed first.
 The "include=FALSE" supresses the package installation text appearing in the document...
 ```{r pre-install packages, include=FALSE}
-packages <- c("plyr", "graphics", "ggplot2", "corrplot", "FSA", "car") 
+packages <- c("plyr", "graphics", "ggplot2", "corrplot", "FSA", "car", "rworldmap") 
 source("../src/ipak.R")
 ipak(packages)
 ```
@@ -1003,6 +1003,101 @@ boxplot(pr11$temp_depth ~ pr11$nafo_zone, xlab = "NAFO Region", ylab = "Temperat
 ```
 
 ok scrap the nafo region analysis - it is too mixed up with month (so seeing if region or month is a factor that needs to be factored in to the model is not appropriate)
+
+# remap who sampled
+
+Now lets check the number of records and spatial-temporal distribution of the observations by institution code to make sure none are dodgy
+
+first a table of how many observations each instituioncode has
+```{r institution code analysis - count}
+obs_by_ins <- count(presence, "institutioncode")
+obs_by_ins
+write.csv(obs_by_ins, file = "../output/bio/samplinginstitutions/no_observations_institutioncode.csv")
+```
+ok so IMR, NAFO, ICES, & USM have very few entries (1, 1, 1, and 3 respectively)
+
+Lets take a look at the spatial breakdown of these institutions.First all points...
+
+```{r}
+map2 <- getMap(resolution = "low") #creates an object called map at low resoultion
+plot(map2, xlim = c(-70, -43), ylim =c(38, 70), asp = 1, main = "All Occurrences", col = "cornsilk") #the x and y lim are the long-lat bounds of the map
+points(presence$decimalLongitude, presence$decimalLatitude, col = "red") #this adds points to the mapet", xlab = "Longitude", ylab = "Latitude")
+dev.copy(png, "../output/bio/samplinginstitutions/all_occurrences.png") #this prints a png of the plot
+dev.off() #this turns off the print command
+```
+Note there is one point up by iceland that you should get rid of (Icelandic population thought to be seperate from Labrador, but it is unclear if this is true or not).
+
+Map the institutioncode == ARC only data...
+```{r map obs by institutuion}
+ARC_obs <- presence[presence$institutioncode == "ARC", ]
+map2 <- getMap(resolution = "low") #creates an object called map at low resoultion
+plot(map2, xlim = c(-70, -43), ylim =c(39, 70), asp = 1, main = "Arc Occurrences", col = "cornsilk") #the x and y lim are the long-lat bounds of the map
+points(ARC_obs$decimalLongitude, ARC_obs$decimalLatitude, col = "red") #this adds points to the mapet", xlab = "Longitude", ylab = "Latitude")
+dev.copy(png, "../output/bio/samplinginstitutions/ARC_occurrences_all.png") #this prints a png of the plot
+dev.off() #this turns off the print command
+
+DFOCENARC_obs <- presence[presence$institutioncode == "DFOCENARC", ]
+map2 <- getMap(resolution = "low") #creates an object called map at low resoultion
+plot(map2, xlim = c(-70, -43), ylim =c(39, 70), asp = 1, main = "DFO Central & Arctic Occurrences",  col = "cornsilk") #the x and y lim are the long-lat bounds of the map
+points(DFOCENARC_obs$decimalLongitude, DFOCENARC_obs$decimalLatitude, col = "red") #this adds points to the mapet", xlab = "Longitude", ylab = "Latitude")
+dev.copy(png, "../output/bio/samplinginstitutions/DFOCENARC_occurrences_all.png") #this prints a png of the plot
+dev.off() #this turns off the print command
+
+DFOGulf_obs <- presence[presence$institutioncode == "DFOGulf", ]
+map2 <- getMap(resolution = "low") #creates an object called map at low resoultion
+plot(map2, xlim = c(-70, -43), ylim =c(39, 70), asp = 1, main = "DFO Gulf Occurrences",  col = "cornsilk") #the x and y lim are the long-lat bounds of the map
+points(DFOGulf_obs$decimalLongitude, DFOGulf_obs$decimalLatitude, col = "red") #this adds points to the mapet", xlab = "Longitude", ylab = "Latitude")
+dev.copy(png, "../output/bio/samplinginstitutions/DFOGulf_occurrences_all.png") #this prints a png of the plot
+dev.off() #this turns off the print command
+
+DFOISDM_obs <- presence[presence$institutioncode == "DFOISDM", ]
+map2 <- getMap(resolution = "low") #creates an object called map at low resoultion
+plot(map2, xlim = c(-70, -43), ylim =c(39, 70), asp = 1, main = "DFO ISDM Occurrences",  col = "cornsilk") #the x and y lim are the long-lat bounds of the map
+points(DFOISDM_obs$decimalLongitude, DFOISDM_obs$decimalLatitude, col = "red") #this adds points to the mapet", xlab = "Longitude", ylab = "Latitude")
+dev.copy(png, "../output/bio/samplinginstitutions/DFOISDM_occurrences_all.png") #this prints a png of the plot
+dev.off() #this turns off the print command
+
+DFOMTMS_obs <- presence[presence$institutioncode == "DFOMTMS", ]
+map2 <- getMap(resolution = "low") #creates an object called map at low resoultion
+plot(map2, xlim = c(-70, -43), ylim =c(39, 70), asp = 1, main = "DFO Maritimes Occurrences",  col = "cornsilk") #the x and y lim are the long-lat bounds of the map
+points(DFOMTMS_obs$decimalLongitude, DFOMTMS_obs$decimalLatitude, col = "red") #this adds points to the mapet", xlab = "Longitude", ylab = "Latitude")
+dev.copy(png, "../output/bio/samplinginstitutions/DFOMTMS_occurrences_all.png") #this prints a png of the plot
+dev.off() #this turns off the print command
+
+DFONL_obs <- presence[presence$institutioncode == "DFONL", ]
+map2 <- getMap(resolution = "low") #creates an object called map at low resoultion
+plot(map2, xlim = c(-70, -43), ylim =c(39, 70), asp = 1, main = "DFO Newfouundland & Labrador Occurrences",  col = "cornsilk") #the x and y lim are the long-lat bounds of the map
+points(DFONL_obs$decimalLongitude, DFONL_obs$decimalLatitude, col = "red") #this adds points to the mapet", xlab = "Longitude", ylab = "Latitude")
+dev.copy(png, "../output/bio/samplinginstitutions/DFONL_occurrences_all.png") #this prints a png of the plot
+dev.off() #this turns off the print command
+
+DFOQC_obs <- presence[presence$institutioncode == "DFOQC", ]
+map2 <- getMap(resolution = "low") #creates an object called map at low resoultion
+plot(map2, xlim = c(-70, -43), ylim =c(39, 70), asp = 1, main = "DFO Quebec Occurrences",  col = "cornsilk") #the x and y lim are the long-lat bounds of the map
+points(DFOQC_obs$decimalLongitude, DFOQC_obs$decimalLatitude, col = "red") #this adds points to the mapet", xlab = "Longitude", ylab = "Latitude")
+dev.copy(png, "../output/bio/samplinginstitutions/DFOQC_occurrences_all.png") #this prints a png of the plot
+dev.off() #this turns off the print command
+
+MaineDMR_obs <- presence[presence$institutioncode == "MaineDMR", ]
+map2 <- getMap(resolution = "low") #creates an object called map at low resoultion
+plot(map2, xlim = c(-70, -43), ylim =c(39, 70), asp = 1, main = "Maine DMR Occurrences",  col = "cornsilk") #the x and y lim are the long-lat bounds of the map
+points(MaineDMR_obs$decimalLongitude, MaineDMR_obs$decimalLatitude, col = "red") #this adds points to the mapet", xlab = "Longitude", ylab = "Latitude")
+dev.copy(png, "../output/bio/samplinginstitutions/MaineDMR_occurrences_all.png") #this prints a png of the plot
+dev.off() #this turns off the print command
+
+NEFSC_obs <- presence[presence$institutioncode == "NEFSC", ]
+map2 <- getMap(resolution = "low") #creates an object called map at low resoultion
+plot(map2, xlim = c(-70, -43), ylim =c(39, 70), asp = 1, main = "NEFSC Occurrences",  col = "cornsilk") #the x and y lim are the long-lat bounds of the map
+points(NEFSC_obs$decimalLongitude, NEFSC_obs$decimalLatitude, col = "red") #this adds points to the mapet", xlab = "Longitude", ylab = "Latitude")
+dev.copy(png, "../output/bio/samplinginstitutions/NEFSC_occurrences_all.png") #this prints a png of the plot
+dev.off() #this turns off the print command
+
+ROM_obs <- presence[presence$institutioncode == "ROM", ]
+map2 <- getMap(resolution = "low") #creates an object called map at low resoultion
+plot(map2, xlim = c(-70, -43), ylim =c(39, 70), asp = 1, main = "Royal Ontario Museum Occurrences",  col = "cornsilk") #the x and y lim are the long-lat bounds of the map
+points(ROM_obs$decimalLongitude, ROM_obs$decimalLatitude, col = "red") #this adds points to the mapet", xlab = "Longitude", ylab = "Latitude")
+dev.copy(png, "../output/bio/samplinginstitutions/ROM_occurrences_all.png") #this prints a png of the plot
+```
 
 # check for gear type
 
