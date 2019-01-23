@@ -1371,6 +1371,8 @@ cell3985_18_2000_7
 ```
 
 
+#spatial autocorrelation
+
 
 #maxent?
 
