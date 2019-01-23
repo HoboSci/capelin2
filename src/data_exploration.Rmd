@@ -1311,23 +1311,64 @@ vif_allo2_depth
 
 vif_allo2_depth_sq <- read.csv("../output/bio/vif_allo2_depth.csv", header = TRUE)
 vif_allo2_depth_sq$GVIF2Dfsq <- vif_allo2_depth_sq$GVIF..1..2.Df..^2
-write.csv(vif_allo2_depth_sq, "../output/bio/vif_allo2_depth_sq", row.names = TRUE)
+write.csv(vif_allo2_depth_sq, "../output/bio/vif_allo2_depth_sq.csv", row.names = TRUE)
 vif_allo2_depth_sq
 ```
 
 without gear
 ```{r}
-vif_allbuttemp_surfacegear <- vif(lm(occurrence ~ temp_depth + salinity_surface + salinity_depth + o2_surface + o2_depth + chl_surface + chl_depth + bottom_depth + mlp_surface + ssh_surface + gear + nao_sample + nao_prev + nao_winter + amo_sample + amo_prev + amo_winter, data = presab))
+vif_allbuttemp_surfacegear <- vif(lm(occurrence ~ temp_depth + salinity_surface + salinity_depth + o2_surface + o2_depth + chl_surface + chl_depth + bottom_depth + mlp_surface + ssh_surface + nao_sample + nao_prev + nao_winter + amo_sample + amo_prev + amo_winter, data = presab))
 write.csv(vif_allbuttemp_surfacegear, "../output/bio/vif_allbuttemp_surfacegear.csv", row.names = TRUE)
 vif_allbuttemp_surfacegear
 
-vif_allo2_depthgear <- vif(lm(occurrence ~ temp_surface + temp_depth + salinity_surface + salinity_depth + o2_surface + chl_surface + chl_depth + bottom_depth + mlp_surface + ssh_surface + gear + nao_sample + nao_prev + nao_winter + amo_sample + amo_prev + amo_winter, data = presab))
+vif_allo2_depthgear <- vif(lm(occurrence ~ temp_surface + temp_depth + salinity_surface + salinity_depth + o2_surface + chl_surface + chl_depth + bottom_depth + mlp_surface + ssh_surface + nao_sample + nao_prev + nao_winter + amo_sample + amo_prev + amo_winter, data = presab))
 write.csv(vif_allo2_depthgear, "../output/bio/vif_allo2_depthgear.csv", row.names = TRUE)
 vif_allo2_depthgear
 ```
 
 
+```{r}
+vif_test <- vif(lm(occurrence ~ temp_surface + temp_depth + salinity_surface + salinity_depth + chl_surface + bottom_depth + mlp_surface + nao_sample + nao_prev + nao_winter + amo_sample + amo_winter, data = presab))
+vif_test
+```
 
+# check to see how many cells have >1 point per timeslice
+
+this needs to be 3D so you need to create a cell_id_3d
+```{r}
+presab$cell_id_3d <- paste(presab$cell_id, presab$depthlayerno, sep="_") #create a new column that is a unique cell_id & depth ID. 
+head(presab)
+```
+and now do one with a timeslice label
+```{r}
+presab$cell_id_xyzt <- paste(presab$cell_id_3d, presab$year, presab$month, sep="_") #create a new column that is a unique cell_id & depth ID. 
+head(presab)
+```
+
+
+the data is in presab$total_cell_obs_xyt 
+```{r}
+unique_pointpercell <- unique(presab$total_cell_obs_xyzt)
+unique_pointpercell
+```
+bugger... ok so lets do a frequency table
+```{r}
+celobsmore1 <- subset(presab, total_cell_obs_xyzt > 1)
+pointpercell <- with(celobsmore1, table(cell_id_xyzt, total_cell_obs_xyzt))
+write.csv(pointpercell, file = "../output/bio/pointpercell.csv")
+nrow(pointpercell)
+pointpercell
+```
+
+so there are 949 3d timesliced cells that contain more than one occurrence. 
+- different sampling days
+- different coordinates
+- risk of duplicate entries (but only if two instituions inputted the same data with slightly different coordinates and different reserch program names - see cell3985_18_2000_7 below as example)
+
+```{r}
+cell3985_18_2000_7  <- subset(celobsmore1, cell_id_xyzt == "3985_18_2000_7")
+cell3985_18_2000_7 
+```
 
 
 
