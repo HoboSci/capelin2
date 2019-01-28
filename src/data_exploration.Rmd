@@ -961,20 +961,19 @@ dev.off() # stops automatic saving of the plot to a png
 ```
 
 
-
 # NAFO Regions
 
 compare the environmental correlates between different NAFO regions
 
 first see which nafo zones were sampled in each year
-```{r}
+```{r presence nafo by year}
 nafo_by_yr <- with(presence, table(year, nafo_zone))
 write.csv(nafo_by_yr, file = "../output/bio/nafozone_by_yr.csv")
 nafo_by_yr
 ```
 
 and by month
-```{r}
+```{r prsence nafo by month}
 nafo_by_mth <- with(presence, table(nafo_zone, month))
 write.csv(nafo_by_mth, file = "../output/bio/nafozone_by_mth.csv")
 nafo_by_mth
@@ -985,6 +984,82 @@ Interesting that there is a point in 1C - this is outside Canadian waters.... an
 onec <-  subset(presence, nafo_zone == "1C")
 onec
 ```
+
+## density plot with background and presence env. data by NAFO region
+
+What I want to see if if there is a marked difference between the env. correlates of the presence points between NAFO regions. This is also to try deal with sampling bias (b/c the whole region is not uniformly sampled in each month, but rather nafo regions have a strong month bias)
+
+first create NAFO-region datasets
+
+```{r presence by nafo}
+nafo0a <- subset(presence, nafo_zone == "0A")
+nafo0b <- subset(presence, nafo_zone == "0B")
+nafo1c <- subset(presence, nafo_zone == "1C")
+nafo2g <- subset(presence, nafo_zone == "2G")
+nafo2h <- subset(presence, nafo_zone == "2H")
+nafo2j <- subset(presence, nafo_zone == "2J")
+nafo3k <- subset(presence, nafo_zone == "3K")
+nafo3l <- subset(presence, nafo_zone == "3L")
+nafo3m <- subset(presence, nafo_zone == "3M")
+nafo3n <- subset(presence, nafo_zone == "3N")
+nafo3o <- subset(presence, nafo_zone == "3O")
+nafo3ps <- subset(presence, nafo_zone == "3Ps")
+nafo4r <- subset(presence, nafo_zone == "4R")
+nafo4s <- subset(presence, nafo_zone == "4S")
+nafo4t <- subset(presence, nafo_zone == "4T")
+nafo4vn <- subset(presence, nafo_zone == "4Vn")
+nafo4vs <- subset(presence, nafo_zone == "4Vs")
+nafo4w <- subset(presence, nafo_zone == "4W")
+nafo4x <- subset(presence, nafo_zone == "4X")
+nafo5y <- subset(presence, nafo_zone == "5Y")
+nafo5ze <- subset(presence, nafo_zone == "5ZE")
+nafohudson <- subset(presence, nafo_zone == "HudsonStrait")
+```
+
+plot by each variable, less 3m (2 samples) 1c (one sample) and 5ze (zero samples?!)
+```{r presence by nafo by variable}
+ggplot(nafo0a, aes(x = temp_surface, colour = nafo_zone)) + geom_density(na.rm = TRUE) + geom_density(data=nafo0b, na.rm = TRUE) + geom_density(data=nafo2g, na.rm = TRUE) + geom_density(data=nafo2h, na.rm = TRUE) + geom_density(data=nafo2j, na.rm = TRUE) + geom_density(data=nafo3k, na.rm = TRUE) + geom_density(data=nafo3l, na.rm = TRUE) + geom_density(data=nafo3n, na.rm = TRUE) + geom_density(data=nafo3o, na.rm = TRUE) + geom_density(data=nafo3ps, na.rm = TRUE) + geom_density(data=nafo4r, na.rm = TRUE) + geom_density(data=nafo4s, na.rm = TRUE) + geom_density(data=nafo4t, na.rm = TRUE) + geom_density(data=nafo4vn, na.rm = TRUE) + geom_density(data=nafo4vs, na.rm = TRUE) + geom_density(data=nafo4w, na.rm = TRUE) + geom_density(data=nafo4x, na.rm = TRUE) + geom_density(data=nafo5y, na.rm = TRUE) + geom_density(data=nafohudson, na.rm = TRUE)
+dev.copy(png,"../output/env/env_by_nafo_plots/temp_surface_nafo.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+
+ggplot(nafo0a, aes(x = temp_depth, colour = nafo_zone)) + geom_density(na.rm = TRUE) + geom_density(data=nafo0b, na.rm = TRUE) + geom_density(data=nafo2g, na.rm = TRUE) + geom_density(data=nafo2h, na.rm = TRUE) + geom_density(data=nafo2j, na.rm = TRUE) + geom_density(data=nafo3k, na.rm = TRUE) + geom_density(data=nafo3l, na.rm = TRUE) + geom_density(data=nafo3n, na.rm = TRUE) + geom_density(data=nafo3o, na.rm = TRUE) + geom_density(data=nafo3ps, na.rm = TRUE) + geom_density(data=nafo4r, na.rm = TRUE) + geom_density(data=nafo4s, na.rm = TRUE) + geom_density(data=nafo4t, na.rm = TRUE) + geom_density(data=nafo4vn, na.rm = TRUE) + geom_density(data=nafo4vs, na.rm = TRUE) + geom_density(data=nafo4w, na.rm = TRUE) + geom_density(data=nafo4x, na.rm = TRUE) + geom_density(data=nafo5y, na.rm = TRUE) + geom_density(data=nafohudson, na.rm = TRUE)
+dev.copy(png,"../output/env/env_by_nafo_plots/temp_depth_nafo.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+
+ggplot(nafo0a, aes(x = chl_surface, colour = nafo_zone)) + geom_density(na.rm = TRUE) + geom_density(data=nafo0b, na.rm = TRUE) + geom_density(data=nafo2g, na.rm = TRUE) + geom_density(data=nafo2h, na.rm = TRUE) + geom_density(data=nafo2j, na.rm = TRUE) + geom_density(data=nafo3k, na.rm = TRUE) + geom_density(data=nafo3l, na.rm = TRUE) + geom_density(data=nafo3n, na.rm = TRUE) + geom_density(data=nafo3o, na.rm = TRUE) + geom_density(data=nafo3ps, na.rm = TRUE) + geom_density(data=nafo4r, na.rm = TRUE) + geom_density(data=nafo4s, na.rm = TRUE) + geom_density(data=nafo4t, na.rm = TRUE) + geom_density(data=nafo4vn, na.rm = TRUE) + geom_density(data=nafo4vs, na.rm = TRUE) + geom_density(data=nafo4w, na.rm = TRUE) + geom_density(data=nafo4x, na.rm = TRUE) + geom_density(data=nafo5y, na.rm = TRUE) + geom_density(data=nafohudson, na.rm = TRUE)
+dev.copy(png,"../output/env/env_by_nafo_plots/chl_surface_nafo.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+
+ggplot(nafo0a, aes(x = chl_depth, colour = nafo_zone)) + geom_density(na.rm = TRUE) + geom_density(data=nafo0b, na.rm = TRUE) + geom_density(data=nafo2g, na.rm = TRUE) + geom_density(data=nafo2h, na.rm = TRUE) + geom_density(data=nafo2j, na.rm = TRUE) + geom_density(data=nafo3k, na.rm = TRUE) + geom_density(data=nafo3l, na.rm = TRUE) + geom_density(data=nafo3n, na.rm = TRUE) + geom_density(data=nafo3o, na.rm = TRUE) + geom_density(data=nafo3ps, na.rm = TRUE) + geom_density(data=nafo4r, na.rm = TRUE) + geom_density(data=nafo4s, na.rm = TRUE) + geom_density(data=nafo4t, na.rm = TRUE) + geom_density(data=nafo4vn, na.rm = TRUE) + geom_density(data=nafo4vs, na.rm = TRUE) + geom_density(data=nafo4w, na.rm = TRUE) + geom_density(data=nafo4x, na.rm = TRUE) + geom_density(data=nafo5y, na.rm = TRUE) + geom_density(data=nafohudson, na.rm = TRUE)
+dev.copy(png,"../output/env/env_by_nafo_plots/chl_depth_nafo.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+
+ggplot(nafo0a, aes(x = salinity_surface, colour = nafo_zone)) + geom_density(na.rm = TRUE) + geom_density(data=nafo0b, na.rm = TRUE) + geom_density(data=nafo2g, na.rm = TRUE) + geom_density(data=nafo2h, na.rm = TRUE) + geom_density(data=nafo2j, na.rm = TRUE) + geom_density(data=nafo3k, na.rm = TRUE) + geom_density(data=nafo3l, na.rm = TRUE) + geom_density(data=nafo3n, na.rm = TRUE) + geom_density(data=nafo3o, na.rm = TRUE) + geom_density(data=nafo3ps, na.rm = TRUE) + geom_density(data=nafo4r, na.rm = TRUE) + geom_density(data=nafo4s, na.rm = TRUE) + geom_density(data=nafo4t, na.rm = TRUE) + geom_density(data=nafo4vn, na.rm = TRUE) + geom_density(data=nafo4vs, na.rm = TRUE) + geom_density(data=nafo4w, na.rm = TRUE) + geom_density(data=nafo4x, na.rm = TRUE) + geom_density(data=nafo5y, na.rm = TRUE) + geom_density(data=nafohudson, na.rm = TRUE)
+dev.copy(png,"../output/env/env_by_nafo_plots/salinity_surface_nafo.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+
+ggplot(nafo0a, aes(x = salinity_depth, colour = nafo_zone)) + geom_density(na.rm = TRUE) + geom_density(data=nafo0b, na.rm = TRUE) + geom_density(data=nafo2g, na.rm = TRUE) + geom_density(data=nafo2h, na.rm = TRUE) + geom_density(data=nafo2j, na.rm = TRUE) + geom_density(data=nafo3k, na.rm = TRUE) + geom_density(data=nafo3l, na.rm = TRUE) + geom_density(data=nafo3n, na.rm = TRUE) + geom_density(data=nafo3o, na.rm = TRUE) + geom_density(data=nafo3ps, na.rm = TRUE) + geom_density(data=nafo4r, na.rm = TRUE) + geom_density(data=nafo4s, na.rm = TRUE) + geom_density(data=nafo4t, na.rm = TRUE) + geom_density(data=nafo4vn, na.rm = TRUE) + geom_density(data=nafo4vs, na.rm = TRUE) + geom_density(data=nafo4w, na.rm = TRUE) + geom_density(data=nafo4x, na.rm = TRUE) + geom_density(data=nafo5y, na.rm = TRUE) + geom_density(data=nafohudson, na.rm = TRUE)
+dev.copy(png,"../output/env/env_by_nafo_plots/salinity_depth_nafo.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+
+ggplot(nafo0a, aes(x = o2_surface, colour = nafo_zone)) + geom_density(na.rm = TRUE) + geom_density(data=nafo0b, na.rm = TRUE) + geom_density(data=nafo2g, na.rm = TRUE) + geom_density(data=nafo2h, na.rm = TRUE) + geom_density(data=nafo2j, na.rm = TRUE) + geom_density(data=nafo3k, na.rm = TRUE) + geom_density(data=nafo3l, na.rm = TRUE) + geom_density(data=nafo3n, na.rm = TRUE) + geom_density(data=nafo3o, na.rm = TRUE) + geom_density(data=nafo3ps, na.rm = TRUE) + geom_density(data=nafo4r, na.rm = TRUE) + geom_density(data=nafo4s, na.rm = TRUE) + geom_density(data=nafo4t, na.rm = TRUE) + geom_density(data=nafo4vn, na.rm = TRUE) + geom_density(data=nafo4vs, na.rm = TRUE) + geom_density(data=nafo4w, na.rm = TRUE) + geom_density(data=nafo4x, na.rm = TRUE) + geom_density(data=nafo5y, na.rm = TRUE) + geom_density(data=nafohudson, na.rm = TRUE)
+dev.copy(png,"../output/env/env_by_nafo_plots/o2_surface_nafo.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+
+ggplot(nafo0a, aes(x = salinity_depth, colour = nafo_zone)) + geom_density(na.rm = TRUE) + geom_density(data=nafo0b, na.rm = TRUE) + geom_density(data=nafo2g, na.rm = TRUE) + geom_density(data=nafo2h, na.rm = TRUE) + geom_density(data=nafo2j, na.rm = TRUE) + geom_density(data=nafo3k, na.rm = TRUE) + geom_density(data=nafo3l, na.rm = TRUE) + geom_density(data=nafo3n, na.rm = TRUE) + geom_density(data=nafo3o, na.rm = TRUE) + geom_density(data=nafo3ps, na.rm = TRUE) + geom_density(data=nafo4r, na.rm = TRUE) + geom_density(data=nafo4s, na.rm = TRUE) + geom_density(data=nafo4t, na.rm = TRUE) + geom_density(data=nafo4vn, na.rm = TRUE) + geom_density(data=nafo4vs, na.rm = TRUE) + geom_density(data=nafo4w, na.rm = TRUE) + geom_density(data=nafo4x, na.rm = TRUE) + geom_density(data=nafo5y, na.rm = TRUE) + geom_density(data=nafohudson, na.rm = TRUE)
+dev.copy(png,"../output/env/env_by_nafo_plots/o2_depth_nafo.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+
+ggplot(nafo0a, aes(x = mlp_surface, colour = nafo_zone)) + geom_density(na.rm = TRUE) + geom_density(data=nafo0b, na.rm = TRUE) + geom_density(data=nafo2g, na.rm = TRUE) + geom_density(data=nafo2h, na.rm = TRUE) + geom_density(data=nafo2j, na.rm = TRUE) + geom_density(data=nafo3k, na.rm = TRUE) + geom_density(data=nafo3l, na.rm = TRUE) + geom_density(data=nafo3n, na.rm = TRUE) + geom_density(data=nafo3o, na.rm = TRUE) + geom_density(data=nafo3ps, na.rm = TRUE) + geom_density(data=nafo4r, na.rm = TRUE) + geom_density(data=nafo4s, na.rm = TRUE) + geom_density(data=nafo4t, na.rm = TRUE) + geom_density(data=nafo4vn, na.rm = TRUE) + geom_density(data=nafo4vs, na.rm = TRUE) + geom_density(data=nafo4w, na.rm = TRUE) + geom_density(data=nafo4x, na.rm = TRUE) + geom_density(data=nafo5y, na.rm = TRUE) + geom_density(data=nafohudson, na.rm = TRUE)
+dev.copy(png,"../output/env/env_by_nafo_plots/mlp_nafo.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+
+ggplot(nafo0a, aes(x = ssh_surface, colour = nafo_zone)) + geom_density(na.rm = TRUE) + geom_density(data=nafo0b, na.rm = TRUE) + geom_density(data=nafo2g, na.rm = TRUE) + geom_density(data=nafo2h, na.rm = TRUE) + geom_density(data=nafo2j, na.rm = TRUE) + geom_density(data=nafo3k, na.rm = TRUE) + geom_density(data=nafo3l, na.rm = TRUE) + geom_density(data=nafo3n, na.rm = TRUE) + geom_density(data=nafo3o, na.rm = TRUE) + geom_density(data=nafo3ps, na.rm = TRUE) + geom_density(data=nafo4r, na.rm = TRUE) + geom_density(data=nafo4s, na.rm = TRUE) + geom_density(data=nafo4t, na.rm = TRUE) + geom_density(data=nafo4vn, na.rm = TRUE) + geom_density(data=nafo4vs, na.rm = TRUE) + geom_density(data=nafo4w, na.rm = TRUE) + geom_density(data=nafo4x, na.rm = TRUE) + geom_density(data=nafo5y, na.rm = TRUE) + geom_density(data=nafohudson, na.rm = TRUE)
+dev.copy(png,"../output/env/env_by_nafo_plots/ssh_nafo.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+```
+
+
 
 Let's plot the variables by nafo region/year then by month
 
