@@ -21,7 +21,7 @@ You can load them using the following code which uses a function called [ipak](h
 Note this function checks to see if the packages are installed first.
 The "include=FALSE" supresses the package installation text appearing in the document...
 ```{r pre-install packages, include=FALSE}
-packages <- c("plyr", "graphics", "ggplot2", "corrplot", "FSA", "car", "rworldmap") 
+packages <- c("plyr", "graphics", "ggplot2", "corrplot", "FSA", "car", "rworldmap", "fastmatch") 
 source("../src/ipak.R")
 ipak(packages)
 ```
@@ -1046,7 +1046,7 @@ ggplot(nafo0a, aes(x = o2_surface, colour = nafo_zone)) + geom_density(na.rm = T
 dev.copy(png,"../output/env/env_by_nafo_plots/o2_surface_nafo.png") # to automatically save the plot to a png AND show it inline
 dev.off() # stops automatic saving of the plot to a png
 
-ggplot(nafo0a, aes(x = salinity_depth, colour = nafo_zone)) + geom_density(na.rm = TRUE) + geom_density(data=nafo0b, na.rm = TRUE) + geom_density(data=nafo2g, na.rm = TRUE) + geom_density(data=nafo2h, na.rm = TRUE) + geom_density(data=nafo2j, na.rm = TRUE) + geom_density(data=nafo3k, na.rm = TRUE) + geom_density(data=nafo3l, na.rm = TRUE) + geom_density(data=nafo3n, na.rm = TRUE) + geom_density(data=nafo3o, na.rm = TRUE) + geom_density(data=nafo3ps, na.rm = TRUE) + geom_density(data=nafo4r, na.rm = TRUE) + geom_density(data=nafo4s, na.rm = TRUE) + geom_density(data=nafo4t, na.rm = TRUE) + geom_density(data=nafo4vn, na.rm = TRUE) + geom_density(data=nafo4vs, na.rm = TRUE) + geom_density(data=nafo4w, na.rm = TRUE) + geom_density(data=nafo4x, na.rm = TRUE) + geom_density(data=nafo5y, na.rm = TRUE) + geom_density(data=nafohudson, na.rm = TRUE)
+ggplot(nafo0a, aes(x = o2_depth, colour = nafo_zone)) + geom_density(na.rm = TRUE) + geom_density(data=nafo0b, na.rm = TRUE) + geom_density(data=nafo2g, na.rm = TRUE) + geom_density(data=nafo2h, na.rm = TRUE) + geom_density(data=nafo2j, na.rm = TRUE) + geom_density(data=nafo3k, na.rm = TRUE) + geom_density(data=nafo3l, na.rm = TRUE) + geom_density(data=nafo3n, na.rm = TRUE) + geom_density(data=nafo3o, na.rm = TRUE) + geom_density(data=nafo3ps, na.rm = TRUE) + geom_density(data=nafo4r, na.rm = TRUE) + geom_density(data=nafo4s, na.rm = TRUE) + geom_density(data=nafo4t, na.rm = TRUE) + geom_density(data=nafo4vn, na.rm = TRUE) + geom_density(data=nafo4vs, na.rm = TRUE) + geom_density(data=nafo4w, na.rm = TRUE) + geom_density(data=nafo4x, na.rm = TRUE) + geom_density(data=nafo5y, na.rm = TRUE) + geom_density(data=nafohudson, na.rm = TRUE)
 dev.copy(png,"../output/env/env_by_nafo_plots/o2_depth_nafo.png") # to automatically save the plot to a png AND show it inline
 dev.off() # stops automatic saving of the plot to a png
 
@@ -1195,6 +1195,67 @@ gearby_mth <- with(presence, table(month, gear))
 write.csv(gearby_mth, file = "../output/bio/gear_by_mth.csv")
 gearby_mth
 ```
+
+What I want to see if if there is a marked difference between the env. correlates of the presence points between gear type used. This is also to try deal with detection bias between gear type (b/c the whole region is not uniformly sampled by the same gear type)
+
+first create gear datasets
+
+```{r presence by gear}
+presence$gear <- as.character(presence$gear)
+bottom_trawl <- subset(presence, gear == "bottom_trawl")
+bottom_trawl_alfredo_03 <- subset(presence, gear == "bottom_trawl_alfredo_03")
+bottom_trawl_campelen_14 <- subset(presence, gear == "bottom_trawl_campelen_14")
+bottom_trawl_campelen_1800 <- subset(presence, gear == "bottom_trawl_campelen_1800")
+bottom_trawl_campelen_21 <- subset(presence, gear == "bottom_trawl_campelen_21")
+bottom_trawl_cosmos_2600 <- subset(presence, gear == "bottom_trawl_cosmos_2600")
+bottom_trawl_western_IIA <- subset(presence, gear == "bottom_trawl_western_IIA")
+unknown <- subset(presence, gear == "unknown")
+vertical_plankton_tow <- subset(presence, gear == "vertical_plankton_tow")
+```
+
+plot by each variable, less 3m (2 samples) 1c (one sample) and 5ze (zero samples?!)
+```{r presence by gear by variable}
+ggplot(bottom_trawl, aes(x = temp_surface, colour = gear)) + geom_density(na.rm = TRUE) + geom_density(data=bottom_trawl_alfredo_03, na.rm = TRUE) + geom_density(data=bottom_trawl_campelen_14, na.rm = TRUE) + geom_density(data=bottom_trawl_campelen_1800, na.rm = TRUE) + geom_density(data=bottom_trawl_campelen_21, na.rm = TRUE) + geom_density(data=bottom_trawl_cosmos_2600, na.rm = TRUE) + geom_density(data=bottom_trawl_western_IIA, na.rm = TRUE) + geom_density(data=unknown, na.rm = TRUE) + geom_density(data=vertical_plankton_tow, na.rm = TRUE)
+dev.copy(png,"../output/env/env_by_gear_plots/temp_surface_gear.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+
+ggplot(bottom_trawl, aes(x = temp_depth, colour = gear)) + geom_density(na.rm = TRUE) + geom_density(data=bottom_trawl_alfredo_03, na.rm = TRUE) + geom_density(data=bottom_trawl_campelen_14, na.rm = TRUE) + geom_density(data=bottom_trawl_campelen_1800, na.rm = TRUE) + geom_density(data=bottom_trawl_campelen_21, na.rm = TRUE) + geom_density(data=bottom_trawl_cosmos_2600, na.rm = TRUE) + geom_density(data=bottom_trawl_western_IIA, na.rm = TRUE) + geom_density(data=unknown, na.rm = TRUE) + geom_density(data=vertical_plankton_tow, na.rm = TRUE)
+dev.copy(png,"../output/env/env_by_gear_plots/temp_depth_gear.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+
+ggplot(bottom_trawl, aes(x = chl_surface, colour = gear)) + geom_density(na.rm = TRUE) + geom_density(data=bottom_trawl_alfredo_03, na.rm = TRUE) + geom_density(data=bottom_trawl_campelen_14, na.rm = TRUE) + geom_density(data=bottom_trawl_campelen_1800, na.rm = TRUE) + geom_density(data=bottom_trawl_campelen_21, na.rm = TRUE) + geom_density(data=bottom_trawl_cosmos_2600, na.rm = TRUE) + geom_density(data=bottom_trawl_western_IIA, na.rm = TRUE) + geom_density(data=unknown, na.rm = TRUE) + geom_density(data=vertical_plankton_tow, na.rm = TRUE)
+dev.copy(png,"../output/env/env_by_gear_plots/chl_surface_gear.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+
+ggplot(bottom_trawl, aes(x = chl_depth, colour = gear))  + geom_density(na.rm = TRUE) + geom_density(data=bottom_trawl_alfredo_03, na.rm = TRUE) + geom_density(data=bottom_trawl_campelen_14, na.rm = TRUE) + geom_density(data=bottom_trawl_campelen_1800, na.rm = TRUE) + geom_density(data=bottom_trawl_campelen_21, na.rm = TRUE) + geom_density(data=bottom_trawl_cosmos_2600, na.rm = TRUE) + geom_density(data=bottom_trawl_western_IIA, na.rm = TRUE) + geom_density(data=unknown, na.rm = TRUE) + geom_density(data=vertical_plankton_tow, na.rm = TRUE)
+dev.copy(png,"../output/env/env_by_gear_plots/chl_depth_gear.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+
+ggplot(bottom_trawl, aes(x = salinity_surface, colour = gear)) + geom_density(na.rm = TRUE) + geom_density(data=bottom_trawl_alfredo_03, na.rm = TRUE) + geom_density(data=bottom_trawl_campelen_14, na.rm = TRUE) + geom_density(data=bottom_trawl_campelen_1800, na.rm = TRUE) + geom_density(data=bottom_trawl_campelen_21, na.rm = TRUE) + geom_density(data=bottom_trawl_cosmos_2600, na.rm = TRUE) + geom_density(data=bottom_trawl_western_IIA, na.rm = TRUE) + geom_density(data=unknown, na.rm = TRUE) + geom_density(data=vertical_plankton_tow, na.rm = TRUE)
+dev.copy(png,"../output/env/env_by_gear_plots/salinity_surface_gear.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+
+ggplot(bottom_trawl, aes(x = salinity_depth, colour = gear)) + geom_density(na.rm = TRUE) + geom_density(data=bottom_trawl_alfredo_03, na.rm = TRUE) + geom_density(data=bottom_trawl_campelen_14, na.rm = TRUE) + geom_density(data=bottom_trawl_campelen_1800, na.rm = TRUE) + geom_density(data=bottom_trawl_campelen_21, na.rm = TRUE) + geom_density(data=bottom_trawl_cosmos_2600, na.rm = TRUE) + geom_density(data=bottom_trawl_western_IIA, na.rm = TRUE) + geom_density(data=unknown, na.rm = TRUE) + geom_density(data=vertical_plankton_tow, na.rm = TRUE)
+dev.copy(png,"../output/env/env_by_gear_plots/salinity_depth_gear.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+
+ggplot(bottom_trawl, aes(x = o2_surface, colour = gear)) + geom_density(na.rm = TRUE) + geom_density(data=bottom_trawl_alfredo_03, na.rm = TRUE) + geom_density(data=bottom_trawl_campelen_14, na.rm = TRUE) + geom_density(data=bottom_trawl_campelen_1800, na.rm = TRUE) + geom_density(data=bottom_trawl_campelen_21, na.rm = TRUE) + geom_density(data=bottom_trawl_cosmos_2600, na.rm = TRUE) + geom_density(data=bottom_trawl_western_IIA, na.rm = TRUE) + geom_density(data=unknown, na.rm = TRUE) + geom_density(data=vertical_plankton_tow, na.rm = TRUE)
+dev.copy(png,"../output/env/env_by_gear_plots/o2_surface_gear.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+
+ggplot(bottom_trawl, aes(x = o2_depth, colour = gear)) + geom_density(na.rm = TRUE) + geom_density(data=bottom_trawl_alfredo_03, na.rm = TRUE) + geom_density(data=bottom_trawl_campelen_14, na.rm = TRUE) + geom_density(data=bottom_trawl_campelen_1800, na.rm = TRUE) + geom_density(data=bottom_trawl_campelen_21, na.rm = TRUE) + geom_density(data=bottom_trawl_cosmos_2600, na.rm = TRUE) + geom_density(data=bottom_trawl_western_IIA, na.rm = TRUE) + geom_density(data=unknown, na.rm = TRUE) + geom_density(data=vertical_plankton_tow, na.rm = TRUE)
+dev.copy(png,"../output/env/env_by_gear_plots/o2_depth_gear.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+
+ggplot(bottom_trawl, aes(x = mlp_surface, colour = gear)) + geom_density(na.rm = TRUE) + geom_density(data=bottom_trawl_alfredo_03, na.rm = TRUE) + geom_density(data=bottom_trawl_campelen_14, na.rm = TRUE) + geom_density(data=bottom_trawl_campelen_1800, na.rm = TRUE) + geom_density(data=bottom_trawl_campelen_21, na.rm = TRUE) + geom_density(data=bottom_trawl_cosmos_2600, na.rm = TRUE) + geom_density(data=bottom_trawl_western_IIA, na.rm = TRUE) + geom_density(data=unknown, na.rm = TRUE) + geom_density(data=vertical_plankton_tow, na.rm = TRUE)
+dev.copy(png,"../output/env/env_by_gear_plots/mlp_gear.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+
+ggplot(bottom_trawl, aes(x = ssh_surface, colour = gear)) + geom_density(na.rm = TRUE) + geom_density(data=bottom_trawl_alfredo_03, na.rm = TRUE) + geom_density(data=bottom_trawl_campelen_14, na.rm = TRUE) + geom_density(data=bottom_trawl_campelen_1800, na.rm = TRUE) + geom_density(data=bottom_trawl_campelen_21, na.rm = TRUE) + geom_density(data=bottom_trawl_cosmos_2600, na.rm = TRUE) + geom_density(data=bottom_trawl_western_IIA, na.rm = TRUE) + geom_density(data=unknown, na.rm = TRUE) + geom_density(data=vertical_plankton_tow, na.rm = TRUE)
+dev.copy(png,"../output/env/env_by_gear_plots/ssh_gear.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+```
+
 
 
 
@@ -1458,32 +1519,40 @@ vif_allbutnaoamo_sq
 # check to see how many cells have >1 point per timeslice
 
 this needs to be 3D so you need to create a cell_id_3d
-```{r}
+```{r cell_id_3d}
 presab$cell_id_3d <- paste(presab$cell_id, presab$depthlayerno, sep="_") #create a new column that is a unique cell_id & depth ID. 
 head(presab)
 ```
 and now do one with a timeslice label
-```{r}
+```{r cell_id_xyzt}
 presab$cell_id_xyzt <- paste(presab$cell_id_3d, presab$year, presab$month, sep="_") #create a new column that is a unique cell_id & depth ID. 
 head(presab)
+write.csv(presab, "../output/bio/presab_cellid_xyzt.csv", row.names = FALSE)
 ```
 
 
-the data is in presab$total_cell_obs_xyt 
+because background points can land in the same xyzt, subset the dataset to be only presences
+
 ```{r}
-unique_pointpercell <- unique(presab$total_cell_obs_xyzt)
+presencedup <- subset(presab, occurrence == "1")
+nrow(presencedup)
+```
+
+
+the data is in presencedup$total_cell_obs_xyzt
+```{r unique_pointpercell}
+unique_pointpercell <- unique(presencedup$total_cell_obs_xyzt)
 unique_pointpercell
 ```
 bugger... ok so lets do a frequency table
-```{r}
-celobsmore1 <- subset(presab, total_cell_obs_xyzt > 1)
-pointpercell <- with(celobsmore1, table(cell_id_xyzt, total_cell_obs_xyzt))
-write.csv(pointpercell, file = "../output/bio/pointpercell.csv")
-nrow(pointpercell)
-pointpercell
+```{r unique_pointpercell frequencies}
+pointpercellcount <- count(celobsmore1, "total_cell_obs_xyzt")
+pointpercellcount$no_cells <- pointpercellcount$freq / pointpercellcount$total_cell_obs_xyzt
+write.csv(pointpercellcount, file = "../output/bio/pointpercellcount.csv")
+pointpercellcount
 ```
 
-so there are 949 3d timesliced cells that contain more than one occurrence. 
+so there are 949 3d timesliced cells that contain more than one occurrence, and 2042 rows. 
 - different sampling days
 - different coordinates
 - risk of duplicate entries (but only if two instituions inputted the same data with slightly different coordinates and different reserch program names - see cell3985_18_2000_7 below as example)
@@ -1493,6 +1562,74 @@ cell3985_18_2000_7  <- subset(celobsmore1, cell_id_xyzt == "3985_18_2000_7")
 cell3985_18_2000_7 
 ```
 
+Ideally you only want one observation cell cell_id_xyzt. First see if any are missing depth data
+
+find the column numbers that correspond to the env. data (use fastmatch package as is quicker)
+
+```{r}
+fmatch("chl_surface", names(celobsmore1)) #28
+fmatch("chl_depth", names(celobsmore1)) #29
+fmatch("mlp_surface", names(celobsmore1)) #30
+fmatch("o2_surface", names(celobsmore1)) #31
+fmatch("o2_depth", names(celobsmore1)) #32
+fmatch("salinity_surface", names(celobsmore1)) #33
+fmatch("salinity_depth", names(celobsmore1)) #34
+fmatch("ssh_surface", names(celobsmore1)) #35
+fmatch("temp_surface", names(celobsmore1)) #36
+fmatch("temp_depth", names(celobsmore1)) #37
+```
+
+then subset any with NA values
+
+```{r celobsmore1_novals}
+celobsmore1_novals <-  celobsmore1[!complete.cases(celobsmore1[28:37]), ] #28:37 represent the columns w/ env. data
+nrow(celobsmore1_novals) #just to check how many there are - 1095 out of 2042
+```
+
+ok and subset with all values
+
+```{r celobsmore1_allval}
+celobsmore1_allvals <- celobsmore1[complete.cases(celobsmore1[28:37]), ] #28:37 represent the columns w/ env. data
+nrow(celobsmore1_allvals) #947 out of 2042
+```
+
+ok so how many unique cells do we have with complete data...
+
+```{r}
+pointpercellcount_alldata <- count(celobsmore1_allvals, "total_cell_obs_xyzt")
+pointpercellcount_alldata$no_cells <- pointpercellcount_alldata$freq / pointpercellcount_alldata$total_cell_obs_xyzt
+write.csv(pointpercellcount_alldata, file = "../output/bio/pointpercellcount_alldata.csv")
+pointpercellcount_alldata
+```
+
+and see which cell_id_xyzt appear in both celobsmore1_allvals and celobsmore1_novals
+```{r}
+celobsmore1_allnovals <- inner_join(celobsmore1_allvals, celobsmore1_novals)
+celobsmore1_allnovals 
+```
+None.... which is good. I'd expect observations in the same xyzt to have the same values
+
+so, I can successfully reduce the observations down to one per xyzt
+
+```{r}
+fmatch("cell_id_xyzt", names(celobsmore1)) #46
+duplicatesbegone <- celobsmore1[!duplicated(celobsmore1[ ,46]), ] #creates a df with all duplicates gone (now 1 obs per cell)
+nrow(duplicatesbegone) #949 - good
+presabnodup <- subset(presab, total_cell_obs_xyzt == "1") #remove all rows that have more than one obs
+nrow(presabnodup) #1549351 - this adds up 
+presab <- rbind(presabnodup, duplicatesbegone)
+nrow(presab) #1550300 - great!
+
+#recalculate the total_cell_obs_xyzt column
+
+names(presab)[names(presab)=="total_cell_obs_xyzt"] <- "XXtotal_cell_obs_xyzt" #rename col
+obs_cell_yymm_depth_dup <- count(presab, cell_id, year, month, depthlayerno)
+test <- merge(presab, obs_cell_yymm_depth_dup, by.x=c("cell_id", "year", "month", "depthlayerno"), by.y=c("cell_id", "year", "month", "depthlayerno"))
+names(test)[names(test)=="n"] <- "total_cell_obs_xyzt" #rename col
+
+write.csv(presab, "../output/bio/presab_cellid_xyzt_nodup.csv")
+rm(presabnodup, duplicatesbegone, celobsmore1, celobsmore1_novals, celobsmore1_allnovals, celobsmore1_allvals) #just because they are bigish variables
+```
 
 
 
