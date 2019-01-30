@@ -1000,12 +1000,33 @@ now extract and add to data_aea
 ```{r}
 background_all_sp$bottom_depth_glorys <- extract(x = bathyrast, y = background_all_sp)
 write.csv(background_all_sp, "../output/bio/background_complete_obs_cels_globot.csv", row.names = FALSE)
+background_all <- as.data.frame(background_all_sp)
 head(background_all_sp)
 ```
 
+# remove any duplicate entries
 
+Check to see how many cells have >1 point per timeslice. This needs to be timesliced and 3D
 
+```{r cell_id_3d}
+background_all$cell_id_3d <- paste(background_all$cell_id, background_all$depthlayerno, sep="_") #create a new column that is a unique cell_id & depth ID. 
+head(data_aea)
+```
 
+and now do one with a timeslice label
+```{r cell_id_xyzt}
+background_all$cell_id_xyzt <- paste(background_all$cell_id_3d, background_all$year, background_all$month, sep="_") #create a new column that is a unique cell_id & depth ID. 
+head(background_all)
+write.csv(background_all, "../output/bio/background_complete_obs_cels_globot_cellid_xyzt.csv", row.names = FALSE)
+```
+
+ok lets see how many have more than one obs per cell
+```{r unique_pointpercell}
+unique_pointpercell <- unique(background_all$total_cell_obs_xyzt)
+unique_pointpercell
+```
+
+1 - perfect!
 
 
 

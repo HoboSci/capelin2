@@ -23,24 +23,24 @@ ipak(packages)
 
 read in the presence and background
 ```{r}
-presencemerging <- read.csv("./output/bio/presence_points_without_envdata_relooped_glbathy.csv", header = TRUE)
-backgroundmerging <- read.csv("./output/bio/background_complete_obs_cels_globot.csv", header = TRUE)
+presencemerging <- read.csv("../output/bio/presence_points_without_envdata_relooped_glbathy_nodup.csv", header = TRUE)
+backgroundmerging <- read.csv("../output/bio/background_complete_obs_cels_globot_cellid_xyzt.csv", header = TRUE)
+```
+
+now check
+```{r}
+colnames(presencemerging)
+```
+
+```{r}
+colnames(backgroundmerging)
 ```
 
 ok so the two dataframed need a spot of cleaning
 
 ```{r}
-presencemerging <- subset(presencemerging, select = -c(longitude_meters.1, latitude_meters.1, longitude_meters.2, latitude_meters.2))
+presencemerging <- subset(presencemerging, select = -c(longitude_meters.1, latitude_meters.1, longitude_meters.2, latitude_meters.2, XXtotal_cell_obs_xyzt))
 backgroundmerging <- subset(backgroundmerging, select = -c(longitude_meters.1, latitude_meters.1, longitude_meters.2, latitude_meters.2, X, optional, optional.1))
-```
-
-now check
-```{r}
-str(presencemerging)
-```
-
-```{r}
-str(backgroundmerging)
 ```
 
 for consistency, rename a couple of presencemerging columns

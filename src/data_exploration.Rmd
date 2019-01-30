@@ -26,13 +26,13 @@ source("../src/ipak.R")
 ipak(packages)
 ```
 
+# read in all data
 
-# presence points
-Read in the presence points
-
+and subset into background and presences
 ```{r}
-presence <- read.csv("../output/bio/presence_points_without_envdata_relooped_glbathy.csv", header = TRUE)
-head(presence)
+presab <- read.csv("../output/bio/presab.csv", header = TRUE)
+presence <- subset(presab, occurrence == "1")
+background <- subset(presab, occurrence == "0")
 ```
 
 ## Update: Who sampled in which year and which month:
@@ -487,12 +487,7 @@ dev.off() # stops automatic saving of the plot to a png
 
 
 # background points
-Read in the presence points
 
-```{r}
-background <- read.csv("../output/bio/background_complete_obs_cels_globot.csv", header = TRUE)
-head(background)
-```
 
 # environmental correlates
 
@@ -967,6 +962,7 @@ compare the environmental correlates between different NAFO regions
 
 first see which nafo zones were sampled in each year
 ```{r presence nafo by year}
+presence$nafo_zone <- as.character(presence$nafo_zone)
 nafo_by_yr <- with(presence, table(year, nafo_zone))
 write.csv(nafo_by_yr, file = "../output/bio/nafozone_by_yr.csv")
 nafo_by_yr
@@ -979,11 +975,20 @@ write.csv(nafo_by_mth, file = "../output/bio/nafozone_by_mth.csv")
 nafo_by_mth
 ```
 
-Interesting that there is a point in 1C - this is outside Canadian waters.... anyway
+Interesting that there is a point in 1C - this is outside Canadian waters remove from the dataset
 ```{r}
-onec <-  subset(presence, nafo_zone == "1C")
-onec
+presab <- presab[!(presab$nafo_zone == "1C" & presab$occurrence == "1"), ]
+write.csv(presab, "../output/bio/presab.csv", row.names = FALSE)
+presence <- presence[!(presence$nafo_zone == "1C"), ]
 ```
+
+and by month again
+```{r prsence nafo by month2}
+nafo_by_mth <- with(presence, table(nafo_zone, month))
+write.csv(nafo_by_mth, file = "../output/bio/nafozone_by_mth.csv")
+nafo_by_mth
+```
+
 
 ## density plot with background and presence env. data by NAFO region
 
@@ -994,7 +999,6 @@ first create NAFO-region datasets
 ```{r presence by nafo}
 nafo0a <- subset(presence, nafo_zone == "0A")
 nafo0b <- subset(presence, nafo_zone == "0B")
-nafo1c <- subset(presence, nafo_zone == "1C")
 nafo2g <- subset(presence, nafo_zone == "2G")
 nafo2h <- subset(presence, nafo_zone == "2H")
 nafo2j <- subset(presence, nafo_zone == "2J")
@@ -1016,7 +1020,7 @@ nafo5ze <- subset(presence, nafo_zone == "5ZE")
 nafohudson <- subset(presence, nafo_zone == "HudsonStrait")
 ```
 
-plot by each variable, less 3m (2 samples) 1c (one sample) and 5ze (zero samples?!)
+plot by each variable, less 3m (2 samples) and 5ze (2 samples)
 ```{r presence by nafo by variable}
 ggplot(nafo0a, aes(x = temp_surface, colour = nafo_zone)) + geom_density(na.rm = TRUE) + geom_density(data=nafo0b, na.rm = TRUE) + geom_density(data=nafo2g, na.rm = TRUE) + geom_density(data=nafo2h, na.rm = TRUE) + geom_density(data=nafo2j, na.rm = TRUE) + geom_density(data=nafo3k, na.rm = TRUE) + geom_density(data=nafo3l, na.rm = TRUE) + geom_density(data=nafo3n, na.rm = TRUE) + geom_density(data=nafo3o, na.rm = TRUE) + geom_density(data=nafo3ps, na.rm = TRUE) + geom_density(data=nafo4r, na.rm = TRUE) + geom_density(data=nafo4s, na.rm = TRUE) + geom_density(data=nafo4t, na.rm = TRUE) + geom_density(data=nafo4vn, na.rm = TRUE) + geom_density(data=nafo4vs, na.rm = TRUE) + geom_density(data=nafo4w, na.rm = TRUE) + geom_density(data=nafo4x, na.rm = TRUE) + geom_density(data=nafo5y, na.rm = TRUE) + geom_density(data=nafohudson, na.rm = TRUE)
 dev.copy(png,"../output/env/env_by_nafo_plots/temp_surface_nafo.png") # to automatically save the plot to a png AND show it inline
@@ -1089,7 +1093,7 @@ obs_by_ins <- count(presence, "institutioncode")
 obs_by_ins
 write.csv(obs_by_ins, file = "../output/bio/samplinginstitutions/no_observations_institutioncode.csv")
 ```
-ok so IMR, NAFO, ICES, & USM have very few entries (1, 1, 1, and 3 respectively)
+ok so NEFSC and ROM only have one point each
 
 Lets take a look at the spatial breakdown of these institutions.First all points...
 
@@ -1294,12 +1298,7 @@ write.csv(table, "../output/env/gear_temp_depthdunn.csv", row.names = TRUE)
 
 #vif
 
-for this you need the joined dataset. this was created under mergig_datasets.src and the file is ../output/bio/presab.csv
-
-```{r}
-presab <- read.csv("../output/bio/presab.csv", header = TRUE)
-```
-
+for this you need the joined dataset. 
 
 ```{r}
 vif_allpresab <- vif(lm(occurrence ~ temp_surface + temp_depth + salinity_surface + salinity_depth + o2_surface + o2_depth + chl_surface + chl_depth + bottom_depth + mlp_surface + ssh_surface + gear + nao_sample + nao_prev + nao_winter + amo_sample + amo_prev + amo_winter, data = presab))
@@ -1515,123 +1514,7 @@ vif_allbutnaoamo_sq$GVIF2Dfsq <- vif_allbutnaoamo_sq$GVIF..1..2.Df..^2
 write.csv(vif_allbutnaoamo_sq, "../output/bio/vif_allbutnaoamo_sq.csv", row.names = TRUE)
 vif_allbutnaoamo_sq
 ```
-
-# check to see how many cells have >1 point per timeslice
-
-this needs to be 3D so you need to create a cell_id_3d
-```{r cell_id_3d}
-presab$cell_id_3d <- paste(presab$cell_id, presab$depthlayerno, sep="_") #create a new column that is a unique cell_id & depth ID. 
-head(presab)
-```
-and now do one with a timeslice label
-```{r cell_id_xyzt}
-presab$cell_id_xyzt <- paste(presab$cell_id_3d, presab$year, presab$month, sep="_") #create a new column that is a unique cell_id & depth ID. 
-head(presab)
-write.csv(presab, "../output/bio/presab_cellid_xyzt.csv", row.names = FALSE)
-```
-
-
-because background points can land in the same xyzt, subset the dataset to be only presences
-
-```{r}
-presencedup <- subset(presab, occurrence == "1")
-nrow(presencedup)
-```
-
-
-the data is in presencedup$total_cell_obs_xyzt
-```{r unique_pointpercell}
-unique_pointpercell <- unique(presencedup$total_cell_obs_xyzt)
-unique_pointpercell
-```
-bugger... ok so lets do a frequency table
-```{r unique_pointpercell frequencies}
-pointpercellcount <- count(celobsmore1, "total_cell_obs_xyzt")
-pointpercellcount$no_cells <- pointpercellcount$freq / pointpercellcount$total_cell_obs_xyzt
-write.csv(pointpercellcount, file = "../output/bio/pointpercellcount.csv")
-pointpercellcount
-```
-
-so there are 949 3d timesliced cells that contain more than one occurrence, and 2042 rows. 
-- different sampling days
-- different coordinates
-- risk of duplicate entries (but only if two instituions inputted the same data with slightly different coordinates and different reserch program names - see cell3985_18_2000_7 below as example)
-
-```{r}
-cell3985_18_2000_7  <- subset(celobsmore1, cell_id_xyzt == "3985_18_2000_7")
-cell3985_18_2000_7 
-```
-
-Ideally you only want one observation cell cell_id_xyzt. First see if any are missing depth data
-
-find the column numbers that correspond to the env. data (use fastmatch package as is quicker)
-
-```{r}
-fmatch("chl_surface", names(celobsmore1)) #28
-fmatch("chl_depth", names(celobsmore1)) #29
-fmatch("mlp_surface", names(celobsmore1)) #30
-fmatch("o2_surface", names(celobsmore1)) #31
-fmatch("o2_depth", names(celobsmore1)) #32
-fmatch("salinity_surface", names(celobsmore1)) #33
-fmatch("salinity_depth", names(celobsmore1)) #34
-fmatch("ssh_surface", names(celobsmore1)) #35
-fmatch("temp_surface", names(celobsmore1)) #36
-fmatch("temp_depth", names(celobsmore1)) #37
-```
-
-then subset any with NA values
-
-```{r celobsmore1_novals}
-celobsmore1_novals <-  celobsmore1[!complete.cases(celobsmore1[28:37]), ] #28:37 represent the columns w/ env. data
-nrow(celobsmore1_novals) #just to check how many there are - 1095 out of 2042
-```
-
-ok and subset with all values
-
-```{r celobsmore1_allval}
-celobsmore1_allvals <- celobsmore1[complete.cases(celobsmore1[28:37]), ] #28:37 represent the columns w/ env. data
-nrow(celobsmore1_allvals) #947 out of 2042
-```
-
-ok so how many unique cells do we have with complete data...
-
-```{r}
-pointpercellcount_alldata <- count(celobsmore1_allvals, "total_cell_obs_xyzt")
-pointpercellcount_alldata$no_cells <- pointpercellcount_alldata$freq / pointpercellcount_alldata$total_cell_obs_xyzt
-write.csv(pointpercellcount_alldata, file = "../output/bio/pointpercellcount_alldata.csv")
-pointpercellcount_alldata
-```
-
-and see which cell_id_xyzt appear in both celobsmore1_allvals and celobsmore1_novals
-```{r}
-celobsmore1_allnovals <- inner_join(celobsmore1_allvals, celobsmore1_novals)
-celobsmore1_allnovals 
-```
-None.... which is good. I'd expect observations in the same xyzt to have the same values
-
-so, I can successfully reduce the observations down to one per xyzt
-
-```{r}
-fmatch("cell_id_xyzt", names(celobsmore1)) #46
-duplicatesbegone <- celobsmore1[!duplicated(celobsmore1[ ,46]), ] #creates a df with all duplicates gone (now 1 obs per cell)
-nrow(duplicatesbegone) #949 - good
-presabnodup <- subset(presab, total_cell_obs_xyzt == "1") #remove all rows that have more than one obs
-nrow(presabnodup) #1549351 - this adds up 
-presab <- rbind(presabnodup, duplicatesbegone)
-nrow(presab) #1550300 - great!
-
-#recalculate the total_cell_obs_xyzt column
-
-names(presab)[names(presab)=="total_cell_obs_xyzt"] <- "XXtotal_cell_obs_xyzt" #rename col
-obs_cell_yymm_depth_dup <- count(presab, cell_id, year, month, depthlayerno)
-test <- merge(presab, obs_cell_yymm_depth_dup, by.x=c("cell_id", "year", "month", "depthlayerno"), by.y=c("cell_id", "year", "month", "depthlayerno"))
-names(test)[names(test)=="n"] <- "total_cell_obs_xyzt" #rename col
-
-write.csv(presab, "../output/bio/presab_cellid_xyzt_nodup.csv")
-rm(presabnodup, duplicatesbegone, celobsmore1, celobsmore1_novals, celobsmore1_allnovals, celobsmore1_allvals) #just because they are bigish variables
-```
-
-
+not much diff..
 
 # monthly spearmans correlations and VIF
 
@@ -1722,6 +1605,11 @@ decback_cor <- cor(decback, use="complete.obs", method = "spearman") #need to cr
 write.csv(decback_cor, "../output/env/decback_cor.csv", row.names = TRUE)
 ```
 
+Run a VIF for each month (with and without gear)
+
+```{r}
+
+```
 
 
 #maxent?

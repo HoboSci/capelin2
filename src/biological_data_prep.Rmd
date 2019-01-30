@@ -1551,3 +1551,145 @@ write.csv(data_aea, file = "../output/bio/presence_points_without_envdata_reloop
 head(data_aea)
 ```
 
+# remove any duplicate entries
+
+Check to see how many cells have >1 point per timeslice. This needs to be timesliced and 3D
+
+```{r cell_id_3d}
+data_aea$cell_id_3d <- paste(data_aea$cell_id, data_aea$depthlayerno, sep="_") #create a new column that is a unique cell_id & depth ID. 
+head(data_aea)
+```
+
+and now do one with a timeslice label
+```{r cell_id_xyzt}
+data_aea$cell_id_xyzt <- paste(data_aea$cell_id_3d, data_aea$year, data_aea$month, sep="_") #create a new column that is a unique cell_id & depth ID. 
+head(data_aea)
+write.csv(data_aea, "../output/bio/presence_points_without_envdata_relooped_glbathy_cellid_xyzt.csv", row.names = FALSE)
+```
+
+ok lets see how many have more than one obs per cell
+```{r unique_pointpercell}
+unique_pointpercell <- unique(data_aea$total_cell_obs_xyzt)
+unique_pointpercell
+```
+
+bugger... ok so lets do a frequency table
+```{r unique_pointpercell frequencies}
+celobsmore1 <- subset(data_aea, total_cell_obs_xyzt >1)
+celobsmore1 #2042 rows
+pointpercellcount <- count(celobsmore1, "total_cell_obs_xyzt")
+pointpercellcount$no_cells <- pointpercellcount$freq / pointpercellcount$total_cell_obs_xyzt
+write.csv(pointpercellcount, file = "../output/bio/pointpercellcount_pres.csv")
+pointpercellcount
+```
+
+so there are 949 3d timesliced cells that contain more than one occurrence, and 2042 rows. 
+- different sampling days
+- different coordinates
+- risk of duplicate entries (but only if two instituions inputted the same data with slightly different coordinates and different reserch program names - see cell3985_18_2000_7 below as example)
+
+Ideally you only want one observation cell cell_id_xyzt. First see if any are missing depth data
+
+find the column numbers that correspond to the env. data (use fastmatch package as is quicker)
+
+```{r}
+fmatch("chl_surface", names(celobsmore1)) #28
+fmatch("chl_depth", names(celobsmore1)) #29
+fmatch("mlp_surface", names(celobsmore1)) #30
+fmatch("o2_surface", names(celobsmore1)) #31
+fmatch("o2_depth", names(celobsmore1)) #32
+fmatch("salinity_surface", names(celobsmore1)) #33
+fmatch("salinity_depth", names(celobsmore1)) #34
+fmatch("ssh_surface", names(celobsmore1)) #35
+fmatch("temp_surface", names(celobsmore1)) #36
+fmatch("temp_depth", names(celobsmore1)) #37
+```
+
+then subset any with NA values
+
+```{r celobsmore1_novals}
+celobsmore1_novals <-  celobsmore1[!complete.cases(celobsmore1[28:37]), ] #28:37 represent the columns w/ env. data
+nrow(celobsmore1_novals) #just to check how many there are - 1095 out of 2042
+```
+
+ok and subset with all values
+
+```{r celobsmore1_allval}
+celobsmore1_allvals <- celobsmore1[complete.cases(celobsmore1[28:37]), ] #28:37 represent the columns w/ env. data
+nrow(celobsmore1_allvals) #947 out of 2042
+```
+
+ok so how many unique cells do we have with complete data...
+
+```{r}
+pointpercellcount_alldata <- count(celobsmore1_allvals, "total_cell_obs_xyzt")
+pointpercellcount_alldata$no_cells <- pointpercellcount_alldata$freq / pointpercellcount_alldata$total_cell_obs_xyzt
+write.csv(pointpercellcount_alldata, file = "../output/bio/pointpercellcount_alldata.csv")
+pointpercellcount_alldata
+```
+
+and see which cell_id_xyzt appear in both celobsmore1_allvals and celobsmore1_novals
+```{r}
+celobsmore1_allnovals <- inner_join(celobsmore1_allvals, celobsmore1_novals)
+celobsmore1_allnovals 
+```
+None.... which is good. I'd expect observations in the same xyzt to have the same values
+
+so, I can successfully reduce the observations down to one per xyzt
+
+```{r}
+fmatch("cell_id_xyzt", names(celobsmore1)) #50
+duplicatesbegone <- celobsmore1[!duplicated(celobsmore1[ ,50]), ] #creates a df with all duplicates gone (now 1 obs per cell)
+nrow(duplicatesbegone) #949 - good
+presabnodup <- subset(data_aea, total_cell_obs_xyzt == "1") #remove all rows that have more than one obs
+nrow(presabnodup) #9351 - this adds up 
+data_aea <- rbind(presabnodup, duplicatesbegone)
+nrow(data_aea) #10300 - great!
+```
+
+#recalculate the total_cell_obs_xyzt column
+```{r}
+obs_cell_yymm_depth <- count(data_aea, c("cell_id", "year", "month", "depthlayerno"))
+data_aea <- merge(data_aea, obs_cell_yymm_depth, by.x=c("cell_id", "year", "month", "depthlayerno"), by.y=c("cell_id", "year", "month", "depthlayerno"))
+names(data_aea)[names(data_aea)=="freq"] <- "total_cell_obs_xyzt"
+head(data_aea)
+```
+
+check for unique values(should be 1 only)
+```{r}
+unique_pointpercell <- unique(data_aea$total_cell_obs_xyzt)
+unique_pointpercell
+```
+Great! Save
+
+```{r}
+write.csv(data_aea, file = "../output/bio/presence_points_without_envdata_relooped_glbathy_nodup.csv", row.names = FALSE) # change the path to where ever you would like to save it
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
