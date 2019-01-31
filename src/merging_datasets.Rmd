@@ -22,10 +22,49 @@ ipak(packages)
 ```
 
 read in the presence and background
-```{r}
+```{r read in presence and background}
 presencemerging <- read.csv("../output/bio/presence_points_without_envdata_relooped_glbathy_nodup.csv", header = TRUE)
 backgroundmerging <- read.csv("../output/bio/background_complete_obs_cels_globot_cellid_xyzt.csv", header = TRUE)
 ```
+
+```{r}
+testb2003 <- read.csv("../output/bio/background_complete_2000_2003.csv", header = TRUE)
+test200301 <- subset(testb2003, year == "2003" & month == "1")
+head(test200301)
+
+testback <- read.csv("../output/bio/background_all_complete.csv", header = TRUE)
+
+head(test200301)
+test200301$cell_id_3d <- paste(test200301$cell_id, test200301$depthlayerno, sep="_") #create a new column that is a unique cell_id & depth ID. 
+head(test200301)
+test200301$cell_id_xyzt <- paste(test200301$cell_id_3d, test200301$year, test200301$month, sep="_") #create a new column that is a unique cell_id & depth ID. 
+head(test200301)
+unique_pointpercell <- unique(test200301$total_cell_obs_xyzt)
+unique_pointpercell
+
+fmatch("chl_surface", names(test200301)) #28
+fmatch("chl_depth", names(test200301)) #29
+fmatch("mlp_surface", names(test200301)) #30
+fmatch("o2_surface", names(test200301)) #31
+fmatch("o2_depth", names(test200301)) #32
+fmatch("salinity_surface", names(test200301)) #33
+fmatch("salinity_depth", names(test200301)) #34
+fmatch("ssh_surface", names(test200301)) #35
+fmatch("temp_surface", names(test200301)) #36
+fmatch("temp_depth", names(test200301)) #37
+
+test200301a <-  test200301[!complete.cases(test200301[24:33]), ] #28:37 represent the columns w/ env. data
+nrow(test200301a)
+
+testsel <- sample_n(test200301, 10000) #where 10000 = number of rows to sample 
+head(testsel)
+testsel <- subset(testsel, select -c(total_cell_obs_xyzt))
+write.csv(testsel, "../output/bio/back20031.csv", row.names = FALSE)
+head(testsel)
+```
+
+
+
 
 now check
 ```{r}
@@ -38,19 +77,19 @@ colnames(backgroundmerging)
 
 ok so the two dataframed need a spot of cleaning
 
-```{r}
+```{r removing crap columns from presence and background}
 presencemerging <- subset(presencemerging, select = -c(longitude_meters.1, latitude_meters.1, longitude_meters.2, latitude_meters.2, XXtotal_cell_obs_xyzt))
 backgroundmerging <- subset(backgroundmerging, select = -c(longitude_meters.1, latitude_meters.1, longitude_meters.2, latitude_meters.2, X, optional, optional.1))
 ```
 
 for consistency, rename a couple of presencemerging columns
-```{r}
+```{r renaming presence columns}
 names(presencemerging)[names(presencemerging)=="total_cell_obs"] <- "total_cell_obs_xy"
 names(presencemerging)[names(presencemerging)=="yymm_cell_obs"] <- "total_cell_obs_xyt"
 ```
 
 now merge the two datasets
-```{r}
+```{r merge pres and background}
 presab <- rbind.fill(presencemerging, backgroundmerging)
 write.csv(presab, "../output/bio/presab.csv", row.names = FALSE)
 head(presab)
@@ -59,7 +98,618 @@ head(presab)
 lovely jubley
 
 
+# weighted 10k for each month
+
+For each month, the 10,000 background points will be garnered from background points created for each month-year and weighted to the observations. For example, for January 22% of the unique observations by cell occurred in 2003, 49% in 2004, 7% in 2005, and 21% in 2006. Thus, 22% of the background points for the January model will come from 2003, 49% from 2004, 7% in 2005, and 21% in 2006. 
+See ‘Percentage of occurrences by unique cell (xyzt)’ in Appendix Observations per Cell in results document + excel + data_exploration.
+
+Some other analysis has indicated that background points have been gathered from 1BCDEF (ouside Canada EEZ and inside Greenland EEZ). Just do a table here
+
+```{r}
+nafounique <- unique(backgroundmerging$nafo_zone)
+nafounique
+nafo1b <- subset(backgroundmerging, nafo_zone == "1B")
+nafo1bc <- subset(backgroundmerging, nafo_zone == "1C")
+nafo1d <- subset(backgroundmerging, nafo_zone == "1D")
+nafo1be <- subset(backgroundmerging, nafo_zone == "1E")
+nafo1f <- subset(backgroundmerging, nafo_zone == "1F")
+nafo1 <- rbind(nafo1b, nafo1bc, nafo1be, nafo1f)
+nrow(nafo1) #139235
+```
+
+and the spread of these funny nafo points in year month...
+
+```{r background nafo1x by year-month}
+nafo1_yymm <- with(nafo1, table(year, month))
+write.csv(nafo1_yymm, file = "../output/bio/background_nafo1x_mth_yr.csv")
+nafo1_yymm
+```
+
+ok so nothing too crazy... lets remove these nafo 1x points from the dataset
+
+```{r}
+backno1 <- backgroundmerging[!(backgroundmerging$nafo_zone == "1B"),]
+backno1 <- backno1[!(backno1$nafo_zone == "1C"),]
+backno1 <- backno1[!(backno1$nafo_zone == "1D"),]
+backno1 <- backno1[!(backno1$nafo_zone == "1E"),]
+backno1 <- backno1[!(backno1$nafo_zone == "1F"),]
+
+nafounique <- unique(backno1$nafo_zone)
+nafounique
+head(backno1)
+```
+
+ok now randomly select background points from each timeslice as per this table (see results doc appendix observations per cell + excel spreadsheet)
+
+	    1	2	3	4	5	6	7	8	9	10	11	12
+1998	0	0	0	846	790	835	518	0	358	1315	1123	107
+1999	0	0	1433	603	595	968	648	0	620	169	835	551
+2000	0	0	1277	603	537	746	492	0	652	590	1025	725
+2001	0	5000	748	990	751	637	389	0	390	405	495	1430
+2002	0	0	996	1062	761	676	440	0	811	624	420	966
+2003	2222	0	717	1004	888	809	492	0	318	590	311	1014
+2004	4938	0	0	732	790	797	674	1004	652	472	604	1101
+2005	700	4000	872	316	644	676	1010	1270	556	776	858	416
+2006	2140	1000	1558	301	49	790	674	1410	588	1096	616	783
+2007	0	0	623	746	508	593	1813	1404	636	624	553	821
+2008	0	0	934	516	741	797	777	1418	564	455	748	589
+2009	0	0	312	946	1405	351	207	582	580	556	915	454
+2010	0	0	530	560	663	720	648	596	747	1096	875	560
+2011	0	0	0	775	878	605	285	758	533	1062	593	483
+2012	0	0	0	0	0	0	208	793	604	0	0	0
+2013	0	0	0	0	0	0	699	660	509	119	12	0
+2014	0	0	0	0	0	0	26	77	818	51	0	0
+2015	0	0	0	0	0	0	0	28	64	0	17	0
+Total	10000	10000	10000	10000	10000	10000	10000	10000	10000	10000	10000	10000
+
+Ok so for Jan:
+2003: 2222 XXXXX THIS IS MISSING!!!!
+2004: 4938
+2005: 700
+2006: 2140
+
+```{r}
+jan2004 <- subset(backno1, year == "2004" & month == "1")
+jan2004 <- sample_n(jan2004, 4938) 
+jan2005 <- subset(backno1, year == "2005" & month == "1")
+jan2005 <- sample_n(jan2005, 700) 
+jan2006 <- subset(backno1, year == "2006" & month == "1")
+jan2006 <- sample_n(jan2006, 2140) 
+jan <- rbind(jan2004, jan2005, jan2006)
+```
+
+for feb
+2001: 5000
+2005: 4000
+2006: 1000
+
+```{r}
+feb2001 <- subset(backno1, year == "2001" & month == "2")
+feb2001 <- sample_n(feb2001, 5000) 
+feb2005 <- subset(backno1, year == "2005" & month == "2")
+feb2005 <- sample_n(feb2005, 4000) 
+feb2006 <- subset(backno1, year == "2006" & month == "2")
+feb2006 <- sample_n(feb2006, 1000) 
+feb <- rbind(feb2001, feb2005, feb2006)
+```
+
+for march
+1999	1433
+2000	1277
+2001	748
+2002	996
+2003	717
+2005	872
+2006	1558
+2007	623
+2008	934
+2009	312
+2010	530
+
+```{r}
+mar1999 <- subset(backno1, year == "1999" & month == "3")
+mar1999 <- sample_n(mar1999, 1433) 
+mar2000 <- subset(backno1, year == "2000" & month == "3")
+mar2000 <- sample_n(mar2000, 1277) 
+mar2001 <- subset(backno1, year == "2001" & month == "3")
+mar2001 <- sample_n(mar2001, 748)
+mar2002 <- subset(backno1, year == "2002" & month == "3")
+mar2002 <- sample_n(mar2002, 996)
+mar2003 <- subset(backno1, year == "2003" & month == "3")
+mar2003 <- sample_n(mar2003, 717)
+mar2005 <- subset(backno1, year == "2005" & month == "3")
+mar2005 <- sample_n(mar2005, 872)
+mar2006 <- subset(backno1, year == "2006" & month == "3")
+mar2006 <- sample_n(mar2006, 1558)
+mar2007 <- subset(backno1, year == "2007" & month == "3")
+mar2007 <- sample_n(mar2007, 623)
+mar2008 <- subset(backno1, year == "2008" & month == "3")
+mar2008 <- sample_n(mar2008, 934)
+mar2009 <- subset(backno1, year == "2009" & month == "3")
+mar2009 <- sample_n(mar2009, 312)
+mar2010 <- subset(backno1, year == "2010" & month == "3")
+mar2010 <- sample_n(mar2010, 530)
+mar <- rbind(mar1999, mar2000, mar2001, mar2002, mar2003, mar2005, mar2006, mar2007, mar2008, mar2009, mar2010)
+```
+
+For april
+1998	846
+1999	603
+2000	603
+2001	990
+2002	1062
+2003	1004
+2004	732
+2005	316
+2006	301
+2007	746
+2008	516
+2009	946
+2010	560
+2011	775
+
+```{r}
+apr1998 <- subset(backno1, year == "1998" & month == "4")
+apr1998 <- sample_n(apr1998, 846) 
+apr1999 <- subset(backno1, year == "1999" & month == "4")
+apr1999 <- sample_n(apr1999, 603) 
+apr2000 <- subset(backno1, year == "2000" & month == "4")
+apr2000 <- sample_n(apr2000, 603) 
+apr2001 <- subset(backno1, year == "2001" & month == "4")
+apr2001 <- sample_n(apr2001, 990)
+apr2002 <- subset(backno1, year == "2002" & month == "4")
+apr2002 <- sample_n(apr2002, 1062)
+apr2003 <- subset(backno1, year == "2003" & month == "4")
+apr2003 <- sample_n(apr2003, 1004)
+apr2004 <- subset(backno1, year == "2004" & month == "4")
+apr2004 <- sample_n(apr2004, 732)
+apr2005 <- subset(backno1, year == "2005" & month == "4")
+apr2005 <- sample_n(apr2005, 316)
+apr2006 <- subset(backno1, year == "2006" & month == "4")
+apr2006 <- sample_n(apr2006, 301)
+apr2007 <- subset(backno1, year == "2007" & month == "4")
+apr2007 <- sample_n(apr2007, 746)
+apr2008 <- subset(backno1, year == "2008" & month == "4")
+apr2008 <- sample_n(apr2008, 516)
+apr2009 <- subset(backno1, year == "2009" & month == "4")
+apr2009 <- sample_n(apr2009, 946)
+apr2010 <- subset(backno1, year == "2010" & month == "4")
+apr2010 <- sample_n(apr2010, 560)
+apr2011 <- subset(backno1, year == "2011" & month == "4")
+apr2011 <- sample_n(apr2011, 775)
+apr <- rbind(apr1998, apr1999, apr2000, apr2001, apr2002, apr2003, apr2004, apr2005, apr2006, apr2007, apr2008, apr2009, apr2010, apr2011)
+```
 
 
+For May
+1998	790
+1999	595
+2000	537
+2001	751
+2002	761
+2003	888
+2004	790
+2005	644
+2006	49
+2007	508
+2008	741
+2009	1405
+2010	663
+2011	878
 
+```{r}
+may1998 <- subset(backno1, year == "1998" & month == "5")
+may1998 <- sample_n(may1998, 790) 
+may1999 <- subset(backno1, year == "1999" & month == "5")
+may1999 <- sample_n(may1999, 595) 
+may2000 <- subset(backno1, year == "2000" & month == "5")
+may2000 <- sample_n(may2000, 537) 
+may2001 <- subset(backno1, year == "2001" & month == "5")
+may2001 <- sample_n(may2001, 751)
+may2002 <- subset(backno1, year == "2002" & month == "5")
+may2002 <- sample_n(may2002, 761)
+may2003 <- subset(backno1, year == "2003" & month == "5")
+may2003 <- sample_n(may2003, 888)
+may2004 <- subset(backno1, year == "2004" & month == "5")
+may2004 <- sample_n(may2004, 790)
+may2005 <- subset(backno1, year == "2005" & month == "5")
+may2005 <- sample_n(may2005, 644)
+may2006 <- subset(backno1, year == "2006" & month == "5")
+may2006 <- sample_n(may2006, 49)
+may2007 <- subset(backno1, year == "2007" & month == "5")
+may2007 <- sample_n(may2007, 508)
+may2008 <- subset(backno1, year == "2008" & month == "5")
+may2008 <- sample_n(may2008, 741)
+may2009 <- subset(backno1, year == "2009" & month == "5")
+may2009 <- sample_n(may2009, 1405)
+may2010 <- subset(backno1, year == "2010" & month == "5")
+may2010 <- sample_n(may2010, 663)
+may2011 <- subset(backno1, year == "2011" & month == "5")
+may2011 <- sample_n(may2011, 878)
+may <- rbind(may1998, may1999, may2000, may2001, may2002, may2003, may2004, may2005, may2006, may2007, may2008, may2009, may2010, may2011)
+```
+
+for June
+
+1998	835
+1999	968
+2000	746
+2001	637
+2002	676
+2003	809
+2004	797
+2005	676
+2006	790
+2007	593
+2008	797
+2009	351
+2010	720
+2011	605
+
+```{r}
+jun1998 <- subset(backno1, year == "1998" & month == "6")
+jun1998 <- sample_n(jun1998, 835) 
+jun1999 <- subset(backno1, year == "1999" & month == "6")
+jun1999 <- sample_n(jun1999, 968) 
+jun2000 <- subset(backno1, year == "2000" & month == "6")
+jun2000 <- sample_n(jun2000, 746) 
+jun2001 <- subset(backno1, year == "2001" & month == "6")
+jun2001 <- sample_n(jun2001, 637)
+jun2002 <- subset(backno1, year == "2002" & month == "6")
+jun2002 <- sample_n(jun2002, 676)
+jun2003 <- subset(backno1, year == "2003" & month == "6")
+jun2003 <- sample_n(jun2003, 809)
+jun2004 <- subset(backno1, year == "2004" & month == "6")
+jun2004 <- sample_n(jun2004, 797)
+jun2005 <- subset(backno1, year == "2005" & month == "6")
+jun2005 <- sample_n(jun2005, 676)
+jun2006 <- subset(backno1, year == "2006" & month == "6")
+jun2006 <- sample_n(jun2006, 790)
+jun2007 <- subset(backno1, year == "2007" & month == "6")
+jun2007 <- sample_n(jun2007, 593)
+jun2008 <- subset(backno1, year == "2008" & month == "6")
+jun2008 <- sample_n(jun2008, 797)
+jun2009 <- subset(backno1, year == "2009" & month == "6")
+jun2009 <- sample_n(jun2009, 351)
+jun2010 <- subset(backno1, year == "2010" & month == "6")
+jun2010 <- sample_n(jun2010, 720)
+jun2011 <- subset(backno1, year == "2011" & month == "6")
+jun2011 <- sample_n(jun2011, 605)
+jun <- rbind(jun1998, jun1999, jun2000, jun2001, jun2002, jun2003, jun2004, jun2005, jun2006, jun2007, jun2008, jun2009, jun2010, jun2011)
+```
+
+July
+
+1998	518
+1999	648
+2000	492
+2001	389
+2002	440
+2003	492
+2004	674
+2005	1010
+2006	674
+2007	1813
+2008	777
+2009	207
+2010	648
+2011	285
+2012	208
+2013	699
+2014	26
+
+```{r}
+jul1998 <- subset(backno1, year == "1998" & month == "7")
+jul1998 <- sample_n(jul1998, 518) 
+jul1999 <- subset(backno1, year == "1999" & month == "7")
+jul1999 <- sample_n(jul1999, 648) 
+jul2000 <- subset(backno1, year == "2000" & month == "7")
+jul2000 <- sample_n(jul2000, 492) 
+jul2001 <- subset(backno1, year == "2001" & month == "7")
+jul2001 <- sample_n(jul2001, 389)
+jul2002 <- subset(backno1, year == "2002" & month == "7")
+jul2002 <- sample_n(jul2002, 440)
+jul2003 <- subset(backno1, year == "2003" & month == "7")
+jul2003 <- sample_n(jul2003, 492)
+jul2004 <- subset(backno1, year == "2004" & month == "7")
+jul2004 <- sample_n(jul2004, 674)
+jul2005 <- subset(backno1, year == "2005" & month == "7")
+jul2005 <- sample_n(jul2005, 1010)
+jul2006 <- subset(backno1, year == "2006" & month == "7")
+jul2006 <- sample_n(jul2006, 674)
+jul2007 <- subset(backno1, year == "2007" & month == "7")
+jul2007 <- sample_n(jul2007, 1813)
+jul2008 <- subset(backno1, year == "2008" & month == "7")
+jul2008 <- sample_n(jul2008, 777)
+jul2009 <- subset(backno1, year == "2009" & month == "7")
+jul2009 <- sample_n(jul2009, 207)
+jul2010 <- subset(backno1, year == "2010" & month == "7")
+jul2010 <- sample_n(jul2010, 648)
+jul2011 <- subset(backno1, year == "2011" & month == "7")
+jul2011 <- sample_n(jul2011, 285)
+jul2012 <- subset(backno1, year == "2012" & month == "7")
+jul2012 <- sample_n(jul2012, 208)
+jul2013 <- subset(backno1, year == "2013" & month == "7")
+jul2013 <- sample_n(jul2013, 699)
+jul2014 <- subset(backno1, year == "2014" & month == "7")
+jul2014 <- sample_n(jul2014, 26)
+jul <- rbind(jul1998, jul1999, jul2000, jul2001, jul2002, jul2003, jul2004, jul2005, jul2006, jul2007, jul2008, jul2009, jul2010, jul2011, jul2012, jul2013, jul2014)
+```
+
+For Aug
+2004	1004
+2005	1270
+2006	1410
+2007	1404
+2008	1418
+2009	582
+2010	596
+2011	758
+2012	793
+2013	660
+2014	77
+2015	28
+
+
+```{r}
+aug2004 <- subset(backno1, year == "2004" & month == "8")
+aug2004 <- sample_n(aug2004, 1004)
+aug2005 <- subset(backno1, year == "2005" & month == "8")
+aug2005 <- sample_n(aug2005, 1270)
+aug2006 <- subset(backno1, year == "2006" & month == "8")
+aug2006 <- sample_n(aug2006, 1410)
+aug2007 <- subset(backno1, year == "2007" & month == "8")
+aug2007 <- sample_n(aug2007, 1404)
+aug2008 <- subset(backno1, year == "2008" & month == "8")
+aug2008 <- sample_n(aug2008, 1418)
+aug2009 <- subset(backno1, year == "2009" & month == "8")
+aug2009 <- sample_n(aug2009, 582)
+aug2010 <- subset(backno1, year == "2010" & month == "8")
+aug2010 <- sample_n(aug2010, 596)
+aug2011 <- subset(backno1, year == "2011" & month == "8")
+aug2011 <- sample_n(aug2011, 758)
+aug2012 <- subset(backno1, year == "2012" & month == "8")
+aug2012 <- sample_n(aug2012, 793)
+aug2013 <- subset(backno1, year == "2013" & month == "8")
+aug2013 <- sample_n(aug2013, 660)
+aug2014 <- subset(backno1, year == "2014" & month == "8")
+aug2014 <- sample_n(aug2014, 77)
+aug2015 <- subset(backno1, year == "2015" & month == "8")
+aug2015 <- sample_n(aug2015, 28)
+aug <- rbind(aug2004, aug2005, aug2006, aug2007, aug2008, aug2009, aug2010, aug2011, aug2012, aug2013, aug2014, aug2015)
+```
+
+For sep
+1998	358
+1999	620
+2000	652
+2001	390
+2002	811
+2003	318
+2004	652
+2005	556
+2006	588
+2007	636
+2008	564
+2009	580
+2010	747
+2011	533
+2012	604
+2013	509
+2014	818
+2015	64
+
+```{r}
+sep1998 <- subset(backno1, year == "1998" & month == "9")
+sep1998 <- sample_n(sep1998, 358) 
+sep1999 <- subset(backno1, year == "1999" & month == "9")
+sep1999 <- sample_n(sep1999, 620) 
+sep2000 <- subset(backno1, year == "2000" & month == "9")
+sep2000 <- sample_n(sep2000, 652) 
+sep2001 <- subset(backno1, year == "2001" & month == "9")
+sep2001 <- sample_n(sep2001, 390)
+sep2002 <- subset(backno1, year == "2002" & month == "9")
+sep2002 <- sample_n(sep2002, 811)
+sep2003 <- subset(backno1, year == "2003" & month == "9")
+sep2003 <- sample_n(sep2003, 318)
+sep2004 <- subset(backno1, year == "2004" & month == "9")
+sep2004 <- sample_n(sep2004, 652)
+sep2005 <- subset(backno1, year == "2005" & month == "9")
+sep2005 <- sample_n(sep2005, 556)
+sep2006 <- subset(backno1, year == "2006" & month == "9")
+sep2006 <- sample_n(sep2006, 588)
+sep2007 <- subset(backno1, year == "2007" & month == "9")
+sep2007 <- sample_n(sep2007, 636)
+sep2008 <- subset(backno1, year == "2008" & month == "9")
+sep2008 <- sample_n(sep2008, 564)
+sep2009 <- subset(backno1, year == "2009" & month == "9")
+sep2009 <- sample_n(sep2009, 580)
+sep2010 <- subset(backno1, year == "2010" & month == "9")
+sep2010 <- sample_n(sep2010, 747)
+sep2011 <- subset(backno1, year == "2011" & month == "9")
+sep2011 <- sample_n(sep2011, 533)
+sep2012 <- subset(backno1, year == "2012" & month == "9")
+sep2012 <- sample_n(sep2012, 604)
+sep2013 <- subset(backno1, year == "2013" & month == "9")
+sep2013 <- sample_n(sep2013, 509)
+sep2014 <- subset(backno1, year == "2014" & month == "9")
+sep2014 <- sample_n(sep2014, 818)
+sep2015 <- subset(backno1, year == "2015" & month == "9")
+sep2015 <- sample_n(sep2015, 64)
+sep <- rbind(sep1998, sep1999, sep2000, sep2001, sep2002, sep2003, sep2004, sep2005, sep2006, sep2007, sep2008, sep2009, sep2010, sep2011, sep2012, sep2013, sep2014, sep2015)
+```
+
+
+For oct
+1998	1315
+1999	169
+2000	590
+2001	405
+2002	624
+2003	590
+2004	472
+2005	776
+2006	1096
+2007	624
+2008	455
+2009	556
+2010	1096
+2011	1062
+2013	119
+2014	51
+
+
+```{r}
+oct1998 <- subset(backno1, year == "1998" & month == "10")
+oct1998 <- sample_n(oct1998, 1315) 
+oct1999 <- subset(backno1, year == "1999" & month == "10")
+oct1999 <- sample_n(oct1999, 169) 
+oct2000 <- subset(backno1, year == "2000" & month == "10")
+oct2000 <- sample_n(oct2000, 590) 
+oct2001 <- subset(backno1, year == "2001" & month == "10")
+oct2001 <- sample_n(oct2001, 405)
+oct2002 <- subset(backno1, year == "2002" & month == "10")
+oct2002 <- sample_n(oct2002, 624)
+oct2003 <- subset(backno1, year == "2003" & month == "10")
+oct2003 <- sample_n(oct2003, 590)
+oct2004 <- subset(backno1, year == "2004" & month == "10")
+oct2004 <- sample_n(oct2004, 472)
+oct2005 <- subset(backno1, year == "2005" & month == "10")
+oct2005 <- sample_n(oct2005, 776)
+oct2006 <- subset(backno1, year == "2006" & month == "10")
+oct2006 <- sample_n(oct2006, 1096)
+oct2007 <- subset(backno1, year == "2007" & month == "10")
+oct2007 <- sample_n(oct2007, 624)
+oct2008 <- subset(backno1, year == "2008" & month == "10")
+oct2008 <- sample_n(oct2008, 455)
+oct2009 <- subset(backno1, year == "2009" & month == "10")
+oct2009 <- sample_n(oct2009, 556)
+oct2010 <- subset(backno1, year == "2010" & month == "10")
+oct2010 <- sample_n(oct2010, 1096)
+oct2011 <- subset(backno1, year == "2011" & month == "10")
+oct2011 <- sample_n(oct2011, 1062)
+oct2013 <- subset(backno1, year == "2013" & month == "10")
+oct2013 <- sample_n(oct2013, 119)
+oct2014 <- subset(backno1, year == "2014" & month == "10")
+oct2014 <- sample_n(oct2014, 51)
+oct <- rbind(oct1998, oct1999, oct2000, oct2001, oct2002, oct2003, oct2004, oct2005, oct2006, oct2007, oct2008, oct2009, oct2010, oct2011, oct2013, oct2014)
+```
+
+Nov
+1998	1123
+1999	835
+2000	1025
+2001	495
+2002	420
+2003	311
+2004	604
+2005	858
+2006	616
+2007	553
+2008	748
+2009	915
+2010	875
+2011	593
+2013	12
+2015	17
+
+```{r}
+nov1998 <- subset(backno1, year == "1998" & month == "11")
+nov1998 <- sample_n(nov1998, 1123) 
+nov1999 <- subset(backno1, year == "1999" & month == "11")
+nov1999 <- sample_n(nov1999, 835) 
+nov2000 <- subset(backno1, year == "2000" & month == "11")
+nov2000 <- sample_n(nov2000, 1025) 
+nov2001 <- subset(backno1, year == "2001" & month == "11")
+nov2001 <- sample_n(nov2001, 495)
+nov2002 <- subset(backno1, year == "2002" & month == "11")
+nov2002 <- sample_n(nov2002, 420)
+nov2003 <- subset(backno1, year == "2003" & month == "11")
+nov2003 <- sample_n(nov2003, 311)
+nov2004 <- subset(backno1, year == "2004" & month == "11")
+nov2004 <- sample_n(nov2004, 604)
+nov2005 <- subset(backno1, year == "2005" & month == "11")
+nov2005 <- sample_n(nov2005, 858)
+nov2006 <- subset(backno1, year == "2006" & month == "11")
+nov2006 <- sample_n(nov2006, 616)
+nov2007 <- subset(backno1, year == "2007" & month == "11")
+nov2007 <- sample_n(nov2007, 553)
+nov2008 <- subset(backno1, year == "2008" & month == "11")
+nov2008 <- sample_n(nov2008, 748)
+nov2009 <- subset(backno1, year == "2009" & month == "11")
+nov2009 <- sample_n(nov2009, 915)
+nov2010 <- subset(backno1, year == "2010" & month == "11")
+nov2010 <- sample_n(nov2010, 875)
+nov2011 <- subset(backno1, year == "2011" & month == "11")
+nov2011 <- sample_n(nov2011, 593)
+nov2013 <- subset(backno1, year == "2013" & month == "11")
+nov2013 <- sample_n(nov2013, 12)
+nov2015 <- subset(backno1, year == "2015" & month == "11")
+nov2015 <- sample_n(nov2015, 17)
+nov <- rbind(nov1998, nov1999, nov2000, nov2001, nov2002, nov2003, nov2004, nov2005, nov2006, nov2007, nov2008, nov2009, nov2010, nov2011, nov2013, nov2015)
+```
+
+Dec
+1998	107
+1999	551
+2000	725
+2001	1430
+2002	966
+2003	1014
+2004	1101
+2005	416
+2006	783
+2007	821
+2008	589
+2009	454
+2010	560
+2011	483
+
+
+```{r}
+dec1998 <- subset(backno1, year == "1998" & month == "12")
+dec1998 <- sample_n(dec1998, 107) 
+dec1999 <- subset(backno1, year == "1999" & month == "12")
+dec1999 <- sample_n(dec1999, 551) 
+dec2000 <- subset(backno1, year == "2000" & month == "12")
+dec2000 <- sample_n(dec2000, 725) 
+dec2001 <- subset(backno1, year == "2001" & month == "12")
+dec2001 <- sample_n(dec2001, 1430)
+dec2002 <- subset(backno1, year == "2002" & month == "12")
+dec2002 <- sample_n(dec2002, 966)
+dec2003 <- subset(backno1, year == "2003" & month == "12")
+dec2003 <- sample_n(dec2003, 1014)
+dec2004 <- subset(backno1, year == "2004" & month == "12")
+dec2004 <- sample_n(dec2004, 1101)
+dec2005 <- subset(backno1, year == "2005" & month == "12")
+dec2005 <- sample_n(dec2005, 416)
+dec2006 <- subset(backno1, year == "2006" & month == "12")
+dec2006 <- sample_n(dec2006, 783)
+dec2007 <- subset(backno1, year == "2007" & month == "12")
+dec2007 <- sample_n(dec2007, 821)
+dec2008 <- subset(backno1, year == "2008" & month == "12")
+dec2008 <- sample_n(dec2008, 589)
+dec2009 <- subset(backno1, year == "2009" & month == "12")
+dec2009 <- sample_n(dec2009, 454)
+dec2010 <- subset(backno1, year == "2010" & month == "12")
+dec2010 <- sample_n(dec2010, 560)
+dec2011 <- subset(backno1, year == "2011" & month == "12")
+dec2011 <- sample_n(dec2011, 483)
+dec <- rbind(dec1998, dec1999, dec2000, dec2001, dec2002, dec2003, dec2004, dec2005, dec2006, dec2007, dec2008, dec2009, dec2010, dec2011)
+```
+
+join everything together
+```{r}
+back10k <- rbind(jan, feb, mar, apr, may, jun, jul, aug, sep, oct, nov, dec)
+write.csv(back10k, "../output/bio/background_10k.csv", row.names = FALSE)
+```
+
+merge with presence
+
+now merge the two datasets
+```{r merge pres and back10k}
+presab10k <- rbind(presencemerging, back10k)
+write.csv(presab10k, "../output/bio/presab_10k.csv", row.names = FALSE)
+nrow(presab10k)
+```
 

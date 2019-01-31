@@ -38,18 +38,27 @@ background <- subset(presab, occurrence == "0")
 ## Update: Who sampled in which year and which month:
 
 year
-```{r}
+```{r observations by institute-year}
 inst_by_yr <- with(presence, table(year, institutioncode))
 write.csv(inst_by_yr, file = "../output/bio/institutioncode_by_yr.csv")
 inst_by_yr
 ```
 
 month
-```{r}
+```{r observations by institute-month}
 inst_by_mt <- with(presence, table(month, institutioncode))
 write.csv(inst_by_mt, file = "../output/bio/institutioncode_by_mth.csv")
 inst_by_mt
 ```
+
+and just a year-month table
+```{r observations by year-month}
+year_by_mt <- with(presence, table(year, month))
+write.csv(year_by_mt, file = "../output/bio/year_by_mth.csv")
+year_by_mt
+```
+
+
 
 ## environmental correlates
 
@@ -1608,34 +1617,24 @@ write.csv(decback_cor, "../output/env/decback_cor.csv", row.names = TRUE)
 
 Run a VIF for each month (with and without gear)
 
-```{r}
+```{r monthly vif with and without gear}
 
 
 #with gear - for jan there is none because there is only one category of gear
 
 
 #without gear
-vif_nogear_jan <- vif(lm(occurrence ~ temp_depth + salinity_surface + salinity_depth + o2_depth + chl_surface + bottom_depth + mlp_surface, data = janpresab))
+vif_nogear_jan <- vif(lm(occurrence ~ temp_surface + temp_depth + salinity_surface + salinity_depth + o2_surface + o2_depth + chl_surface + chl_depth + bottom_depth + mlp_surface + ssh_surface, data = janpresab))
 write.csv(vif_nogear_jan, "../output/bio/monthly_vifs/vif_nogear_jan.csv", row.names = TRUE)
 vif_nogear_jan
 
-#with gear
-vif_gear_feb <- vif(lm(occurrence ~ temp_depth + salinity_surface + salinity_depth + o2_depth + chl_surface + bottom_depth + mlp_surface, data = febpresab))
-write.csv(vif_gear_feb, "../output/bio/monthly_vifs/vif_gear_feb.csv", row.names = TRUE)
-vif_gear_feb
-
-vif_gear_feb <- read.csv("../output/bio/monthly_vifs/vif_gear_feb.csv", header = TRUE)
-vif_gear_feb$GVIF2Dfsq <- vif_gear_feb$GVIF..1..2.Df..^2
-write.csv(vif_gear_feb, "../output/bio/monthly_vifs/vif_gear_feb.csv", row.names = TRUE)
-vif_gear_feb
-
 #without gear
-vif_nogear_feb <- vif(lm(occurrence ~ temp_depth + salinity_surface + salinity_depth + o2_depth + chl_surface + bottom_depth + mlp_surface, data = febpresab))
+vif_nogear_feb <- vif(lm(occurrence ~ temp_surface + temp_depth + salinity_surface + salinity_depth + o2_surface + o2_depth + chl_surface + chl_depth + bottom_depth + mlp_surface + ssh_surface, data = febpresab))
 write.csv(vif_nogear_feb, "../output/bio/monthly_vifs/vif_nogear_feb.csv", row.names = TRUE)
 vif_nogear_feb
 
 #with gear
-vif_gear_mar <- vif(lm(occurrence ~ temp_depth + salinity_surface + salinity_depth + o2_depth + chl_surface + bottom_depth + mlp_surface + gear + nao_sample + nao_prev + nao_winter + amo_sample + amo_winter, data = marpresab))
+vif_gear_mar <- vif(lm(occurrence ~ temp_surface + temp_depth + salinity_surface + salinity_depth + o2_surface + o2_depth + chl_surface + chl_depth + bottom_depth + mlp_surface + ssh_surface + gear + nao_sample + nao_prev + nao_winter + amo_sample + amo_prev + amo_winter, data = marpresab))
 write.csv(vif_gear_mar, "../output/bio/monthly_vifs/vif_gear_mar.csv", row.names = TRUE)
 vif_gear_mar
 
@@ -1645,12 +1644,12 @@ write.csv(vif_gear_mar, "../output/bio/monthly_vifs/vif_gear_mar.csv", row.names
 vif_gear_mar
 
 #without gear
-vif_nogear_mar <- vif(lm(occurrence ~ temp_depth + salinity_surface + salinity_depth + o2_depth + chl_surface + bottom_depth + mlp_surface + nao_sample + nao_prev + nao_winter + amo_sample + amo_winter, data = marpresab))
+vif_nogear_mar <- vif(lm(occurrence ~ temp_surface + temp_depth + salinity_surface + salinity_depth + o2_surface + o2_depth + chl_surface + chl_depth + bottom_depth + mlp_surface + ssh_surface + nao_sample + nao_prev + nao_winter + amo_sample + amo_prev + amo_winter, data = marpresab))
 write.csv(vif_nogear_mar, "../output/bio/monthly_vifs/vif_nogear_mar.csv", row.names = TRUE)
 vif_nogear_mar
 
 #with gear
-vif_gear_apr <- vif(lm(occurrence ~ temp_depth + salinity_surface + salinity_depth + o2_depth + chl_surface + bottom_depth + mlp_surface + gear + nao_sample + nao_prev + nao_winter + amo_sample + amo_winter, data = aprpresab))
+vif_gear_apr <- vif(lm(occurrence ~ temp_surface + temp_depth + salinity_surface + salinity_depth + o2_surface + o2_depth + chl_surface + chl_depth + bottom_depth + mlp_surface + ssh_surface + gear + nao_sample + nao_prev + nao_winter + amo_sample + amo_prev + amo_winter, data = aprpresab))
 write.csv(vif_gear_apr, "../output/bio/monthly_vifs/vif_gear_apr.csv", row.names = TRUE)
 vif_gear_apr
 
@@ -1660,33 +1659,33 @@ write.csv(vif_gear_apr, "../output/bio/monthly_vifs/vif_gear_apr.csv", row.names
 vif_gear_apr
 
 #without gear
-vif_nogear_apr <- vif(lm(occurrence ~ temp_depth + salinity_surface + salinity_depth + o2_depth + chl_surface + bottom_depth + mlp_surface + nao_sample + nao_prev + nao_winter + amo_sample + amo_winter, data = aprpresab))
+vif_nogear_apr <- vif(lm(occurrence ~ temp_surface + temp_depth + salinity_surface + salinity_depth + o2_surface + o2_depth + chl_surface + chl_depth + bottom_depth + mlp_surface + ssh_surface + nao_sample + nao_prev + nao_winter + amo_sample + amo_prev + amo_winter, data = aprpresab))
 write.csv(vif_nogear_apr, "../output/bio/monthly_vifs/vif_nogear_apr.csv", row.names = TRUE)
 vif_nogear_apr
 
 #with gear
-vif_gear_may <- vif(lm(occurrence ~ temp_depth + salinity_surface + salinity_depth + o2_depth + chl_surface + bottom_depth + mlp_surface + gear + nao_sample + nao_prev + nao_winter + amo_sample + amo_winter, data = maypresab))
+vif_gear_may <- vif(lm(occurrence ~ temp_surface + temp_depth + salinity_surface + salinity_depth + o2_surface + o2_depth + chl_surface + chl_depth + bottom_depth + mlp_surface + ssh_surface + gear + nao_sample + nao_prev + nao_winter + amo_sample + amo_prev + amo_winter, data = maypresab))
 write.csv(vif_gear_may, "../output/bio/monthly_vifs/vif_gear_may.csv", row.names = TRUE)
 vif_gear_may
 
 #without gear
-vif_nogear_may <- vif(lm(occurrence ~ temp_depth + salinity_surface + salinity_depth + o2_depth + chl_surface + bottom_depth + mlp_surface + nao_sample + nao_prev + nao_winter + amo_sample + amo_winter, data = maypresab))
+vif_nogear_may <- vif(lm(occurrence ~ temp_surface + temp_depth + salinity_surface + salinity_depth + o2_surface + o2_depth + chl_surface + chl_depth + bottom_depth + mlp_surface + ssh_surface + nao_sample + nao_prev + nao_winter + amo_sample + amo_prev + amo_winter, data = maypresab))
 write.csv(vif_nogear_may, "../output/bio/monthly_vifs/vif_nogear_may.csv", row.names = TRUE)
 vif_nogear_may
 
 #with gear
-vif_gear_jun <- vif(lm(occurrence ~ temp_depth + salinity_surface + salinity_depth + o2_depth + chl_surface + bottom_depth + mlp_surface + gear + nao_sample + nao_prev + nao_winter + amo_sample + amo_winter, data = junpresab))
+vif_gear_jun <- vif(lm(occurrence ~ temp_surface + temp_depth + salinity_surface + salinity_depth + o2_surface + o2_depth + chl_surface + chl_depth + bottom_depth + mlp_surface + ssh_surface + gear + nao_sample + nao_prev + nao_winter + amo_sample + amo_prev + amo_winter, data = junpresab))
 write.csv(vif_gear_jun, "../output/bio/monthly_vifs/vif_gear_jun.csv", row.names = TRUE)
 vif_gear_jun
 
 
 #without gear
-vif_nogear_jun <- vif(lm(occurrence ~ temp_depth + salinity_surface + salinity_depth + o2_depth + chl_surface + bottom_depth + mlp_surface + nao_sample + nao_prev + nao_winter + amo_sample + amo_winter, data = junpresab))
+vif_nogear_jun <- vif(lm(occurrence ~ temp_surface + temp_depth + salinity_surface + salinity_depth + o2_surface + o2_depth + chl_surface + chl_depth + bottom_depth + mlp_surface + ssh_surface + nao_sample + nao_prev + nao_winter + amo_sample + amo_prev + amo_winter, data = junpresab))
 write.csv(vif_nogear_jun, "../output/bio/monthly_vifs/vif_nogear_jun.csv", row.names = TRUE)
 vif_nogear_jun
 
 #with gear
-vif_gear_jul <- vif(lm(occurrence ~ temp_depth + salinity_surface + salinity_depth + o2_depth + chl_surface + bottom_depth + mlp_surface + gear + nao_sample + nao_prev + nao_winter + amo_sample + amo_winter, data = julpresab))
+vif_gear_jul <- vif(lm(occurrence ~ temp_surface + temp_depth + salinity_surface + salinity_depth + o2_surface + o2_depth + chl_surface + chl_depth + bottom_depth + mlp_surface + ssh_surface + gear + nao_sample + nao_prev + nao_winter + amo_sample + amo_prev + amo_winter, data = julpresab))
 write.csv(vif_gear_jul, "../output/bio/monthly_vifs/vif_gear_jul.csv", row.names = TRUE)
 vif_gear_jul
 
@@ -1696,12 +1695,12 @@ write.csv(vif_gear_jul, "../output/bio/monthly_vifs/vif_gear_jul.csv", row.names
 vif_gear_jul
 
 #without gear
-vif_nogear_jul <- vif(lm(occurrence ~ temp_depth + salinity_surface + salinity_depth + o2_depth + chl_surface + bottom_depth + mlp_surface + nao_sample + nao_prev + nao_winter + amo_sample + amo_winter, data = julpresab))
+vif_nogear_jul <- vif(lm(occurrence ~ temp_surface + temp_depth + salinity_surface + salinity_depth + o2_surface + o2_depth + chl_surface + chl_depth + bottom_depth + mlp_surface + ssh_surface + nao_sample + nao_prev + nao_winter + amo_sample + amo_prev + amo_winter, data = julpresab))
 write.csv(vif_nogear_jul, "../output/bio/monthly_vifs/vif_nogear_jul.csv", row.names = TRUE)
 vif_nogear_jul
 
 #with gear
-vif_gear_aug <- vif(lm(occurrence ~ temp_depth + salinity_surface + salinity_depth + o2_depth + chl_surface + bottom_depth + mlp_surface + gear + nao_sample + nao_prev + nao_winter + amo_sample + amo_winter, data = augpresab))
+vif_gear_aug <- vif(lm(occurrence ~ temp_surface + temp_depth + salinity_surface + salinity_depth + o2_surface + o2_depth + chl_surface + chl_depth + bottom_depth + mlp_surface + ssh_surface + gear + nao_sample + nao_prev + nao_winter + amo_sample + amo_prev + amo_winter, data = augpresab))
 write.csv(vif_gear_aug, "../output/bio/monthly_vifs/vif_gear_aug.csv", row.names = TRUE)
 vif_gear_aug
 
@@ -1711,12 +1710,12 @@ write.csv(vif_gear_aug, "../output/bio/monthly_vifs/vif_gear_aug.csv", row.names
 vif_gear_aug
 
 #without gear
-vif_nogear_aug <- vif(lm(occurrence ~ temp_depth + salinity_surface + salinity_depth + o2_depth + chl_surface + bottom_depth + mlp_surface + nao_sample + nao_prev + nao_winter + amo_sample + amo_winter, data = augpresab))
+vif_nogear_aug <- vif(lm(occurrence ~ temp_surface + temp_depth + salinity_surface + salinity_depth + o2_surface + o2_depth + chl_surface + chl_depth + bottom_depth + mlp_surface + ssh_surface + nao_sample + nao_prev + nao_winter + amo_sample + amo_prev + amo_winter, data = augpresab))
 write.csv(vif_nogear_aug, "../output/bio/monthly_vifs/vif_nogear_aug.csv", row.names = TRUE)
 vif_nogear_aug
 
 #with gear
-vif_gear_sep <- vif(lm(occurrence ~ temp_depth + salinity_surface + salinity_depth + o2_depth + chl_surface + bottom_depth + mlp_surface + gear + nao_sample + nao_prev + nao_winter + amo_sample + amo_winter, data = seppresab))
+vif_gear_sep <- vif(lm(occurrence ~ temp_surface + temp_depth + salinity_surface + salinity_depth + o2_surface + o2_depth + chl_surface + chl_depth + bottom_depth + mlp_surface + ssh_surface + gear + nao_sample + nao_prev + nao_winter + amo_sample + amo_prev + amo_winter, data = seppresab))
 write.csv(vif_gear_sep, "../output/bio/monthly_vifs/vif_gear_sep.csv", row.names = TRUE)
 vif_gear_sep
 
@@ -1726,12 +1725,12 @@ write.csv(vif_gear_sep, "../output/bio/monthly_vifs/vif_gear_sep.csv", row.names
 vif_gear_sep
 
 #without gear
-vif_nogear_sep <- vif(lm(occurrence ~ temp_depth + salinity_surface + salinity_depth + o2_depth + chl_surface + bottom_depth + mlp_surface + nao_sample + nao_prev + nao_winter + amo_sample + amo_winter, data = seppresab))
+vif_nogear_sep <- vif(lm(occurrence ~ temp_surface + temp_depth + salinity_surface + salinity_depth + o2_surface + o2_depth + chl_surface + chl_depth + bottom_depth + mlp_surface + ssh_surface + nao_sample + nao_prev + nao_winter + amo_sample + amo_prev + amo_winter, data = seppresab))
 write.csv(vif_nogear_sep, "../output/bio/monthly_vifs/vif_nogear_sep.csv", row.names = TRUE)
 vif_nogear_sep
 
 #with gear
-vif_gear_oct <- vif(lm(occurrence ~ temp_depth + salinity_surface + salinity_depth + o2_depth + chl_surface + bottom_depth + mlp_surface + gear + nao_sample + nao_prev + nao_winter + amo_sample + amo_winter, data = octpresab))
+vif_gear_oct <- vif(lm(occurrence ~ temp_surface + temp_depth + salinity_surface + salinity_depth + o2_surface + o2_depth + chl_surface + chl_depth + bottom_depth + mlp_surface + ssh_surface + gear + nao_sample + nao_prev + nao_winter + amo_sample + amo_prev + amo_winter, data = octpresab))
 write.csv(vif_gear_oct, "../output/bio/monthly_vifs/vif_gear_oct.csv", row.names = TRUE)
 vif_gear_oct
 
@@ -1741,12 +1740,12 @@ write.csv(vif_gear_oct, "../output/bio/monthly_vifs/vif_gear_oct.csv", row.names
 vif_gear_oct
 
 #without gear
-vif_nogear_oct <- vif(lm(occurrence ~ temp_depth + salinity_surface + salinity_depth + o2_depth + chl_surface + bottom_depth + mlp_surface + nao_sample + nao_prev + nao_winter + amo_sample + amo_winter, data = octpresab))
+vif_nogear_oct <- vif(lm(occurrence ~ temp_surface + temp_depth + salinity_surface + salinity_depth + o2_surface + o2_depth + chl_surface + chl_depth + bottom_depth + mlp_surface + ssh_surface + nao_sample + nao_prev + nao_winter + amo_sample + amo_prev + amo_winter, data = octpresab))
 write.csv(vif_nogear_oct, "../output/bio/monthly_vifs/vif_nogear_oct.csv", row.names = TRUE)
 vif_nogear_oct
 
 #with gear
-vif_gear_nov <- vif(lm(occurrence ~ temp_depth + salinity_surface + salinity_depth + o2_depth + chl_surface + bottom_depth + mlp_surface + gear + nao_sample + nao_prev + nao_winter + amo_sample + amo_winter, data = novpresab))
+vif_gear_nov <- vif(lm(occurrence ~ temp_surface + temp_depth + salinity_surface + salinity_depth + o2_surface + o2_depth + chl_surface + chl_depth + bottom_depth + mlp_surface + ssh_surface + gear + nao_sample + nao_prev + nao_winter + amo_sample + amo_prev + amo_winter, data = novpresab))
 write.csv(vif_gear_nov, "../output/bio/monthly_vifs/vif_gear_nov.csv", row.names = TRUE)
 vif_gear_nov
 
@@ -1756,18 +1755,18 @@ write.csv(vif_gear_nov, "../output/bio/monthly_vifs/vif_gear_nov.csv", row.names
 vif_gear_nov
 
 #without gear
-vif_nogear_nov <- vif(lm(occurrence ~ temp_depth + salinity_surface + salinity_depth + o2_depth + chl_surface + bottom_depth + mlp_surface + nao_sample + nao_prev + nao_winter + amo_sample + amo_winter, data = novpresab))
+vif_nogear_nov <- vif(lm(occurrence ~ temp_surface + temp_depth + salinity_surface + salinity_depth + o2_surface + o2_depth + chl_surface + chl_depth + bottom_depth + mlp_surface + ssh_surface + nao_sample + nao_prev + nao_winter + amo_sample + amo_prev + amo_winter, data = novpresab))
 write.csv(vif_nogear_nov, "../output/bio/monthly_vifs/vif_nogear_nov.csv", row.names = TRUE)
 vif_nogear_nov
 
 #with gear
-vif_gear_dec <- vif(lm(occurrence ~ temp_depth + salinity_surface + salinity_depth + o2_depth + chl_surface + bottom_depth + mlp_surface + gear + nao_sample + nao_prev + nao_winter + amo_sample + amo_winter, data = decpresab))
+vif_gear_dec <- vif(lm(occurrence ~ temp_surface + temp_depth + salinity_surface + salinity_depth + o2_surface + o2_depth + chl_surface + chl_depth + bottom_depth + mlp_surface + ssh_surface + nao_sample + nao_prev + nao_winter + amo_sample + amo_prev + amo_winter, data = decpresab))
 write.csv(vif_gear_dec, "../output/bio/monthly_vifs/vif_gear_dec.csv", row.names = TRUE)
 vif_gear_dec
 
 
 #without gear
-vif_nogear_dec <- vif(lm(occurrence ~ temp_depth + salinity_surface + salinity_depth + o2_depth + chl_surface + bottom_depth + mlp_surface + nao_sample + nao_prev + nao_winter + amo_sample + amo_winter, data = decpresab))
+vif_nogear_dec <- vif(lm(occurrence ~ temp_surface + temp_depth + salinity_surface + salinity_depth + o2_surface + o2_depth + chl_surface + chl_depth + bottom_depth + mlp_surface + ssh_surface + nao_sample + nao_prev + nao_winter + amo_sample + amo_prev + amo_winter, data = decpresab))
 write.csv(vif_nogear_dec, "../output/bio/monthly_vifs/vif_nogear_dec.csv", row.names = TRUE)
 vif_nogear_dec
 ```
@@ -1775,171 +1774,159 @@ vif_nogear_dec
 spearmans indicates mlp_surface, ssh_surface, salinity_surface, temp_surface, 02_surface all highly correlated every month. remove from each model and rerun
 Run a VIF for each month (with and without gear)
 
-```{r}
+```{r monthly vif with and without gear and highly correlated}
 
 
 #with gear - for jan there is none because there is only one category of gear
 
 
 #without gear
-vif_nogear_jan <- vif(lm(occurrence ~ temp_depth + salinity_surface + salinity_depth + o2_depth + chl_surface + bottom_depth, data = janpresab))
-write.csv(vif_nogear_jan, "../output/bio/monthly_vifs/nohighcorr_vif_nogear_jan.csv", row.names = TRUE)
+vif_nogear_jan <- vif(lm(occurrence ~ temp_surface + temp_depth + salinity_surface + salinity_depth + o2_surface + o2_depth + chl_surface + chl_depth + bottom_depth + mlp_surface + ssh_surface, data = janpresab))
+write.csv(vif_nogear_jan, "../output/bio/monthly_vifs/vif_nogear_jan.csv", row.names = TRUE)
 vif_nogear_jan
 
-#with gear
-vif_gear_feb <- vif(lm(occurrence ~ temp_depth + salinity_surface + salinity_depth + o2_depth + chl_surface + bottom_depth, data = febpresab))
-write.csv(vif_gear_feb, "../output/bio/monthly_vifs/nohighcorr_vif_gear_feb.csv", row.names = TRUE)
-vif_gear_feb
-
-vif_gear_feb <- read.csv("../output/bio/monthly_vifs/highcorrvif_gear_feb.csv", header = TRUE)
-vif_gear_feb$GVIF2Dfsq <- vif_gear_feb$GVIF..1..2.Df..^2
-write.csv(vif_gear_feb, "../output/bio/monthly_vifs/nohighcorr_vif_gear_feb.csv", row.names = TRUE)
-vif_gear_feb
-
 #without gear
-vif_nogear_feb <- vif(lm(occurrence ~ temp_depth + salinity_surface + salinity_depth + o2_depth + chl_surface + bottom_depth, data = febpresab))
-write.csv(vif_nogear_feb, "../output/bio/monthly_vifs/nohighcorr_vif_nogear_feb.csv", row.names = TRUE)
+vif_nogear_feb <- vif(lm(occurrence ~ temp_surface + temp_depth + salinity_surface + salinity_depth + o2_surface + o2_depth + chl_surface + chl_depth + bottom_depth + mlp_surface + ssh_surface, data = febpresab))
+write.csv(vif_nogear_feb, "../output/bio/monthly_vifs/vif_nogear_feb.csv", row.names = TRUE)
 vif_nogear_feb
 
 #with gear
-vif_gear_mar <- vif(lm(occurrence ~ temp_depth + salinity_surface + salinity_depth + o2_depth + chl_surface + bottom_depth + gear + nao_sample + nao_prev + nao_winter + amo_sample + amo_winter, data = marpresab))
-write.csv(vif_gear_mar, "../output/bio/monthly_vifs/nohighcorr_vif_gear_mar.csv", row.names = TRUE)
+vif_gear_mar <- vif(lm(occurrence ~ temp_surface + temp_depth + salinity_surface + salinity_depth + o2_surface + o2_depth + chl_surface + chl_depth + bottom_depth + mlp_surface + ssh_surface + gear + nao_sample + nao_prev + nao_winter + amo_sample + amo_prev + amo_winter, data = marpresab))
+write.csv(vif_gear_mar, "../output/bio/monthly_vifs/vif_gear_mar.csv", row.names = TRUE)
 vif_gear_mar
 
-vif_gear_mar <- read.csv("../output/bio/monthly_vifs/nohighcorr_vif_gear_mar.csv", header = TRUE)
+vif_gear_mar <- read.csv("../output/bio/monthly_vifs/vif_gear_mar.csv", header = TRUE)
 vif_gear_mar$GVIF2Dfsq <- vif_gear_mar$GVIF..1..2.Df..^2
-write.csv(vif_gear_mar, "../output/bio/monthly_vifs/nohighcorr_vif_gear_mar.csv", row.names = TRUE)
+write.csv(vif_gear_mar, "../output/bio/monthly_vifs/vif_gear_mar.csv", row.names = TRUE)
 vif_gear_mar
 
 #without gear
-vif_nogear_mar <- vif(lm(occurrence ~ temp_depth + salinity_surface + salinity_depth + o2_depth + chl_surface + bottom_depth + nao_sample + nao_prev + nao_winter + amo_sample + amo_winter, data = marpresab))
-write.csv(vif_nogear_mar, "../output/bio/monthly_vifs/nohighcorr_vif_nogear_mar.csv", row.names = TRUE)
+vif_nogear_mar <- vif(lm(occurrence ~ temp_surface + temp_depth + salinity_surface + salinity_depth + o2_surface + o2_depth + chl_surface + chl_depth + bottom_depth + mlp_surface + ssh_surface + nao_sample + nao_prev + nao_winter + amo_sample + amo_prev + amo_winter, data = marpresab))
+write.csv(vif_nogear_mar, "../output/bio/monthly_vifs/vif_nogear_mar.csv", row.names = TRUE)
 vif_nogear_mar
 
 #with gear
-vif_gear_apr <- vif(lm(occurrence ~ temp_depth + salinity_surface + salinity_depth + o2_depth + chl_surface + bottom_depth + gear + nao_sample + nao_prev + nao_winter + amo_sample + amo_winter, data = aprpresab))
-write.csv(vif_gear_apr, "../output/bio/monthly_vifs/nohighcorr_vif_gear_apr.csv", row.names = TRUE)
+vif_gear_apr <- vif(lm(occurrence ~ temp_surface + temp_depth + salinity_surface + salinity_depth + o2_surface + o2_depth + chl_surface + chl_depth + bottom_depth + mlp_surface + ssh_surface + gear + nao_sample + nao_prev + nao_winter + amo_sample + amo_prev + amo_winter, data = aprpresab))
+write.csv(vif_gear_apr, "../output/bio/monthly_vifs/vif_gear_apr.csv", row.names = TRUE)
 vif_gear_apr
 
 vif_gear_apr <- read.csv("../output/bio/monthly_vifs/vif_gear_apr.csv", header = TRUE)
 vif_gear_apr$GVIF2Dfsq <- vif_gear_apr$GVIF..1..2.Df..^2
-write.csv(vif_gear_apr, "../output/bio/monthly_vifs/nohighcorr_vif_gear_apr.csv", row.names = TRUE)
+write.csv(vif_gear_apr, "../output/bio/monthly_vifs/vif_gear_apr.csv", row.names = TRUE)
 vif_gear_apr
 
 #without gear
-vif_nogear_apr <- vif(lm(occurrence ~ temp_depth + salinity_surface + salinity_depth + o2_depth + chl_surface + bottom_depth + nao_sample + nao_prev + nao_winter + amo_sample + amo_winter, data = aprpresab))
-write.csv(vif_nogear_apr, "../output/bio/monthly_vifs/nohighcorr_vif_nogear_apr.csv", row.names = TRUE)
+vif_nogear_apr <- vif(lm(occurrence ~ temp_surface + temp_depth + salinity_surface + salinity_depth + o2_surface + o2_depth + chl_surface + chl_depth + bottom_depth + mlp_surface + ssh_surface + nao_sample + nao_prev + nao_winter + amo_sample + amo_prev + amo_winter, data = aprpresab))
+write.csv(vif_nogear_apr, "../output/bio/monthly_vifs/vif_nogear_apr.csv", row.names = TRUE)
 vif_nogear_apr
 
 #with gear
-vif_gear_may <- vif(lm(occurrence ~ temp_depth + salinity_surface + salinity_depth + o2_depth + chl_surface + bottom_depth + gear + nao_sample + nao_prev + nao_winter + amo_sample + amo_winter, data = maypresab))
-write.csv(vif_gear_may, "../output/bio/monthly_vifs/nohighcorr_vif_gear_may.csv", row.names = TRUE)
+vif_gear_may <- vif(lm(occurrence ~ temp_surface + temp_depth + salinity_surface + salinity_depth + o2_surface + o2_depth + chl_surface + chl_depth + bottom_depth + mlp_surface + ssh_surface + gear + nao_sample + nao_prev + nao_winter + amo_sample + amo_prev + amo_winter, data = maypresab))
+write.csv(vif_gear_may, "../output/bio/monthly_vifs/vif_gear_may.csv", row.names = TRUE)
 vif_gear_may
 
 #without gear
-vif_nogear_may <- vif(lm(occurrence ~ temp_depth + salinity_surface + salinity_depth + o2_depth + chl_surface + bottom_depth + nao_sample + nao_prev + nao_winter + amo_sample + amo_winter, data = maypresab))
-write.csv(vif_nogear_may, "../output/bio/monthly_vifs/nohighcorr_vif_nogear_may.csv", row.names = TRUE)
+vif_nogear_may <- vif(lm(occurrence ~ temp_surface + temp_depth + salinity_surface + salinity_depth + o2_surface + o2_depth + chl_surface + chl_depth + bottom_depth + mlp_surface + ssh_surface + nao_sample + nao_prev + nao_winter + amo_sample + amo_prev + amo_winter, data = maypresab))
+write.csv(vif_nogear_may, "../output/bio/monthly_vifs/vif_nogear_may.csv", row.names = TRUE)
 vif_nogear_may
 
 #with gear
-vif_gear_jun <- vif(lm(occurrence ~ temp_depth + salinity_surface + salinity_depth + o2_depth + chl_surface + bottom_depth + gear + nao_sample + nao_prev + nao_winter + amo_sample + amo_winter, data = junpresab))
-write.csv(vif_gear_jun, "../output/bio/monthly_vifs/nohighcorr_vif_gear_jun.csv", row.names = TRUE)
+vif_gear_jun <- vif(lm(occurrence ~ temp_surface + temp_depth + salinity_surface + salinity_depth + o2_surface + o2_depth + chl_surface + chl_depth + bottom_depth + mlp_surface + ssh_surface + gear + nao_sample + nao_prev + nao_winter + amo_sample + amo_prev + amo_winter, data = junpresab))
+write.csv(vif_gear_jun, "../output/bio/monthly_vifs/vif_gear_jun.csv", row.names = TRUE)
 vif_gear_jun
 
 
 #without gear
-vif_nogear_jun <- vif(lm(occurrence ~ temp_depth + salinity_surface + salinity_depth + o2_depth + chl_surface + bottom_depth + nao_sample + nao_prev + nao_winter + amo_sample + amo_winter, data = junpresab))
-write.csv(vif_nogear_jun, "../output/bio/monthly_vifs/nohighcorr_vif_nogear_jun.csv", row.names = TRUE)
+vif_nogear_jun <- vif(lm(occurrence ~ temp_surface + temp_depth + salinity_surface + salinity_depth + o2_surface + o2_depth + chl_surface + chl_depth + bottom_depth + mlp_surface + ssh_surface + nao_sample + nao_prev + nao_winter + amo_sample + amo_prev + amo_winter, data = junpresab))
+write.csv(vif_nogear_jun, "../output/bio/monthly_vifs/vif_nogear_jun.csv", row.names = TRUE)
 vif_nogear_jun
 
 #with gear
-vif_gear_jul <- vif(lm(occurrence ~ temp_depth + salinity_surface + salinity_depth + o2_depth + chl_surface + bottom_depth + gear + nao_sample + nao_prev + nao_winter + amo_sample + amo_winter, data = julpresab))
-write.csv(vif_gear_jul, "../output/bio/monthly_vifs/nohighcorr_vif_gear_jul.csv", row.names = TRUE)
+vif_gear_jul <- vif(lm(occurrence ~ temp_surface + temp_depth + salinity_surface + salinity_depth + o2_surface + o2_depth + chl_surface + chl_depth + bottom_depth + mlp_surface + ssh_surface + gear + nao_sample + nao_prev + nao_winter + amo_sample + amo_prev + amo_winter, data = julpresab))
+write.csv(vif_gear_jul, "../output/bio/monthly_vifs/vif_gear_jul.csv", row.names = TRUE)
 vif_gear_jul
 
-vif_gear_jul <- read.csv("../output/bio/monthly_vifs/nohighcorr_vif_gear_jul.csv", header = TRUE)
+vif_gear_jul <- read.csv("../output/bio/monthly_vifs/vif_gear_jul.csv", header = TRUE)
 vif_gear_jul$GVIF2Dfsq <- vif_gear_jul$GVIF..1..2.Df..^2
-write.csv(vif_gear_jul, "../output/bio/monthly_vifs/nohighcorr_vif_gear_jul.csv", row.names = TRUE)
+write.csv(vif_gear_jul, "../output/bio/monthly_vifs/vif_gear_jul.csv", row.names = TRUE)
 vif_gear_jul
 
 #without gear
-vif_nogear_jul <- vif(lm(occurrence ~ temp_depth + salinity_surface + salinity_depth + o2_depth + chl_surface + bottom_depth + nao_sample + nao_prev + nao_winter + amo_sample + amo_winter, data = julpresab))
-write.csv(vif_nogear_jul, "../output/bio/monthly_vifs/nohighcorr_vif_nogear_jul.csv", row.names = TRUE)
+vif_nogear_jul <- vif(lm(occurrence ~ temp_surface + temp_depth + salinity_surface + salinity_depth + o2_surface + o2_depth + chl_surface + chl_depth + bottom_depth + mlp_surface + ssh_surface + nao_sample + nao_prev + nao_winter + amo_sample + amo_prev + amo_winter, data = julpresab))
+write.csv(vif_nogear_jul, "../output/bio/monthly_vifs/vif_nogear_jul.csv", row.names = TRUE)
 vif_nogear_jul
 
 #with gear
-vif_gear_aug <- vif(lm(occurrence ~ temp_depth + salinity_surface + salinity_depth + o2_depth + chl_surface + bottom_depth + gear + nao_sample + nao_prev + nao_winter + amo_sample + amo_winter, data = augpresab))
-write.csv(vif_gear_aug, "../output/bio/monthly_vifs/nohighcorr_vif_gear_aug.csv", row.names = TRUE)
+vif_gear_aug <- vif(lm(occurrence ~ temp_surface + temp_depth + salinity_surface + salinity_depth + o2_surface + o2_depth + chl_surface + chl_depth + bottom_depth + mlp_surface + ssh_surface + gear + nao_sample + nao_prev + nao_winter + amo_sample + amo_prev + amo_winter, data = augpresab))
+write.csv(vif_gear_aug, "../output/bio/monthly_vifs/vif_gear_aug.csv", row.names = TRUE)
 vif_gear_aug
 
-vif_gear_aug <- read.csv("../output/bio/monthly_vifs/nohighcorr_vif_gear_aug.csv", header = TRUE)
+vif_gear_aug <- read.csv("../output/bio/monthly_vifs/vif_gear_aug.csv", header = TRUE)
 vif_gear_aug$GVIF2Dfsq <- vif_gear_aug$GVIF..1..2.Df..^2
-write.csv(vif_gear_aug, "../output/bio/monthly_vifs/nohighcorr_vif_gear_aug.csv", row.names = TRUE)
+write.csv(vif_gear_aug, "../output/bio/monthly_vifs/vif_gear_aug.csv", row.names = TRUE)
 vif_gear_aug
 
 #without gear
-vif_nogear_aug <- vif(lm(occurrence ~ temp_depth + salinity_surface + salinity_depth + o2_depth + chl_surface + bottom_depth + nao_sample + nao_prev + nao_winter + amo_sample + amo_winter, data = augpresab))
-write.csv(vif_nogear_aug, "../output/bio/monthly_vifs/nohighcorr_vif_nogear_aug.csv", row.names = TRUE)
+vif_nogear_aug <- vif(lm(occurrence ~ temp_surface + temp_depth + salinity_surface + salinity_depth + o2_surface + o2_depth + chl_surface + chl_depth + bottom_depth + mlp_surface + ssh_surface + nao_sample + nao_prev + nao_winter + amo_sample + amo_prev + amo_winter, data = augpresab))
+write.csv(vif_nogear_aug, "../output/bio/monthly_vifs/vif_nogear_aug.csv", row.names = TRUE)
 vif_nogear_aug
 
 #with gear
-vif_gear_sep <- vif(lm(occurrence ~ temp_depth + salinity_surface + salinity_depth + o2_depth + chl_surface + bottom_depth + gear + nao_sample + nao_prev + nao_winter + amo_sample + amo_winter, data = seppresab))
-write.csv(vif_gear_sep, "../output/bio/monthly_vifs/nohighcorr_vif_gear_sep.csv", row.names = TRUE)
+vif_gear_sep <- vif(lm(occurrence ~ temp_surface + temp_depth + salinity_surface + salinity_depth + o2_surface + o2_depth + chl_surface + chl_depth + bottom_depth + mlp_surface + ssh_surface + gear + nao_sample + nao_prev + nao_winter + amo_sample + amo_prev + amo_winter, data = seppresab))
+write.csv(vif_gear_sep, "../output/bio/monthly_vifs/vif_gear_sep.csv", row.names = TRUE)
 vif_gear_sep
 
-vif_gear_sep <- read.csv("../output/bio/monthly_vifs/nohighcorr_vif_gear_sep.csv", header = TRUE)
+vif_gear_sep <- read.csv("../output/bio/monthly_vifs/vif_gear_sep.csv", header = TRUE)
 vif_gear_sep$GVIF2Dfsq <- vif_gear_sep$GVIF..1..2.Df..^2
-write.csv(vif_gear_sep, "../output/bio/monthly_vifs/nohighcorr_vif_gear_sep.csv", row.names = TRUE)
+write.csv(vif_gear_sep, "../output/bio/monthly_vifs/vif_gear_sep.csv", row.names = TRUE)
 vif_gear_sep
 
 #without gear
-vif_nogear_sep <- vif(lm(occurrence ~ temp_depth + salinity_surface + salinity_depth + o2_depth + chl_surface + bottom_depth + nao_sample + nao_prev + nao_winter + amo_sample + amo_winter, data = seppresab))
-write.csv(vif_nogear_sep, "../output/bio/monthly_vifs/nohighcorr_vif_nogear_sep.csv", row.names = TRUE)
+vif_nogear_sep <- vif(lm(occurrence ~ temp_surface + temp_depth + salinity_surface + salinity_depth + o2_surface + o2_depth + chl_surface + chl_depth + bottom_depth + mlp_surface + ssh_surface + nao_sample + nao_prev + nao_winter + amo_sample + amo_prev + amo_winter, data = seppresab))
+write.csv(vif_nogear_sep, "../output/bio/monthly_vifs/vif_nogear_sep.csv", row.names = TRUE)
 vif_nogear_sep
 
 #with gear
-vif_gear_oct <- vif(lm(occurrence ~ temp_depth + salinity_surface + salinity_depth + o2_depth + chl_surface + bottom_depth + gear + nao_sample + nao_prev + nao_winter + amo_sample + amo_winter, data = octpresab))
-write.csv(vif_gear_oct, "../output/bio/monthly_vifs/nohighcorr_vif_gear_oct.csv", row.names = TRUE)
+vif_gear_oct <- vif(lm(occurrence ~ temp_surface + temp_depth + salinity_surface + salinity_depth + o2_surface + o2_depth + chl_surface + chl_depth + bottom_depth + mlp_surface + ssh_surface + gear + nao_sample + nao_prev + nao_winter + amo_sample + amo_prev + amo_winter, data = octpresab))
+write.csv(vif_gear_oct, "../output/bio/monthly_vifs/vif_gear_oct.csv", row.names = TRUE)
 vif_gear_oct
 
-vif_gear_oct <- read.csv("../output/bio/monthly_vifs/nohighcorr_vif_gear_oct.csv", header = TRUE)
+vif_gear_oct <- read.csv("../output/bio/monthly_vifs/vif_gear_oct.csv", header = TRUE)
 vif_gear_oct$GVIF2Dfsq <- vif_gear_oct$GVIF..1..2.Df..^2
-write.csv(vif_gear_oct, "../output/bio/monthly_vifs/nohighcorr_vif_gear_oct.csv", row.names = TRUE)
+write.csv(vif_gear_oct, "../output/bio/monthly_vifs/vif_gear_oct.csv", row.names = TRUE)
 vif_gear_oct
 
 #without gear
-vif_nogear_oct <- vif(lm(occurrence ~ temp_depth + salinity_surface + salinity_depth + o2_depth + chl_surface + bottom_depth + nao_sample + nao_prev + nao_winter + amo_sample + amo_winter, data = octpresab))
-write.csv(vif_nogear_oct, "../output/bio/monthly_vifs/nohighcorr_vif_nogear_oct.csv", row.names = TRUE)
+vif_nogear_oct <- vif(lm(occurrence ~ temp_surface + temp_depth + salinity_surface + salinity_depth + o2_surface + o2_depth + chl_surface + chl_depth + bottom_depth + mlp_surface + ssh_surface + nao_sample + nao_prev + nao_winter + amo_sample + amo_prev + amo_winter, data = octpresab))
+write.csv(vif_nogear_oct, "../output/bio/monthly_vifs/vif_nogear_oct.csv", row.names = TRUE)
 vif_nogear_oct
 
 #with gear
-vif_gear_nov <- vif(lm(occurrence ~ temp_depth + salinity_surface + salinity_depth + o2_depth + chl_surface + bottom_depth + gear + nao_sample + nao_prev + nao_winter + amo_sample + amo_winter, data = novpresab))
-write.csv(vif_gear_nov, "../output/bio/monthly_vifs/nohighcorr_vif_gear_nov.csv", row.names = TRUE)
+vif_gear_nov <- vif(lm(occurrence ~ temp_surface + temp_depth + salinity_surface + salinity_depth + o2_surface + o2_depth + chl_surface + chl_depth + bottom_depth + mlp_surface + ssh_surface + gear + nao_sample + nao_prev + nao_winter + amo_sample + amo_prev + amo_winter, data = novpresab))
+write.csv(vif_gear_nov, "../output/bio/monthly_vifs/vif_gear_nov.csv", row.names = TRUE)
 vif_gear_nov
 
-vif_gear_nov <- read.csv("../output/bio/monthly_vifs/nohighcorr_vif_gear_nov.csv", header = TRUE)
+vif_gear_nov <- read.csv("../output/bio/monthly_vifs/vif_gear_nov.csv", header = TRUE)
 vif_gear_nov$GVIF2Dfsq <- vif_gear_nov$GVIF..1..2.Df..^2
-write.csv(vif_gear_nov, "../output/bio/monthly_vifs/nohighcorr_vif_gear_nov.csv", row.names = TRUE)
+write.csv(vif_gear_nov, "../output/bio/monthly_vifs/vif_gear_nov.csv", row.names = TRUE)
 vif_gear_nov
 
 #without gear
-vif_nogear_nov <- vif(lm(occurrence ~ temp_depth + salinity_surface + salinity_depth + o2_depth + chl_surface + bottom_depth + nao_sample + nao_prev + nao_winter + amo_sample + amo_winter, data = novpresab))
-write.csv(vif_nogear_nov, "../output/bio/monthly_vifs/nohighcorr_vif_nogear_nov.csv", row.names = TRUE)
+vif_nogear_nov <- vif(lm(occurrence ~ temp_surface + temp_depth + salinity_surface + salinity_depth + o2_surface + o2_depth + chl_surface + chl_depth + bottom_depth + mlp_surface + ssh_surface + nao_sample + nao_prev + nao_winter + amo_sample + amo_prev + amo_winter, data = novpresab))
+write.csv(vif_nogear_nov, "../output/bio/monthly_vifs/vif_nogear_nov.csv", row.names = TRUE)
 vif_nogear_nov
 
 #with gear
-vif_gear_dec <- vif(lm(occurrence ~ temp_depth + salinity_surface + salinity_depth + o2_depth + chl_surface + bottom_depth + gear + nao_sample + nao_prev + nao_winter + amo_sample + amo_winter, data = decpresab))
-write.csv(vif_gear_dec, "../output/bio/monthly_vifs/nohighcorr_vif_gear_dec.csv", row.names = TRUE)
+vif_gear_dec <- vif(lm(occurrence ~ temp_surface + temp_depth + salinity_surface + salinity_depth + o2_surface + o2_depth + chl_surface + chl_depth + bottom_depth + mlp_surface + ssh_surface + nao_sample + nao_prev + nao_winter + amo_sample + amo_prev + amo_winter, data = decpresab))
+write.csv(vif_gear_dec, "../output/bio/monthly_vifs/vif_gear_dec.csv", row.names = TRUE)
 vif_gear_dec
 
 
 #without gear
-vif_nogear_dec <- vif(lm(occurrence ~ temp_depth + salinity_surface + salinity_depth + o2_depth + chl_surface + bottom_depth + nao_sample + nao_prev + nao_winter + amo_sample + amo_winter, data = decpresab))
-write.csv(vif_nogear_dec, "../output/bio/monthly_vifs/nohighcorr_vif_nogear_dec.csv", row.names = TRUE)
+vif_nogear_dec <- vif(lm(occurrence ~ temp_surface + temp_depth + salinity_surface + salinity_depth + o2_surface + o2_depth + chl_surface + chl_depth + bottom_depth + mlp_surface + ssh_surface + nao_sample + nao_prev + nao_winter + amo_sample + amo_prev + amo_winter, data = decpresab))
+write.csv(vif_nogear_dec, "../output/bio/monthly_vifs/vif_nogear_dec.csv", row.names = TRUE)
 vif_nogear_dec
 ```
-
-
 
 
 
