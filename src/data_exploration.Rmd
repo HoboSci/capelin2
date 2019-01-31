@@ -30,7 +30,7 @@ ipak(packages)
 
 and subset into background and presences
 ```{r}
-presab <- read.csv("../output/bio/presab.csv", header = TRUE)
+presab <- read.csv("../output/bio/presab_10k.csv", header = TRUE)
 presence <- subset(presab, occurrence == "1")
 background <- subset(presab, occurrence == "0")
 ```
@@ -841,6 +841,7 @@ check to see if there are any correlations in the env. variables for the backgro
 
 first subset the env.correlate columns (you don't need everything)
 
+
 ```{r}
 background_env <- subset(background, select = c(amo_sample, amo_winter, amo_prev, nao_sample, nao_winter, nao_prev, chl_surface, chl_depth, mlp_surface, ssh_surface, temp_surface, temp_depth, o2_surface, o2_depth, salinity_surface, salinity_depth))
 background_env_cor <- cor(background_env, use="complete.obs", method = "spearman") #need to create a correlation using cor to plot. complete.obs means na.rm in this package. #using spearmans as suitable for non-linear relationships
@@ -860,7 +861,7 @@ for(i in 1:16){
 PUT THE CHUNK OUTPUT BACK TO INLINE
 
 
-add nafo region and gear type into the mix
+add nafo region and gear type into the mix CANT!!
 
 
 first subset the env.correlate columns + bottom_depth (you don't need everything)
@@ -987,7 +988,7 @@ nafo_by_mth
 Interesting that there is a point in 1C - this is outside Canadian waters remove from the dataset
 ```{r}
 presab <- presab[!(presab$nafo_zone == "1C" & presab$occurrence == "1"), ]
-write.csv(presab, "../output/bio/presab.csv", row.names = FALSE)
+write.csv(presab, "../output/bio/presab_10k.csv", row.names = FALSE)
 presence <- presence[!(presence$nafo_zone == "1C"), ]
 ```
 
@@ -1268,6 +1269,7 @@ ggplot(bottom_trawl, aes(x = ssh_surface, colour = gear)) + geom_density(na.rm =
 dev.copy(png,"../output/env/env_by_gear_plots/ssh_gear.png") # to automatically save the plot to a png AND show it inline
 dev.off() # stops automatic saving of the plot to a png
 ```
+XXXSAM FROM HERE - NEED TO ADD PLOTS TO RESULTS DOC THEN CONTINUE
 
 
 
