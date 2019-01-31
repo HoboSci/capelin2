@@ -27,46 +27,7 @@ presencemerging <- read.csv("../output/bio/presence_points_without_envdata_reloo
 backgroundmerging <- read.csv("../output/bio/background_complete_obs_cels_globot_cellid_xyzt.csv", header = TRUE)
 ```
 
-```{r}
-testb2003 <- read.csv("../output/bio/background_complete_2000_2003.csv", header = TRUE)
-test200301 <- subset(testb2003, year == "2003" & month == "1")
-head(test200301)
-
-testback <- read.csv("../output/bio/background_all_complete.csv", header = TRUE)
-
-head(test200301)
-test200301$cell_id_3d <- paste(test200301$cell_id, test200301$depthlayerno, sep="_") #create a new column that is a unique cell_id & depth ID. 
-head(test200301)
-test200301$cell_id_xyzt <- paste(test200301$cell_id_3d, test200301$year, test200301$month, sep="_") #create a new column that is a unique cell_id & depth ID. 
-head(test200301)
-unique_pointpercell <- unique(test200301$total_cell_obs_xyzt)
-unique_pointpercell
-
-fmatch("chl_surface", names(test200301)) #28
-fmatch("chl_depth", names(test200301)) #29
-fmatch("mlp_surface", names(test200301)) #30
-fmatch("o2_surface", names(test200301)) #31
-fmatch("o2_depth", names(test200301)) #32
-fmatch("salinity_surface", names(test200301)) #33
-fmatch("salinity_depth", names(test200301)) #34
-fmatch("ssh_surface", names(test200301)) #35
-fmatch("temp_surface", names(test200301)) #36
-fmatch("temp_depth", names(test200301)) #37
-
-test200301a <-  test200301[!complete.cases(test200301[24:33]), ] #28:37 represent the columns w/ env. data
-nrow(test200301a)
-
-testsel <- sample_n(test200301, 10000) #where 10000 = number of rows to sample 
-head(testsel)
-testsel <- subset(testsel, select -c(total_cell_obs_xyzt))
-write.csv(testsel, "../output/bio/back20031.csv", row.names = FALSE)
-head(testsel)
-```
-
-
-
-
-now check
+now check 
 ```{r}
 colnames(presencemerging)
 ```
@@ -114,7 +75,7 @@ nafo1d <- subset(backgroundmerging, nafo_zone == "1D")
 nafo1be <- subset(backgroundmerging, nafo_zone == "1E")
 nafo1f <- subset(backgroundmerging, nafo_zone == "1F")
 nafo1 <- rbind(nafo1b, nafo1bc, nafo1be, nafo1f)
-nrow(nafo1) #139235
+nrow(nafo1) #140174
 ```
 
 and the spread of these funny nafo points in year month...
@@ -163,19 +124,21 @@ ok now randomly select background points from each timeslice as per this table (
 Total	10000	10000	10000	10000	10000	10000	10000	10000	10000	10000	10000	10000
 
 Ok so for Jan:
-2003: 2222 XXXXX THIS IS MISSING!!!!
+2003: 2222
 2004: 4938
 2005: 700
 2006: 2140
 
 ```{r}
+jan2003 <- subset(backno1, year == "2003" & month == "1")
+jan2003 <- sample_n(jan2003, 2222) 
 jan2004 <- subset(backno1, year == "2004" & month == "1")
 jan2004 <- sample_n(jan2004, 4938) 
 jan2005 <- subset(backno1, year == "2005" & month == "1")
 jan2005 <- sample_n(jan2005, 700) 
 jan2006 <- subset(backno1, year == "2006" & month == "1")
 jan2006 <- sample_n(jan2006, 2140) 
-jan <- rbind(jan2004, jan2005, jan2006)
+jan <- rbind(jan2003, jan2004, jan2005, jan2006)
 ```
 
 for feb
@@ -708,8 +671,8 @@ merge with presence
 
 now merge the two datasets
 ```{r merge pres and back10k}
-presab10k <- rbind(presencemerging, back10k)
+presab10k <- rbind.fill(presencemerging, back10k)
 write.csv(presab10k, "../output/bio/presab_10k.csv", row.names = FALSE)
-nrow(presab10k)
+nrow(presab10k) #130300
 ```
 
