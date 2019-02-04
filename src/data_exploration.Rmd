@@ -1269,10 +1269,6 @@ ggplot(bottom_trawl, aes(x = ssh_surface, colour = gear)) + geom_density(na.rm =
 dev.copy(png,"../output/env/env_by_gear_plots/ssh_gear.png") # to automatically save the plot to a png AND show it inline
 dev.off() # stops automatic saving of the plot to a png
 ```
-XXXSAM FROM HERE - NEED TO ADD PLOTS TO RESULTS DOC THEN CONTINUE
-
-
-
 
 
 ```{r}
@@ -1282,7 +1278,7 @@ dev.copy(png, "../output/env/simple_plots/temperature_boxplot_dept_gear.png") # 
 dev.off() # stops automatic saving of the plot to a png
 ```
 
-looks like not much difference... what about a kruskal wallace test?
+what about a kruskal wallace test?
 
 ```{r}
 kruskal.test(presence$temp_depth ~ presence$gear)
@@ -1313,7 +1309,7 @@ for this you need the joined dataset.
 
 ```{r}
 vif_allpresab <- vif(lm(occurrence ~ temp_surface + temp_depth + salinity_surface + salinity_depth + o2_surface + o2_depth + chl_surface + chl_depth + bottom_depth + mlp_surface + ssh_surface + gear + nao_sample + nao_prev + nao_winter + amo_sample + amo_prev + amo_winter, data = presab))
-write.csv(vif_allpresab, "../output/bio/vif_allpresab.csv", row.names = TRUE)
+write.csv(vif_allpresab, "../output/bio/vif/vif_allpresab.csv", row.names = TRUE)
 vif_allpresab
 ```
 interpret - see https://stats.stackexchange.com/questions/70679/which-variance-inflation-factor-should-i-be-using-textgvif-or-textgvif/96584#96584
@@ -1322,9 +1318,9 @@ or the 2 continuous variables, GVIFˆ(1/(2*Df)) (which is basically the square r
 apparently i just need to square GVIF^(1/(2*Df)) and then use the normal VIF "rule of thumb"...
 
 ```{r}
-vif_allpresab_sq <- read.csv("../output/bio/vif_allpresab.csv", header = TRUE)
+vif_allpresab_sq <- read.csv("../output/bio/vif/vif_allpresab.csv", header = TRUE)
 vif_allpresab_sq$GVIF2Dfsq <- vif_allpresab_sq$GVIF..1..2.Df..^2
-write.csv(vif_allpresab_sq, "../output/bio/vif_allpresab_sq.csv", row.names = TRUE)
+write.csv(vif_allpresab_sq, "../output/bio/vif/vif_allpresab.csv", row.names = TRUE)
 vif_allpresab_sq
 ```
 
@@ -1332,15 +1328,15 @@ As per SLR suggestion, rerun without gear
 
 ```{r vif all but gear}
 vif_allbutgear <- vif(lm(occurrence ~ temp_surface + temp_depth + salinity_surface + salinity_depth + o2_surface + o2_depth + chl_surface + chl_depth + bottom_depth + mlp_surface + ssh_surface + nao_sample + nao_prev + nao_winter + amo_sample + amo_prev + amo_winter, data = presab))
-write.csv(vif_allbutgear, "../output/bio/vif_allbutgear.csv", row.names = TRUE)
+write.csv(vif_allbutgear, "../output/bio/vif/vif_allbutgear.csv", row.names = TRUE)
 vif_allbutgear
 ```
-
+xx
 As per SLR suggestion, rerun without gear and most highly correlated variables 
 
 ```{r vif without gear + high corr}
-vif_allbutgearhighlycorr <- vif(lm(occurrence ~ temp_surface + temp_depth + salinity_surface + salinity_depth + o2_depth + chl_surface + bottom_depth + mlp_surface + nao_sample + nao_prev + nao_winter + amo_sample + amo_winter, data = presab))
-write.csv(vif_allbutgearhighlycorr, "../output/bio/vif_allbutgearhighlycorr.csv", row.names = TRUE)
+vif_allbutgearhighlycorr <- vif(lm(occurrence ~ temp_surface + temp_depth + salinity_surface + salinity_depth + o2_depth + chl_surface + mlp_surface + nao_sample + nao_prev + nao_winter + amo_sample + amo_winter, data = presab))
+write.csv(vif_allbutgearhighlycorr, "../output/bio/vif/vif_allbutgearhighlycorr.csv", row.names = TRUE)
 vif_allbutgearhighlycorr
 ```
 
@@ -1348,54 +1344,72 @@ vif_allbutgearhighlycorr
 As per SLR suggestion, rerun with gear but without most highly correlated variables
 
 ```{r vif all but high corr}
-vif_allbuthighlycorr <- vif(lm(occurrence ~ temp_surface + temp_depth + salinity_surface + salinity_depth + o2_depth + chl_surface + bottom_depth + mlp_surface + nao_sample + nao_prev + nao_winter + amo_sample + amo_winter + gear, data = presab))
-write.csv(vif_allbuthighlycorr, "../output/bio/vif_allbuthighlycorr.csv", row.names = TRUE)
+vif_allbuthighlycorr <- vif(lm(occurrence ~ temp_surface + temp_depth + salinity_surface + salinity_depth + o2_depth + chl_surface + mlp_surface + nao_sample + nao_prev + nao_winter + amo_sample + amo_winter + gear, data = presab))
+write.csv(vif_allbuthighlycorr, "../output/bio/vif/vif_allbuthighlycorr.csv", row.names = TRUE)
 vif_allbuthighlycorr
 
-vif_allbuthighlycorr_sq <- read.csv("../output/bio/vif_allbuthighlycorr.csv", header = TRUE)
+vif_allbuthighlycorr_sq <- read.csv("../output/bio/vif/vif_allbuthighlycorr.csv", header = TRUE)
 vif_allbuthighlycorr_sq$GVIF2Dfsq <- vif_allbuthighlycorr_sq$GVIF..1..2.Df..^2
-write.csv(vif_allbuthighlycorr_sq, "../output/bio/vif_allbuthighlycorr_sq.csv", row.names = TRUE)
+write.csv(vif_allbuthighlycorr_sq, "../output/bio/vif/vif_allbuthighlycorr.csv", row.names = TRUE)
 vif_allbuthighlycorr_sq
 ```
 
 ok remove one variable at a time - leave gear in
 
+remove bottom_depth
+```{r vif all but botdepth}
+vif_allbutbot_prev <- vif(lm(occurrence ~ temp_surface + temp_depth + salinity_surface + salinity_depth + o2_surface + o2_depth + chl_surface + chl_depth + mlp_surface + ssh_surface + gear + nao_sample + nao_prev + nao_winter + amo_sample + amo_prev + amo_winter, data = presab))
+write.csv(vif_allbutbot_prev, "../output/bio/vif/vif_allbutbot_prev.csv", row.names = TRUE)
+
+vif_allbutbot_prev <- read.csv("../output/bio/vif/vif_allbutbot_prev.csv", header = TRUE)
+vif_allbutbot_prev$GVIF2Dfsq <- vif_allbutbot_prev$GVIF..1..2.Df..^2
+write.csv(vif_allbutbot_prev, "../output/bio/vif/vif_allbutbot_prev.csv", row.names = TRUE)
+vif_allbutbot_prev
+```
+
+and leave gear out
+
+remove bottom_depth + gear
+```{r vif all but botddepth + gear}
+vif_allbutbot_prevgear <- vif(lm(occurrence ~ temp_surface + temp_depth + salinity_surface + salinity_depth + o2_surface + o2_depth + chl_surface + chl_depth + mlp_surface + ssh_surface + nao_sample + nao_prev + nao_winter + amo_sample + amo_prev + amo_winter, data = presab))
+write.csv(vif_allbutbot_prevgear, "../output/bio/vif/vif_allbutbot_prevgear.csv", row.names = TRUE)
+vif_allbutbot_prevgear
+```
+
 remove amo_prev
 ```{r vif all but amoprev}
 vif_allbutamo_prev <- vif(lm(occurrence ~ temp_surface + temp_depth + salinity_surface + salinity_depth + o2_surface + o2_depth + chl_surface + chl_depth + bottom_depth + mlp_surface + ssh_surface + gear + nao_sample + nao_prev + nao_winter + amo_sample + amo_winter, data = presab))
-write.csv(vif_allbutamo_prev, "../output/bio/vif_allbutamo_prev.csv", row.names = TRUE)
-vif_allbutamo_prev
+write.csv(vif_allbutamo_prev, "../output/bio/vif/vif_allbutamo_prev.csv", row.names = TRUE)
 
-vif_allbutamo_prev_sq <- read.csv("../output/bio/vif_allbutamo_prev.csv", header = TRUE)
-vif_allbutamo_prev_sq$GVIF2Dfsq <- vif_allbutamo_prev_sq$GVIF..1..2.Df..^2
-write.csv(vif_allbutamo_prev_sq, "../output/bio/vif_allbutamo_prev_sq.csv", row.names = TRUE)
-vif_allbutamo_prev_sq
+vif_allbutamo_prev <- read.csv("../output/bio/vif/vif_allbutamo_prev.csv", header = TRUE)
+vif_allbutamo_prev$GVIF2Dfsq <- vif_allbutamo_prev$GVIF..1..2.Df..^2
+write.csv(vif_allbutamo_prev, "../output/bio/vif/vif_allbutamo_prev.csv", row.names = TRUE)
+vif_allbutamo_prev
 ```
 and leave gear out
 
 remove amo_prev + gear
 ```{r vif all but amoprev + gear}
 vif_allbutamo_prevgear <- vif(lm(occurrence ~ temp_surface + temp_depth + salinity_surface + salinity_depth + o2_surface + o2_depth + chl_surface + chl_depth + bottom_depth + mlp_surface + ssh_surface + nao_sample + nao_prev + nao_winter + amo_sample + amo_winter, data = presab))
-write.csv(vif_allbutamo_prevgear, "../output/bio/vif_allbutamo_prevgear.csv", row.names = TRUE)
+write.csv(vif_allbutamo_prevgear, "../output/bio/vif/vif_allbutamo_prevgear.csv", row.names = TRUE)
 vif_allbutamo_prevgear
 ```
 
 remove chl_depth
 ```{r vif all but chldepth}
 vif_allbutchl_depth <- vif(lm(occurrence ~ temp_surface + temp_depth + salinity_surface + salinity_depth + o2_surface + o2_depth + chl_surface + bottom_depth + mlp_surface + ssh_surface + gear + nao_sample + nao_prev + nao_winter + amo_sample + amo_prev + amo_winter, data = presab))
-write.csv(vif_allbutchl_depth, "../output/bio/vif_allbutchl_depth.csv", row.names = TRUE)
-vif_allbutchl_depth
+write.csv(vif_allbutchl_depth, "../output/bio/vif/vif_allbutchl_depth.csv", row.names = TRUE)
 
-vif_allbutchl_depth_sq <- read.csv("../output/bio/vif_allbutchl_depth.csv", header = TRUE)
-vif_allbutchl_depth_sq$GVIF2Dfsq <- vif_allbutchl_depth_sq$GVIF..1..2.Df..^2
-write.csv(vif_allbutchl_depth_sq, "../output/bio/vif_allbutchl_depth_sq.csv", row.names = TRUE)
-vif_allbutchl_depth_sq
+vif_allbutchl_depth <- read.csv("../output/bio/vif/vif_allbutchl_depth.csv", header = TRUE)
+vif_allbutchl_depth$GVIF2Dfsq <- vif_allbutchl_depth$GVIF..1..2.Df..^2
+write.csv(vif_allbutchl_depth, "../output/bio/vif/vif_allbutchl_depth.csv", row.names = TRUE)
+vif_allbutchl_depth
 ```
 
 remove chl_depth and gear
 ```{r vif all but chldepth+gear}
 vif_allbutchl_depthgear <- vif(lm(occurrence ~ temp_surface + temp_depth + salinity_surface + salinity_depth + o2_surface + o2_depth + chl_surface + bottom_depth + mlp_surface + ssh_surface + nao_sample + nao_prev + nao_winter + amo_sample + amo_prev + amo_winter, data = presab))
-write.csv(vif_allbutchl_depthgear, "../output/bio/vif_allbutchl_depthgear.csv", row.names = TRUE)
+write.csv(vif_allbutchl_depthgear, "../output/bio/vif/vif_allbutchl_depthgear.csv", row.names = TRUE)
 vif_allbutchl_depthgear
 ```
 
@@ -1403,38 +1417,36 @@ vif_allbutchl_depthgear
 remove ssh_surface
 ```{r vif all but ssh}
 vif_allbutssh_surface <- vif(lm(occurrence ~ temp_surface + temp_depth + salinity_surface + salinity_depth + o2_surface + o2_depth + chl_surface + chl_depth + bottom_depth + mlp_surface + gear + nao_sample + nao_prev + nao_winter + amo_sample + amo_prev + amo_winter, data = presab))
-write.csv(vif_allbutssh_surface, "../output/bio/vif_allbutssh_surface.csv", row.names = TRUE)
-vif_allbutssh_surface
+write.csv(vif_allbutssh_surface, "../output/bio/vif/vif_allbutssh_surface.csv", row.names = TRUE)
 
-vif_allbutssh_surface_sq <- read.csv("../output/bio/vif_allbutssh_surface.csv", header = TRUE)
-vif_allbutssh_surface_sq$GVIF2Dfsq <- vif_allbutssh_surface_sq$GVIF..1..2.Df..^2
-write.csv(vif_allbutssh_surface_sq, "../output/bio/vif_allbutssh_surface_sq.csv", row.names = TRUE)
-vif_allbutssh_surface_sq
+vif_allbutssh_surface <- read.csv("../output/bio/vif/vif_allbutssh_surface.csv", header = TRUE)
+vif_allbutssh_surface$GVIF2Dfsq <- vif_allbutssh_surface$GVIF..1..2.Df..^2
+write.csv(vif_allbutssh_surface, "../output/bio/vif/vif_allbutssh_surface.csv", row.names = TRUE)
+vif_allbutssh_surface
 ```
 
 remove ssh_surface & gear
 ```{r vif all but ssh+gear}
 vif_allbutssh_surfacegear <- vif(lm(occurrence ~ temp_surface + temp_depth + salinity_surface + salinity_depth + o2_surface + o2_depth + chl_surface + chl_depth + bottom_depth + mlp_surface + nao_sample + nao_prev + nao_winter + amo_sample + amo_prev + amo_winter, data = presab))
-write.csv(vif_allbutssh_surfacegear, "../output/bio/vif_allbutssh_surfacegear.csv", row.names = TRUE)
+write.csv(vif_allbutssh_surfacegear, "../output/bio/vif/vif_allbutssh_surfacegear.csv", row.names = TRUE)
 vif_allbutssh_surfacegear
 ```
 
 remove o2_surface
 ```{r vif all but o2surface}
 vif_allbuto2_surface <- vif(lm(occurrence ~ temp_surface + temp_depth + salinity_surface + salinity_depth + o2_depth + chl_surface + chl_depth + bottom_depth + mlp_surface + ssh_surface + gear + nao_sample + nao_prev + nao_winter + amo_sample + amo_prev + amo_winter, data = presab))
-write.csv(vif_allbuto2_surface, "../output/bio/vif_allbuto2_surface.csv", row.names = TRUE)
-vif_allbuto2_surface
+write.csv(vif_allbuto2_surface, "../output/bio/vif/vif_allbuto2_surface.csv", row.names = TRUE)
 
-vif_allbuto2_surface_sq <- read.csv("../output/bio/vif_allbuto2_surface.csv", header = TRUE)
-vif_allbuto2_surface_sq$GVIF2Dfsq <- vif_allbuto2_surface_sq$GVIF..1..2.Df..^2
-write.csv(vif_allbuto2_surface_sq, "../output/bio/vif_allbuto2_surface_sq.csv", row.names = TRUE)
-vif_allbuto2_surface_sq
+vif_allbuto2_surface <- read.csv("../output/bio/vif/vif_allbuto2_surface.csv", header = TRUE)
+vif_allbuto2_surface$GVIF2Dfsq <- vif_allbuto2_surface$GVIF..1..2.Df..^2
+write.csv(vif_allbuto2_surface, "../output/bio/vif/vif_allbuto2_surface.csv", row.names = TRUE)
+vif_allbuto2_surface
 ```
 
 remove o2_surface & gear
 ```{r vif all but o2surface+gear}
 vif_allbuto2_surfacegear <- vif(lm(occurrence ~ temp_surface + temp_depth + salinity_surface + salinity_depth + o2_depth + chl_surface + chl_depth + bottom_depth + mlp_surface + ssh_surface + nao_sample + nao_prev + nao_winter + amo_sample + amo_prev + amo_winter, data = presab))
-write.csv(vif_allbuto2_surfacegear, "../output/bio/vif_allbuto2_surfacegear.csv", row.names = TRUE)
+write.csv(vif_allbuto2_surfacegear, "../output/bio/vif/vif_allbuto2_surfacegear.csv", row.names = TRUE)
 vif_allbuto2_surfacegear
 ```
 
@@ -1443,37 +1455,51 @@ as per SLR chat jan 23:
 remove salinity_surface only
 ```{r vif all but salsurface}
 vif_allbutsalinitysurface <- vif(lm(occurrence ~ temp_surface + temp_depth + salinity_depth + o2_surface + o2_depth + chl_surface + chl_depth + bottom_depth + mlp_surface + ssh_surface + gear + nao_sample + nao_prev + nao_winter + amo_sample + amo_prev + amo_winter, data = presab))
-write.csv(vif_allbutsalinitysurface, "../output/bio/vif_allbutsalinitysurface.csv", row.names = TRUE)
-vif_allbutsalinitysurface
+write.csv(vif_allbutsalinitysurface, "../output/bio/vif/vif_allbutsalinitysurface.csv", row.names = TRUE)
 
-vif_allbutsalinitysurface_sq <- read.csv("../output/bio/vif_allbutsalinitysurface.csv", header = TRUE)
-vif_allbutsalinitysurface_sq$GVIF2Dfsq <- vif_allbutsalinitysurface_sq$GVIF..1..2.Df..^2
-write.csv(vif_allbutsalinitysurface_sq, "../output/bio/vif_allbutsalinitysurface_sq.csv", row.names = TRUE)
-vif_allbutsalinitysurface_sq
+vif_allbutsalinitysurface <- read.csv("../output/bio/vif/vif_allbutsalinitysurface.csv", header = TRUE)
+vif_allbutsalinitysurface$GVIF2Dfsq <- vif_allbutsalinitysurface$GVIF..1..2.Df..^2
+write.csv(vif_allbutsalinitysurface, "../output/bio/vif/vif_allbutsalinitysurface.csv", row.names = TRUE)
+vif_allbutsalinitysurface
 ```
 and without gear
 
 ```{r vif all but salsurface+gear}
 vif_allbutsalinitysurfacegear <- vif(lm(occurrence ~ temp_surface + temp_depth + salinity_depth + o2_surface + o2_depth + chl_surface + chl_depth + bottom_depth + mlp_surface + ssh_surface + nao_sample + nao_prev + nao_winter + amo_sample + amo_prev + amo_winter, data = presab))
-write.csv(vif_allbutsalinitysurfacegear, "../output/bio/vif_allbutsalinitysurfacegear.csv", row.names = TRUE)
+write.csv(vif_allbutsalinitysurfacegear, "../output/bio/vif/vif_allbutsalinitysurfacegear.csv", row.names = TRUE)
 vif_allbutsalinitysurfacegear
+```
+
+remove temp_surface only
+```{r vif all but tempsurface}
+vif_allbuttempsurface <- vif(lm(occurrence ~ temp_depth + salinity_surface + salinity_depth + o2_surface + o2_depth + chl_surface + chl_depth + bottom_depth + mlp_surface + ssh_surface + gear + nao_sample + nao_prev + nao_winter + amo_sample + amo_prev + amo_winter, data = presab))
+write.csv(vif_allbuttempsurface, "../output/bio/vif/vif_allbuttempsurface.csv", row.names = TRUE)
+
+vif_allbuttempsurface <- read.csv("../output/bio/vif/vif_allbuttempsurface.csv", header = TRUE)
+vif_allbuttempsurface$GVIF2Dfsq <- vif_allbuttempsurface$GVIF..1..2.Df..^2
+write.csv(vif_allbuttempsurface, "../output/bio/vif/vif_allbuttempsurface.csv", row.names = TRUE)
+vif_allbuttempsurface
+
+vif_allbuttempsurfacegear <- vif(lm(occurrence ~ temp_depth + salinity_surface + salinity_depth + o2_surface + o2_depth + chl_surface + chl_depth + bottom_depth + mlp_surface + ssh_surface + nao_sample + nao_prev + nao_winter + amo_sample + amo_prev + amo_winter, data = presab))
+write.csv(vif_allbuttempsurfacegear, "../output/bio/vif/vif_allbuttempsurfacegear.csv", row.names = TRUE)
+vif_allbuttempsurfacegear
+
 ```
 
 now remove temp_surface plus highly correlated
 ```{r vif allbut high corr + temp surface/gear/nogear}
 #with gear
-vif_allbuthighcorrtempsurface <- vif(lm(occurrence ~ temp_depth + salinity_surface + salinity_depth + o2_depth + chl_surface + bottom_depth + mlp_surface + gear + nao_sample + nao_prev + nao_winter + amo_sample + amo_winter, data = presab))
-write.csv(vif_allbuthighcorrtempsurface, "../output/bio/vif_allbuthighcorrtempsurface.csv", row.names = TRUE)
+vif_allbuthighcorrtempsurface <- vif(lm(occurrence ~ temp_depth + salinity_surface + salinity_depth + o2_depth + chl_surface + mlp_surface + gear + nao_sample + nao_prev + nao_winter + amo_sample + amo_winter, data = presab))
+write.csv(vif_allbuthighcorrtempsurface, "../output/bio/vif/vif_allbuthighcorrtempsurface.csv", row.names = TRUE)
+
+vif_allbuthighcorrtempsurface <- read.csv("../output/bio/vif/vif_allbuthighcorrtempsurface.csv", header = TRUE)
+vif_allbuthighcorrtempsurface$GVIF2Dfsq <- vif_allbuthighcorrtempsurface$GVIF..1..2.Df..^2
+write.csv(vif_allbuthighcorrtempsurface, "../output/bio/vif/vif_allbuthighcorrtempsurface.csv", row.names = TRUE)
 vif_allbuthighcorrtempsurface
 
-vif_allbuthighcorrtempsurface_sq <- read.csv("../output/bio/vif_allbuthighcorrtempsurface.csv", header = TRUE)
-vif_allbuthighcorrtempsurface_sq$GVIF2Dfsq <- vif_allbuthighcorrtempsurface_sq$GVIF..1..2.Df..^2
-write.csv(vif_allbuthighcorrtempsurface_sq, "../output/bio/vif_allbuthighcorrtempsurface_sq.csv", row.names = TRUE)
-vif_allbuthighcorrtempsurface_sq
-
 #without gear
-vif_allbuthighcorrtempsurfacegear <- vif(lm(occurrence ~ temp_depth + salinity_surface + salinity_depth + o2_depth + chl_surface + bottom_depth + mlp_surface + nao_sample + nao_prev + nao_winter + amo_sample + amo_winter, data = presab))
-write.csv(vif_allbuthighcorrtempsurfacegear, "../output/bio/vif_allbuthighcorrtempsurfacegear.csv", row.names = TRUE)
+vif_allbuthighcorrtempsurfacegear <- vif(lm(occurrence ~ temp_depth + salinity_surface + salinity_depth + o2_depth + chl_surface + mlp_surface + nao_sample + nao_prev + nao_winter + amo_sample + amo_winter, data = presab))
+write.csv(vif_allbuthighcorrtempsurfacegear, "../output/bio/vif/vif_allbuthighcorrtempsurfacegear.csv", row.names = TRUE)
 vif_allbuthighcorrtempsurfacegear
 ```
 
@@ -1481,35 +1507,33 @@ now remove temp_surface plus salinity_surface
 ```{r vif allbut temp + salinity surface/gear/nogear}
 #with gear
 vif_allbuttempsalsurface <- vif(lm(occurrence ~ temp_depth + salinity_depth + o2_surface + o2_depth + chl_surface + chl_depth + bottom_depth + mlp_surface + ssh_surface + gear + nao_sample + nao_prev + nao_winter + amo_sample + amo_prev + amo_winter, data = presab))
-write.csv(vif_allbuttempsalsurface, "../output/bio/vif_allbuttempsalsurface.csv", row.names = TRUE)
-vif_allbuttempsalsurface
+write.csv(vif_allbuttempsalsurface, "../output/bio/vif/vif_allbuttempsalsurface.csv", row.names = TRUE)
 
-vif_allbuttempsalsurface_sq <- read.csv("../output/bio/vif_allbuttempsalsurface.csv", header = TRUE)
-vif_allbuttempsalsurface_sq$GVIF2Dfsq <- vif_allbuttempsalsurface_sq$GVIF..1..2.Df..^2
-write.csv(vif_allbuttempsalsurface_sq, "../output/bio/vif_allbuttempsalsurface_sq.csv", row.names = TRUE)
-vif_allbuttempsalsurface_sq
+vif_allbuttempsalsurface <- read.csv("../output/bio/vif/vif_allbuttempsalsurface.csv", header = TRUE)
+vif_allbuttempsalsurface$GVIF2Dfsq <- vif_allbuttempsalsurface$GVIF..1..2.Df..^2
+write.csv(vif_allbuttempsalsurface, "../output/bio/vif/vif_allbuttempsalsurface.csv", row.names = TRUE)
+vif_allbuttempsalsurface
 
 #without gear
 vif_allbuttempsalsurfacegear <- vif(lm(occurrence ~ temp_depth + salinity_depth + o2_surface + o2_depth + chl_surface + chl_depth + bottom_depth + mlp_surface + ssh_surface + nao_sample + nao_prev + nao_winter + amo_sample + amo_prev + amo_winter, data = presab))
-write.csv(vif_allbuttempsalsurfacegear, "../output/bio/vif_allbuttempsalsurfacegear.csv", row.names = TRUE)
+write.csv(vif_allbuttempsalsurfacegear, "../output/bio/vif/vif_allbuttempsalsurfacegear.csv", row.names = TRUE)
 vif_allbuttempsalsurfacegear
 ```
 
 now remove temp_surface plus salinity_surface + highly correlated
 ```{r vif allbut high corr +  temp + salinity surface/gear/nogear}
 #with gear
-vif_allbuthighcorrtempsalsurface <- vif(lm(occurrence ~ temp_depth + salinity_depth + o2_depth + chl_surface + bottom_depth + mlp_surface + gear + nao_sample + nao_prev + nao_winter + amo_sample + amo_winter, data = presab))
-write.csv(vif_allbuthighcorrtempsalsurface, "../output/bio/vif_allbuthighcorrtempsalsurface.csv", row.names = TRUE)
+vif_allbuthighcorrtempsalsurface <- vif(lm(occurrence ~ temp_depth + salinity_depth + o2_depth + chl_surface + mlp_surface + gear + nao_sample + nao_prev + nao_winter + amo_sample + amo_winter, data = presab))
+write.csv(vif_allbuthighcorrtempsalsurface, "../output/bio/vif/vif_allbuthighcorrtempsalsurface.csv", row.names = TRUE)
+
+vif_allbuthighcorrtempsalsurface <- read.csv("../output/bio/vif/vif_allbuthighcorrtempsalsurface.csv", header = TRUE)
+vif_allbuthighcorrtempsalsurface$GVIF2Dfsq <- vif_allbuthighcorrtempsalsurface$GVIF..1..2.Df..^2
+write.csv(vif_allbuthighcorrtempsalsurface, "../output/bio/vif/vif_allbuthighcorrtempsalsurface.csv", row.names = TRUE)
 vif_allbuthighcorrtempsalsurface
 
-vif_allbuthighcorrtempsalsurface_sq <- read.csv("../output/bio/vif_allbuthighcorrtempsalsurface.csv", header = TRUE)
-vif_allbuthighcorrtempsalsurface_sq$GVIF2Dfsq <- vif_allbuthighcorrtempsalsurface_sq$GVIF..1..2.Df..^2
-write.csv(vif_allbuthighcorrtempsalsurface_sq, "../output/bio/vif_allbuthighcorrtempsalsurface_sq.csv", row.names = TRUE)
-vif_allbuthighcorrtempsalsurface_sq
-
 #without gear
-vif_allbuthighcorrtempsalsurfacegear <- vif(lm(occurrence ~ temp_depth + salinity_depth + o2_depth + chl_surface + bottom_depth + mlp_surface + nao_sample + nao_prev + nao_winter + amo_sample + amo_winter, data = presab))
-write.csv(vif_allbuthighcorrtempsalsurfacegear, "../output/bio/vif_allbuthighcorrtempsalsurfacegear.csv", row.names = TRUE)
+vif_allbuthighcorrtempsalsurfacegear <- vif(lm(occurrence ~ temp_depth + salinity_depth + o2_depth + chl_surface + mlp_surface + nao_sample + nao_prev + nao_winter + amo_sample + amo_winter, data = presab))
+write.csv(vif_allbuthighcorrtempsalsurfacegear, "../output/bio/vif/vif_allbuthighcorrtempsalsurfacegear.csv", row.names = TRUE)
 vif_allbuthighcorrtempsalsurfacegear
 ```
 
@@ -1517,13 +1541,12 @@ Just out of curiosity, a vif will all but but atmos drivers
 
 ```{r}
 vif_allbutnaoamo <- vif(lm(occurrence ~ temp_surface + temp_depth + salinity_surface + salinity_depth + o2_surface + o2_depth + chl_surface + chl_depth + bottom_depth + mlp_surface + ssh_surface + gear, data = presab))
-write.csv(vif_allbutnaoamo, "../output/bio/vif_allbutnaoamo.csv", row.names = TRUE)
-vif_allbutnaoamo
+write.csv(vif_allbutnaoamo, "../output/bio/vif/vif_allbutnaoamo.csv", row.names = TRUE)
 
-vif_allbutnaoamo_sq <- read.csv("../output/bio/vif_allbutnaoamo.csv", header = TRUE)
-vif_allbutnaoamo_sq$GVIF2Dfsq <- vif_allbutnaoamo_sq$GVIF..1..2.Df..^2
-write.csv(vif_allbutnaoamo_sq, "../output/bio/vif_allbutnaoamo_sq.csv", row.names = TRUE)
-vif_allbutnaoamo_sq
+vif_allbutnaoamo <- read.csv("../output/bio/vif/vif_allbutnaoamo.csv", header = TRUE)
+vif_allbutnaoamo$GVIF2Dfsq <- vif_allbutnaoamo$GVIF..1..2.Df..^2
+write.csv(vif_allbutnaoamo, "../output/bio/vif/vif_allbutnaoamo.csv", row.names = TRUE)
+vif_allbutnaoamo
 ```
 not much diff..
 
@@ -1568,51 +1591,51 @@ decback <- subset(decpresab, occurrence == "0")
 run the correlations on each month's background points
 
 ```{r monthly spearman correlations}
-janback <- subset(janback, select = c(amo_sample, amo_winter, amo_prev, nao_sample, nao_winter, nao_prev, chl_surface, chl_depth, mlp_surface, ssh_surface, temp_surface, temp_depth, o2_surface, o2_depth, salinity_surface, salinity_depth))
+janback <- subset(janback, select = c(amo_sample, amo_winter, amo_prev, nao_sample, nao_winter, nao_prev, chl_surface, chl_depth, mlp_surface, ssh_surface, temp_surface, temp_depth, o2_surface, o2_depth, salinity_surface, salinity_depth, bottom_depth))
 janback_cor <- cor(janback, use="complete.obs", method = "spearman") #need to create a correlation using cor to plot. complete.obs means na.rm in this package. #using spearmans as suitable for non-linear relationships
 write.csv(janback_cor, "../output/env/janback_cor.csv", row.names = TRUE)
 
-febback <- subset(febback, select = c(amo_sample, amo_winter, amo_prev, nao_sample, nao_winter, nao_prev, chl_surface, chl_depth, mlp_surface, ssh_surface, temp_surface, temp_depth, o2_surface, o2_depth, salinity_surface, salinity_depth))
+febback <- subset(febback, select = c(amo_sample, amo_winter, amo_prev, nao_sample, nao_winter, nao_prev, chl_surface, chl_depth, mlp_surface, ssh_surface, temp_surface, temp_depth, o2_surface, o2_depth, salinity_surface, salinity_depth, bottom_depth))
 febback_cor <- cor(febback, use="complete.obs", method = "spearman") #need to create a correlation using cor to plot. complete.obs means na.rm in this package. #using spearmans as suitable for non-linear relationships
 write.csv(febback_cor, "../output/env/febback_cor.csv", row.names = TRUE)
 
-marback <- subset(marback, select = c(amo_sample, amo_winter, amo_prev, nao_sample, nao_winter, nao_prev, chl_surface, chl_depth, mlp_surface, ssh_surface, temp_surface, temp_depth, o2_surface, o2_depth, salinity_surface, salinity_depth))
+marback <- subset(marback, select = c(amo_sample, amo_winter, amo_prev, nao_sample, nao_winter, nao_prev, chl_surface, chl_depth, mlp_surface, ssh_surface, temp_surface, temp_depth, o2_surface, o2_depth, salinity_surface, salinity_depth, bottom_depth))
 marback_cor <- cor(marback, use="complete.obs", method = "spearman") #need to create a correlation using cor to plot. complete.obs means na.rm in this package. #using spearmans as suitable for non-linear relationships
 write.csv(marback_cor, "../output/env/marback_cor.csv", row.names = TRUE)
 
-aprback <- subset(aprback, select = c(amo_sample, amo_winter, amo_prev, nao_sample, nao_winter, nao_prev, chl_surface, chl_depth, mlp_surface, ssh_surface, temp_surface, temp_depth, o2_surface, o2_depth, salinity_surface, salinity_depth))
+aprback <- subset(aprback, select = c(amo_sample, amo_winter, amo_prev, nao_sample, nao_winter, nao_prev, chl_surface, chl_depth, mlp_surface, ssh_surface, temp_surface, temp_depth, o2_surface, o2_depth, salinity_surface, salinity_depth, bottom_depth))
 aprback_cor <- cor(aprback, use="complete.obs", method = "spearman") #need to create a correlation using cor to plot. complete.obs means na.rm in this package. #using spearmans as suitable for non-linear relationships
 write.csv(aprback_cor, "../output/env/aprback_cor.csv", row.names = TRUE)
 
-mayback <- subset(mayback, select = c(amo_sample, amo_winter, amo_prev, nao_sample, nao_winter, nao_prev, chl_surface, chl_depth, mlp_surface, ssh_surface, temp_surface, temp_depth, o2_surface, o2_depth, salinity_surface, salinity_depth))
+mayback <- subset(mayback, select = c(amo_sample, amo_winter, amo_prev, nao_sample, nao_winter, nao_prev, chl_surface, chl_depth, mlp_surface, ssh_surface, temp_surface, temp_depth, o2_surface, o2_depth, salinity_surface, salinity_depth, bottom_depth))
 mayback_cor <- cor(mayback, use="complete.obs", method = "spearman") #need to create a correlation using cor to plot. complete.obs means na.rm in this package. #using spearmans as suitable for non-linear relationships
 write.csv(mayback_cor, "../output/env/mayback_cor.csv", row.names = TRUE)
 
-junback <- subset(junback, select = c(amo_sample, amo_winter, amo_prev, nao_sample, nao_winter, nao_prev, chl_surface, chl_depth, mlp_surface, ssh_surface, temp_surface, temp_depth, o2_surface, o2_depth, salinity_surface, salinity_depth))
+junback <- subset(junback, select = c(amo_sample, amo_winter, amo_prev, nao_sample, nao_winter, nao_prev, chl_surface, chl_depth, mlp_surface, ssh_surface, temp_surface, temp_depth, o2_surface, o2_depth, salinity_surface, salinity_depth, bottom_depth))
 junback_cor <- cor(junback, use="complete.obs", method = "spearman") #need to create a correlation using cor to plot. complete.obs means na.rm in this package. #using spearmans as suitable for non-linear relationships
 write.csv(junback_cor, "../output/env/junback_cor.csv", row.names = TRUE)
 
-julback <- subset(julback, select = c(amo_sample, amo_winter, amo_prev, nao_sample, nao_winter, nao_prev, chl_surface, chl_depth, mlp_surface, ssh_surface, temp_surface, temp_depth, o2_surface, o2_depth, salinity_surface, salinity_depth))
+julback <- subset(julback, select = c(amo_sample, amo_winter, amo_prev, nao_sample, nao_winter, nao_prev, chl_surface, chl_depth, mlp_surface, ssh_surface, temp_surface, temp_depth, o2_surface, o2_depth, salinity_surface, salinity_depth, bottom_depth))
 julback_cor <- cor(julback, use="complete.obs", method = "spearman") #need to create a correlation using cor to plot. complete.obs means na.rm in this package. #using spearmans as suitable for non-linear relationships
 write.csv(julback_cor, "../output/env/julback_cor.csv", row.names = TRUE)
 
-augback <- subset(augback, select = c(amo_sample, amo_winter, amo_prev, nao_sample, nao_winter, nao_prev, chl_surface, chl_depth, mlp_surface, ssh_surface, temp_surface, temp_depth, o2_surface, o2_depth, salinity_surface, salinity_depth))
+augback <- subset(augback, select = c(amo_sample, amo_winter, amo_prev, nao_sample, nao_winter, nao_prev, chl_surface, chl_depth, mlp_surface, ssh_surface, temp_surface, temp_depth, o2_surface, o2_depth, salinity_surface, salinity_depth, bottom_depth))
 augback_cor <- cor(augback, use="complete.obs", method = "spearman") #need to create a correlation using cor to plot. complete.obs means na.rm in this package. #using spearmans as suitable for non-linear relationships
 write.csv(augback_cor, "../output/env/augback_cor.csv", row.names = TRUE)
 
-sepback <- subset(sepback, select = c(amo_sample, amo_winter, amo_prev, nao_sample, nao_winter, nao_prev, chl_surface, chl_depth, mlp_surface, ssh_surface, temp_surface, temp_depth, o2_surface, o2_depth, salinity_surface, salinity_depth))
+sepback <- subset(sepback, select = c(amo_sample, amo_winter, amo_prev, nao_sample, nao_winter, nao_prev, chl_surface, chl_depth, mlp_surface, ssh_surface, temp_surface, temp_depth, o2_surface, o2_depth, salinity_surface, salinity_depth, bottom_depth))
 sepback_cor <- cor(sepback, use="complete.obs", method = "spearman") #need to create a correlation using cor to plot. complete.obs means na.rm in this package. #using spearmans as suitable for non-linear relationships
 write.csv(sepback_cor, "../output/env/sepback_cor.csv", row.names = TRUE)
 
-octback <- subset(octback, select = c(amo_sample, amo_winter, amo_prev, nao_sample, nao_winter, nao_prev, chl_surface, chl_depth, mlp_surface, ssh_surface, temp_surface, temp_depth, o2_surface, o2_depth, salinity_surface, salinity_depth))
+octback <- subset(octback, select = c(amo_sample, amo_winter, amo_prev, nao_sample, nao_winter, nao_prev, chl_surface, chl_depth, mlp_surface, ssh_surface, temp_surface, temp_depth, o2_surface, o2_depth, salinity_surface, salinity_depth, bottom_depth))
 octback_cor <- cor(octback, use="complete.obs", method = "spearman") #need to create a correlation using cor to plot. complete.obs means na.rm in this package. #using spearmans as suitable for non-linear relationships
 write.csv(octback_cor, "../output/env/octback_cor.csv", row.names = TRUE)
 
-novback <- subset(novback, select = c(amo_sample, amo_winter, amo_prev, nao_sample, nao_winter, nao_prev, chl_surface, chl_depth, mlp_surface, ssh_surface, temp_surface, temp_depth, o2_surface, o2_depth, salinity_surface, salinity_depth))
+novback <- subset(novback, select = c(amo_sample, amo_winter, amo_prev, nao_sample, nao_winter, nao_prev, chl_surface, chl_depth, mlp_surface, ssh_surface, temp_surface, temp_depth, o2_surface, o2_depth, salinity_surface, salinity_depth, bottom_depth))
 novback_cor <- cor(novback, use="complete.obs", method = "spearman") #need to create a correlation using cor to plot. complete.obs means na.rm in this package. #using spearmans as suitable for non-linear relationships
 write.csv(novback_cor, "../output/env/novback_cor.csv", row.names = TRUE)
 
-decback <- subset(decback, select = c(amo_sample, amo_winter, amo_prev, nao_sample, nao_winter, nao_prev, chl_surface, chl_depth, mlp_surface, ssh_surface, temp_surface, temp_depth, o2_surface, o2_depth, salinity_surface, salinity_depth))
+decback <- subset(decback, select = c(amo_sample, amo_winter, amo_prev, nao_sample, nao_winter, nao_prev, chl_surface, chl_depth, mlp_surface, ssh_surface, temp_surface, temp_depth, o2_surface, o2_depth, salinity_surface, salinity_depth, bottom_depth))
 decback_cor <- cor(decback, use="complete.obs", method = "spearman") #need to create a correlation using cor to plot. complete.obs means na.rm in this package. #using spearmans as suitable for non-linear relationships
 write.csv(decback_cor, "../output/env/decback_cor.csv", row.names = TRUE)
 ```
