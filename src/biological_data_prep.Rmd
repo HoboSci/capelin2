@@ -1187,7 +1187,7 @@ plot(map, xlim = c(-70, -43), ylim =c(38,70), asp = 1) #the x and y lim are the 
 points(presence_novals$decimalLongitude, presence_novals$decimalLatitude, col = "red") #this adds points to the mapet", xlab = "Longitude", ylab = "Latitude")
 ```
 
-Ok so they are along the coast, so the points probably fell outside the boxes.
+Ok so they are along the coast, so the points probably fell outside the boxes (confirmed with closer inspection in ArcGIS).
 
 Now remove the values
 ```{r}
