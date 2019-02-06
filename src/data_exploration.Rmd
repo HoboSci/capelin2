@@ -1030,7 +1030,7 @@ nafo5ze <- subset(presence, nafo_zone == "5ZE")
 nafohudson <- subset(presence, nafo_zone == "HudsonStrait")
 ```
 
-plot by each variable, less 3m (2 samples) and 5ze (2 samples)
+plot by each variable, less 3m (2 Sample) and 5ze (2 samples)
 ```{r presence by nafo by variable}
 ggplot(nafo0a, aes(x = temp_surface, colour = nafo_zone)) + geom_density(na.rm = TRUE) + geom_density(data=nafo0b, na.rm = TRUE) + geom_density(data=nafo2g, na.rm = TRUE) + geom_density(data=nafo2h, na.rm = TRUE) + geom_density(data=nafo2j, na.rm = TRUE) + geom_density(data=nafo3k, na.rm = TRUE) + geom_density(data=nafo3l, na.rm = TRUE) + geom_density(data=nafo3n, na.rm = TRUE) + geom_density(data=nafo3o, na.rm = TRUE) + geom_density(data=nafo3ps, na.rm = TRUE) + geom_density(data=nafo4r, na.rm = TRUE) + geom_density(data=nafo4s, na.rm = TRUE) + geom_density(data=nafo4t, na.rm = TRUE) + geom_density(data=nafo4vn, na.rm = TRUE) + geom_density(data=nafo4vs, na.rm = TRUE) + geom_density(data=nafo4w, na.rm = TRUE) + geom_density(data=nafo4x, na.rm = TRUE) + geom_density(data=nafo5y, na.rm = TRUE) + geom_density(data=nafohudson, na.rm = TRUE)
 dev.copy(png,"../output/env/env_by_nafo_plots/temp_surface_nafo.png") # to automatically save the plot to a png AND show it inline
@@ -1977,6 +1977,9 @@ ok now remove row where o2_depth is missing
 ```{r}
 presab_missingvals <- presab_missingvals[!is.na(presab_missingvals$o2_depth), ]
 nrow(presab_missingvals) #126360 - correct
+write.csv(presab_missingvals, "../output/bio/presab_alldata.csv", row.names = FALSE)
+prese_nomissing <- subset(presab_missingvals, occurrence == "1")
+write.csv(prese_nomissing, "../output/bio/pres_nomissing.csv", row.names = FALSE) # this is just to do some mapping in arcgis
 ```
 ok as summaries observations per month
 
@@ -2000,7 +2003,624 @@ presence_na_greater <- subset(presence_NA, depth_layer > bottom_depth_glorys)
 presence_na_greater 
 ```
 
-ok potentially i might be able to claw back 150 points...im not sure its worth it
+ok potentially i might be able to claw back 150 points...im not sure its worth it.
+
+ok so redo the occurrence by month/nafo region
+
+```{r prsence nafo by month with complete data}
+nafo_by_mth <- with(presab_missingvals_obs, table(nafo_zone, month))
+write.csv(nafo_by_mth, file = "../output/bio/nafozone_by_mth_missingvalsout.csv")
+nafo_by_mth
+```
+and year-month table
+
+and just a year-month table
+```{r observations by year-month with complete data}
+year_by_mt <- with(presab_missingvals_obs, table(year, month))
+write.csv(year_by_mt, file = "../output/bio/year_by_mth_missingvalsout.csv")
+year_by_mt
+```
+
+ok now as per MJ/Chan, count of cell sampled by year, and then cell sampled by month (do this on the data with obs with missing env. data out)
+
+```{r}
+timescellsampledtotal <- count(presab_missingvals_obs, "cell_id_3d")
+write.csv(timescellsampledtotal, "../output/bio/chan/timescellsampledtotal.csv", row.names = FALSE)
+names(timescellsampledtotal)[names(timescellsampledtotal)=="freq"] <- "samples"
+summarytimescellsampledtotal <- count(timescellsampledtotal, "samples")
+write.csv(timescellsampledtotal, "../output/bio/chan/summarytimescellsampledtotal.csv", row.names = FALSE)
+```
+
+ok now by year
+
+```{r}
+year <- subset(presab_missingvals_obs, year == "1998")
+timescellsampledyr <- count(year, "cell_id_3d")
+timescellsampledyr$cell_id_3d <- as.character(timescellsampledyr$cell_id_3d)
+timescellsampledyr$cell_id <- as.numeric(sapply(strsplit(timescellsampledyr$cell_id_3d, "_"), "[[", 1)) # extracting the first part of the netcdf filename (which is the year)
+write.csv(timescellsampledyr, file = "../output/bio/chan/timescellsampled1998.csv")
+names(timescellsampledyr)[names(timescellsampledyr)=="freq"] <- "samples"
+summaryyear <- count(timescellsampledyr, "samples")
+write.csv(summaryyear, "../output/bio/chan/summarytimescellsampled1998.csv", row.names = FALSE)
+
+year <- subset(presab_missingvals_obs, year == "1999")
+timescellsampledyr <- count(year, "cell_id_3d")
+timescellsampledyr$cell_id_3d <- as.character(timescellsampledyr$cell_id_3d)
+timescellsampledyr$cell_id <- as.numeric(sapply(strsplit(timescellsampledyr$cell_id_3d, "_"), "[[", 1)) # extracting the first part of the netcdf filename (which is the year)
+write.csv(timescellsampledyr, file = "../output/bio/chan/timescellsampled1999.csv")
+names(timescellsampledyr)[names(timescellsampledyr)=="freq"] <- "samples"
+summaryyear <- count(timescellsampledyr, "samples")
+write.csv(summaryyear, "../output/bio/chan/summarytimescellsampled1999.csv", row.names = FALSE)
+
+year <- subset(presab_missingvals_obs, year == "2000")
+timescellsampledyr <- count(year, "cell_id_3d")
+timescellsampledyr$cell_id_3d <- as.character(timescellsampledyr$cell_id_3d)
+timescellsampledyr$cell_id <- as.numeric(sapply(strsplit(timescellsampledyr$cell_id_3d, "_"), "[[", 1)) # extracting the first part of the netcdf filename (which is the year)
+write.csv(timescellsampledyr, file = "../output/bio/chan/timescellsampled2000.csv")
+names(timescellsampledyr)[names(timescellsampledyr)=="freq"] <- "samples"
+summaryyear <- count(timescellsampledyr, "samples")
+write.csv(summaryyear, "../output/bio/chan/summarytimescellsampled2000.csv", row.names = FALSE)
+
+year <- subset(presab_missingvals_obs, year == "2001")
+timescellsampledyr <- count(year, "cell_id_3d")
+timescellsampledyr$cell_id_3d <- as.character(timescellsampledyr$cell_id_3d)
+timescellsampledyr$cell_id <- as.numeric(sapply(strsplit(timescellsampledyr$cell_id_3d, "_"), "[[", 1)) # extracting the first part of the netcdf filename (which is the year)
+write.csv(timescellsampledyr, file = "../output/bio/chan/timescellsampled2001.csv")
+names(timescellsampledyr)[names(timescellsampledyr)=="freq"] <- "samples"
+summaryyear <- count(timescellsampledyr, "samples")
+write.csv(summaryyear, "../output/bio/chan/summarytimescellsampled2001.csv", row.names = FALSE)
+
+year <- subset(presab_missingvals_obs, year == "2002")
+timescellsampledyr <- count(year, "cell_id_3d")
+timescellsampledyr$cell_id_3d <- as.character(timescellsampledyr$cell_id_3d)
+timescellsampledyr$cell_id <- as.numeric(sapply(strsplit(timescellsampledyr$cell_id_3d, "_"), "[[", 1)) # extracting the first part of the netcdf filename (which is the year)
+write.csv(timescellsampledyr, file = "../output/bio/chan/timescellsampled2002.csv")
+names(timescellsampledyr)[names(timescellsampledyr)=="freq"] <- "samples"
+summaryyear <- count(timescellsampledyr, "samples")
+write.csv(summaryyear, "../output/bio/chan/summarytimescellsampled2002.csv", row.names = FALSE)
+
+year <- subset(presab_missingvals_obs, year == "2003")
+timescellsampledyr <- count(year, "cell_id_3d")
+write.csv(timescellsampledyr, file = "../output/bio/chan/timescellsampled2003.csv")
+names(timescellsampledyr)[names(timescellsampledyr)=="freq"] <- "samples"
+summaryyear <- count(timescellsampledyr, "samples")
+write.csv(summaryyear, "../output/bio/chan/summarytimescellsampled2003.csv", row.names = FALSE)
+
+year <- subset(presab_missingvals_obs, year == "2004")
+timescellsampledyr <- count(year, "cell_id_3d")
+timescellsampledyr$cell_id_3d <- as.character(timescellsampledyr$cell_id_3d)
+timescellsampledyr$cell_id <- as.numeric(sapply(strsplit(timescellsampledyr$cell_id_3d, "_"), "[[", 1)) # extracting the first part of the netcdf filename (which is the year)
+write.csv(timescellsampledyr, file = "../output/bio/chan/timescellsampled2004.csv")
+names(timescellsampledyr)[names(timescellsampledyr)=="freq"] <- "samples"
+summaryyear <- count(timescellsampledyr, "samples")
+write.csv(summaryyear, "../output/bio/chan/summarytimescellsampled2004.csv", row.names = FALSE)
+
+year <- subset(presab_missingvals_obs, year == "2005")
+timescellsampledyr <- count(year, "cell_id_3d")
+timescellsampledyr$cell_id_3d <- as.character(timescellsampledyr$cell_id_3d)
+timescellsampledyr$cell_id <- as.numeric(sapply(strsplit(timescellsampledyr$cell_id_3d, "_"), "[[", 1)) # extracting the first part of the netcdf filename (which is the year)
+write.csv(timescellsampledyr, file = "../output/bio/chan/timescellsampled2005.csv")
+names(timescellsampledyr)[names(timescellsampledyr)=="freq"] <- "samples"
+summaryyear <- count(timescellsampledyr, "samples")
+write.csv(summaryyear, "../output/bio/chan/summarytimescellsampled2005.csv", row.names = FALSE)
+
+year <- subset(presab_missingvals_obs, year == "2006")
+timescellsampledyr <- count(year, "cell_id_3d")
+timescellsampledyr$cell_id_3d <- as.character(timescellsampledyr$cell_id_3d)
+timescellsampledyr$cell_id <- as.numeric(sapply(strsplit(timescellsampledyr$cell_id_3d, "_"), "[[", 1)) # extracting the first part of the netcdf filename (which is the year)
+write.csv(timescellsampledyr, file = "../output/bio/chan/timescellsampled2006.csv")
+names(timescellsampledyr)[names(timescellsampledyr)=="freq"] <- "samples"
+summaryyear <- count(timescellsampledyr, "samples")
+write.csv(summaryyear, "../output/bio/chan/summarytimescellsampled2006.csv", row.names = FALSE)
+
+year <- subset(presab_missingvals_obs, year == "2007")
+timescellsampledyr <- count(year, "cell_id_3d")
+timescellsampledyr$cell_id_3d <- as.character(timescellsampledyr$cell_id_3d)
+timescellsampledyr$cell_id <- as.numeric(sapply(strsplit(timescellsampledyr$cell_id_3d, "_"), "[[", 1)) # extracting the first part of the netcdf filename (which is the year)
+write.csv(timescellsampledyr, file = "../output/bio/chan/timescellsampled2007.csv")
+names(timescellsampledyr)[names(timescellsampledyr)=="freq"] <- "samples"
+summaryyear <- count(timescellsampledyr, "samples")
+write.csv(summaryyear, "../output/bio/chan/summarytimescellsampled2007.csv", row.names = FALSE)
+
+year <- subset(presab_missingvals_obs, year == "2008")
+timescellsampledyr <- count(year, "cell_id_3d")
+timescellsampledyr$cell_id_3d <- as.character(timescellsampledyr$cell_id_3d)
+timescellsampledyr$cell_id <- as.numeric(sapply(strsplit(timescellsampledyr$cell_id_3d, "_"), "[[", 1)) # extracting the first part of the netcdf filename (which is the year)
+write.csv(timescellsampledyr, file = "../output/bio/chan/timescellsampled2008.csv")
+names(timescellsampledyr)[names(timescellsampledyr)=="freq"] <- "samples"
+summaryyear <- count(timescellsampledyr, "samples")
+write.csv(summaryyear, "../output/bio/chan/summarytimescellsampled2008.csv", row.names = FALSE)
+
+year <- subset(presab_missingvals_obs, year == "2009")
+timescellsampledyr <- count(year, "cell_id_3d")
+timescellsampledyr$cell_id_3d <- as.character(timescellsampledyr$cell_id_3d)
+timescellsampledyr$cell_id <- as.numeric(sapply(strsplit(timescellsampledyr$cell_id_3d, "_"), "[[", 1)) # extracting the first part of the netcdf filename (which is the year)
+write.csv(timescellsampledyr, file = "../output/bio/chan/timescellsampled2009.csv")
+names(timescellsampledyr)[names(timescellsampledyr)=="freq"] <- "samples"
+summaryyear <- count(timescellsampledyr, "samples")
+write.csv(summaryyear, "../output/bio/chan/summarytimescellsampled2009.csv", row.names = FALSE)
+
+year <- subset(presab_missingvals_obs, year == "2010")
+timescellsampledyr <- count(year, "cell_id_3d")
+timescellsampledyr$cell_id_3d <- as.character(timescellsampledyr$cell_id_3d)
+timescellsampledyr$cell_id <- as.numeric(sapply(strsplit(timescellsampledyr$cell_id_3d, "_"), "[[", 1)) # extracting the first part of the netcdf filename (which is the year)
+write.csv(timescellsampledyr, file = "../output/bio/chan/timescellsampled2010.csv")
+names(timescellsampledyr)[names(timescellsampledyr)=="freq"] <- "samples"
+summaryyear <- count(timescellsampledyr, "samples")
+write.csv(summaryyear, "../output/bio/chan/summarytimescellsampled2010.csv", row.names = FALSE)
+
+year <- subset(presab_missingvals_obs, year == "2011")
+timescellsampledyr <- count(year, "cell_id_3d")
+timescellsampledyr$cell_id_3d <- as.character(timescellsampledyr$cell_id_3d)
+timescellsampledyr$cell_id <- as.numeric(sapply(strsplit(timescellsampledyr$cell_id_3d, "_"), "[[", 1)) # extracting the first part of the netcdf filename (which is the year)
+write.csv(timescellsampledyr, file = "../output/bio/chan/timescellsampled2011.csv")
+names(timescellsampledyr)[names(timescellsampledyr)=="freq"] <- "samples"
+summaryyear <- count(timescellsampledyr, "samples")
+write.csv(summaryyear, "../output/bio/chan/summarytimescellsampled2011.csv", row.names = FALSE)
+
+year <- subset(presab_missingvals_obs, year == "2012")
+timescellsampledyr <- count(year, "cell_id_3d")
+timescellsampledyr$cell_id_3d <- as.character(timescellsampledyr$cell_id_3d)
+timescellsampledyr$cell_id <- as.numeric(sapply(strsplit(timescellsampledyr$cell_id_3d, "_"), "[[", 1)) # extracting the first part of the netcdf filename (which is the year)
+write.csv(timescellsampledyr, file = "../output/bio/chan/timescellsampled2012.csv")
+names(timescellsampledyr)[names(timescellsampledyr)=="freq"] <- "samples"
+summaryyear <- count(timescellsampledyr, "samples")
+write.csv(summaryyear, "../output/bio/chan/summarytimescellsampled2012.csv", row.names = FALSE)
+
+year <- subset(presab_missingvals_obs, year == "2013")
+timescellsampledyr <- count(year, "cell_id_3d")
+timescellsampledyr$cell_id_3d <- as.character(timescellsampledyr$cell_id_3d)
+timescellsampledyr$cell_id <- as.numeric(sapply(strsplit(timescellsampledyr$cell_id_3d, "_"), "[[", 1)) # extracting the first part of the netcdf filename (which is the year)
+write.csv(timescellsampledyr, file = "../output/bio/chan/timescellsampled2013.csv")
+names(timescellsampledyr)[names(timescellsampledyr)=="freq"] <- "samples"
+summaryyear <- count(timescellsampledyr, "samples")
+write.csv(summaryyear, "../output/bio/chan/summarytimescellsampled2013.csv", row.names = FALSE)
+
+year <- subset(presab_missingvals_obs, year == "2014")
+timescellsampledyr <- count(year, "cell_id_3d")
+timescellsampledyr$cell_id_3d <- as.character(timescellsampledyr$cell_id_3d)
+timescellsampledyr$cell_id <- as.numeric(sapply(strsplit(timescellsampledyr$cell_id_3d, "_"), "[[", 1)) # extracting the first part of the netcdf filename (which is the year)
+write.csv(timescellsampledyr, file = "../output/bio/chan/timescellsampled2014.csv")
+names(timescellsampledyr)[names(timescellsampledyr)=="freq"] <- "samples"
+summaryyear <- count(timescellsampledyr, "samples")
+write.csv(summaryyear, "../output/bio/chan/summarytimescellsampled2014.csv", row.names = FALSE)
+
+year <- subset(presab_missingvals_obs, year == "2015")
+timescellsampledyr <- count(year, "cell_id_3d")
+timescellsampledyr$cell_id_3d <- as.character(timescellsampledyr$cell_id_3d)
+timescellsampledyr$cell_id <- as.numeric(sapply(strsplit(timescellsampledyr$cell_id_3d, "_"), "[[", 1)) # extracting the first part of the netcdf filename (which is the year)
+write.csv(timescellsampledyr, file = "../output/bio/chan/timescellsampled2015.csv")
+names(timescellsampledyr)[names(timescellsampledyr)=="freq"] <- "samples"
+summaryyear <- count(timescellsampledyr, "samples")
+write.csv(summaryyear, "../output/bio/chan/summarytimescellsampled2015.csv", row.names = FALSE)
+```
+
+by month
+```{r}
+month <- subset(presab_missingvals_obs, month == "1")
+timescellsampledyr <- count(month, "cell_id_3d")
+write.csv(timescellsampledyr, file = "../output/bio/chan/timescellsampled1.csv")
+names(timescellsampledyr)[names(timescellsampledyr)=="freq"] <- "samples"
+summaryyear <- count(timescellsampledyr, "samples")
+write.csv(summaryyear, "../output/bio/chan/summarytimescellsampled1.csv", row.names = FALSE)
+
+month <- subset(presab_missingvals_obs, month == "2")
+timescellsampledyr <- count(month, "cell_id_3d")
+write.csv(timescellsampledyr, file = "../output/bio/chan/timescellsampled2.csv")
+names(timescellsampledyr)[names(timescellsampledyr)=="freq"] <- "samples"
+summaryyear <- count(timescellsampledyr, "samples")
+write.csv(summaryyear, "../output/bio/chan/summarytimescellsampled2.csv", row.names = FALSE)
+
+month <- subset(presab_missingvals_obs, month == "3")
+timescellsampledyr <- count(month, "cell_id_3d")
+write.csv(timescellsampledyr, file = "../output/bio/chan/timescellsampled3.csv")
+names(timescellsampledyr)[names(timescellsampledyr)=="freq"] <- "samples"
+summaryyear <- count(timescellsampledyr, "samples")
+write.csv(summaryyear, "../output/bio/chan/summarytimescellsampled3.csv", row.names = FALSE)
+
+month <- subset(presab_missingvals_obs, month == "4")
+timescellsampledyr <- count(month, "cell_id_3d")
+write.csv(timescellsampledyr, file = "../output/bio/chan/timescellsampled4.csv")
+names(timescellsampledyr)[names(timescellsampledyr)=="freq"] <- "samples"
+summaryyear <- count(timescellsampledyr, "samples")
+write.csv(summaryyear, "../output/bio/chan/summarytimescellsampled4.csv", row.names = FALSE)
+
+month <- subset(presab_missingvals_obs, month == "5")
+timescellsampledyr <- count(month, "cell_id_3d")
+write.csv(timescellsampledyr, file = "../output/bio/chan/timescellsampled5.csv")
+names(timescellsampledyr)[names(timescellsampledyr)=="freq"] <- "samples"
+summaryyear <- count(timescellsampledyr, "samples")
+write.csv(summaryyear, "../output/bio/chan/summarytimescellsampled5.csv", row.names = FALSE)
+
+month <- subset(presab_missingvals_obs, month == "6")
+timescellsampledyr <- count(month, "cell_id_3d")
+write.csv(timescellsampledyr, file = "../output/bio/chan/timescellsampled6.csv")
+names(timescellsampledyr)[names(timescellsampledyr)=="freq"] <- "samples"
+summaryyear <- count(timescellsampledyr, "samples")
+write.csv(summaryyear, "../output/bio/chan/summarytimescellsampled6.csv", row.names = FALSE)
+
+month <- subset(presab_missingvals_obs, month == "7")
+timescellsampledyr <- count(month, "cell_id_3d")
+write.csv(timescellsampledyr, file = "../output/bio/chan/timescellsampled7.csv")
+names(timescellsampledyr)[names(timescellsampledyr)=="freq"] <- "samples"
+summaryyear <- count(timescellsampledyr, "samples")
+write.csv(summaryyear, "../output/bio/chan/summarytimescellsampled7.csv", row.names = FALSE)
+
+month <- subset(presab_missingvals_obs, month == "8")
+timescellsampledyr <- count(month, "cell_id_3d")
+write.csv(timescellsampledyr, file = "../output/bio/chan/timescellsampled8.csv")
+names(timescellsampledyr)[names(timescellsampledyr)=="freq"] <- "samples"
+summaryyear <- count(timescellsampledyr, "samples")
+write.csv(summaryyear, "../output/bio/chan/summarytimescellsampled8.csv", row.names = FALSE)
+
+month <- subset(presab_missingvals_obs, month == "9")
+timescellsampledyr <- count(month, "cell_id_3d")
+write.csv(timescellsampledyr, file = "../output/bio/chan/timescellsampled9.csv")
+names(timescellsampledyr)[names(timescellsampledyr)=="freq"] <- "samples"
+summaryyear <- count(timescellsampledyr, "samples")
+write.csv(summaryyear, "../output/bio/chan/summarytimescellsampled9.csv", row.names = FALSE)
+
+month <- subset(presab_missingvals_obs, month == "10")
+timescellsampledyr <- count(month, "cell_id_3d")
+write.csv(timescellsampledyr, file = "../output/bio/chan/timescellsampled10.csv")
+names(timescellsampledyr)[names(timescellsampledyr)=="freq"] <- "samples"
+summaryyear <- count(timescellsampledyr, "samples")
+write.csv(summaryyear, "../output/bio/chan/summarytimescellsampled10.csv", row.names = FALSE)
+
+month <- subset(presab_missingvals_obs, month == "11")
+timescellsampledyr <- count(month, "cell_id_3d")
+write.csv(timescellsampledyr, file = "../output/bio/chan/timescellsampled11.csv")
+names(timescellsampledyr)[names(timescellsampledyr)=="freq"] <- "samples"
+summaryyear <- count(timescellsampledyr, "samples")
+write.csv(summaryyear, "../output/bio/chan/summarytimescellsampled11.csv", row.names = FALSE)
+
+month <- subset(presab_missingvals_obs, month == "12")
+timescellsampledyr <- count(month, "cell_id_3d")
+write.csv(timescellsampledyr, file = "../output/bio/chan/timescellsampled12.csv")
+names(timescellsampledyr)[names(timescellsampledyr)=="freq"] <- "samples"
+summaryyear <- count(timescellsampledyr, "samples")
+write.csv(summaryyear, "../output/bio/chan/summarytimescellsampled12.csv", row.names = FALSE)
+
+timescellsampledyr$cell_id_3d <- as.character(timescellsampledyr$cell_id_3d)
+timescellsampledyr$cell_id <- as.numeric(sapply(strsplit(timescellsampledyr$cell_id_3d, "_"), "[[", 1)) # extracting the first part of the netcdf filename (which is the year)
+head(timescellsampledyr)
+```
+
+```{r summary stats for env variable by year and month for presence points}
+temp_depth <- describeBy(presence$temp_depth, presence$year, mat = TRUE, digits = 2)
+temp_depth <- subset(temp_depth, select = c(group1, min, max, mean, range))
+names(temp_depth)[names(temp_depth)=="group1"] <- "year"
+write.csv(temp_depth, "../output/env/env_sumstats/temp_depth_presence_summarystats_year.csv", row.names = FALSE)
+
+temp_depth <- describeBy(presence$temp_depth, presence$month, mat = TRUE, digits = 2)
+temp_depth <- subset(temp_depth, select = c(group1, min, max, mean, range))
+names(temp_depth)[names(temp_depth)=="group1"] <- "month"
+write.csv(temp_depth, "../output/env/env_sumstats/temp_depth_presence_summarystats_month.csv", row.names = FALSE)
+
+temp_surface <- describeBy(presence$temp_surface, presence$year, mat = TRUE, digits = 2)
+temp_surface <- subset(temp_surface, select = c(group1, min, max, mean, range))
+names(temp_surface)[names(temp_surface)=="group1"] <- "year"
+write.csv(temp_surface, "../output/env/env_sumstats/temp_dsurface_presence_summarystats_year.csv", row.names = FALSE)
+
+temp_surface <- describeBy(presence$temp_depth, presence$month, mat = TRUE, digits = 2)
+temp_surface <- subset(temp_surface, select = c(group1, min, max, mean, range))
+names(temp_surface)[names(temp_surface)=="group1"] <- "month"
+write.csv(temp_surface, "../output/env/env_sumstats/temp_surface_presence_summarystats_month.csv", row.names = FALSE)
+
+salinity_depth <- describeBy(presence$salinity_depth, presence$year, mat = TRUE, digits = 2)
+salinity_depth <- subset(salinity_depth, select = c(group1, min, max, mean, range))
+names(salinity_depth)[names(salinity_depth)=="group1"] <- "year"
+write.csv(salinity_depth, "../output/env/env_sumstats/salinity_depth_presence_summarystats_year.csv", row.names = FALSE)
+
+salinity_depth <- describeBy(presence$salinity_depth, presence$month, mat = TRUE, digits = 2)
+salinity_depth <- subset(salinity_depth, select = c(group1, min, max, mean, range))
+names(salinity_depth)[names(salinity_depth)=="group1"] <- "month"
+write.csv(salinity_depth, "../output/env/env_sumstats/salinity_depth_presence_summarystats_month.csv", row.names = FALSE)
+
+salinity_surface <- describeBy(presence$salinity_surface, presence$year, mat = TRUE, digits = 2)
+salinity_surface <- subset(salinity_surface, select = c(group1, min, max, mean, range))
+names(salinity_surface)[names(salinity_surface)=="group1"] <- "year"
+write.csv(salinity_surface, "../output/env/env_sumstats/salinity_dsurface_presence_summarystats_year.csv", row.names = FALSE)
+
+salinity_surface <- describeBy(presence$salinity_surface, presence$month, mat = TRUE, digits = 2)
+salinity_surface <- subset(salinity_surface, select = c(group1, min, max, mean, range))
+names(salinity_surface)[names(salinity_surface)=="group1"] <- "month"
+write.csv(salinity_surface, "../output/env/env_sumstats/salinity_surface_presence_summarystats_month.csv", row.names = FALSE)
+
+o2_depth <- describeBy(presence$o2_depth, presence$year, mat = TRUE, digits = 2)
+o2_depth <- subset(o2_depth, select = c(group1, min, max, mean, range))
+names(o2_depth)[names(o2_depth)=="group1"] <- "year"
+write.csv(o2_depth, "../output/env/env_sumstats/o2_depth_presence_summarystats_year.csv", row.names = FALSE)
+
+o2_depth <- describeBy(presence$o2_depth, presence$month, mat = TRUE, digits = 2)
+o2_depth <- subset(o2_depth, select = c(group1, min, max, mean, range))
+names(o2_depth)[names(o2_depth)=="group1"] <- "month"
+write.csv(o2_depth, "../output/env/env_sumstats/o2_depth_presence_summarystats_month.csv", row.names = FALSE)
+
+o2_surface <- describeBy(presence$o2_surface, presence$year, mat = TRUE, digits = 2)
+o2_surface <- subset(o2_surface, select = c(group1, min, max, mean, range))
+names(o2_surface)[names(o2_surface)=="group1"] <- "year"
+write.csv(o2_surface, "../output/env/env_sumstats/o2_dsurface_presence_summarystats_year.csv", row.names = FALSE)
+
+o2_surface <- describeBy(presence$o2_surface, presence$month, mat = TRUE, digits = 2)
+o2_surface <- subset(o2_surface, select = c(group1, min, max, mean, range))
+names(o2_surface)[names(o2_surface)=="group1"] <- "month"
+write.csv(o2_surface, "../output/env/env_sumstats/o2_surface_presence_summarystats_month.csv", row.names = FALSE)
+
+chl_depth <- describeBy(presence$chl_depth, presence$year, mat = TRUE, digits = 2)
+chl_depth <- subset(chl_depth, select = c(group1, min, max, mean, range))
+names(chl_depth)[names(chl_depth)=="group1"] <- "year"
+write.csv(chl_depth, "../output/env/env_sumstats/chl_depth_presence_summarystats_year.csv", row.names = FALSE)
+
+chl_depth <- describeBy(presence$chl_depth, presence$month, mat = TRUE, digits = 2)
+chl_depth <- subset(chl_depth, select = c(group1, min, max, mean, range))
+names(chl_depth)[names(chl_depth)=="group1"] <- "month"
+write.csv(chl_depth, "../output/env/env_sumstats/chl_depth_presence_summarystats_month.csv", row.names = FALSE)
+
+chl_surface <- describeBy(presence$chl_surface, presence$year, mat = TRUE, digits = 2)
+chl_surface <- subset(chl_surface, select = c(group1, min, max, mean, range))
+names(chl_surface)[names(chl_surface)=="group1"] <- "year"
+write.csv(chl_surface, "../output/env/env_sumstats/chl_surface_presence_summarystats_year.csv", row.names = FALSE)
+
+chl_surface <- describeBy(presence$chl_surface, presence$month, mat = TRUE, digits = 2)
+chl_surface <- subset(chl_surface, select = c(group1, min, max, mean, range))
+names(chl_surface)[names(chl_surface)=="group1"] <- "month"
+write.csv(chl_surface, "../output/env/env_sumstats/chl_surface_presence_summarystats_month.csv", row.names = FALSE)
+
+mlp <- describeBy(presence$mlp_surface, presence$year, mat = TRUE, digits = 2)
+mlp <- subset(mlp, select = c(group1, min, max, mean, range))
+names(mlp)[names(mlp)=="group1"] <- "year"
+write.csv(mlp, "../output/env/env_sumstats/mlp_presence_summarystats_year.csv", row.names = FALSE)
+
+mlp <- describeBy(presence$mlp_surface, presence$month, mat = TRUE, digits = 2)
+mlp <- subset(mlp, select = c(group1, min, max, mean, range))
+names(mlp)[names(mlp)=="group1"] <- "month"
+write.csv(mlp, "../output/env/env_sumstats/mlp_presence_summarystats_month.csv", row.names = FALSE)
+
+ssh <- describeBy(presence$ssh_surface, presence$year, mat = TRUE, digits = 2)
+ssh <- subset(ssh, select = c(group1, min, max, mean, range))
+names(ssh)[names(chl_depth)=="group1"] <- "year"
+write.csv(ssh, "../output/env/env_sumstats/ssh_presence_summarystats_year.csv", row.names = FALSE)
+
+ssh <- describeBy(presence$ssh_surface, presence$month, mat = TRUE, digits = 2)
+ssh <- subset(ssh, select = c(group1, min, max, mean, range))
+names(ssh)[names(chl_depth)=="group1"] <- "month"
+write.csv(ssh, "../output/env/env_sumstats/ssh_presence_summarystats_month.csv", row.names = FALSE)
+
+amo_sample <- describeBy(presence$amo_sample, presence$year, mat = TRUE, digits = 2)
+amo_sample <- subset(amo_sample, select = c(group1, min, max, mean, range))
+names(amo_sample)[names(amo_sample)=="group1"] <- "year"
+write.csv(amo_sample, "../output/env/env_sumstats/amo_sample_presence_summarystats_year.csv", row.names = FALSE)
+
+amo_sample <- describeBy(presence$amo_sample, presence$month, mat = TRUE, digits = 2)
+amo_sample <- subset(amo_sample, select = c(group1, min, max, mean, range))
+names(amo_sample)[names(chl_depth)=="group1"] <- "month"
+write.csv(amo_sample, "../output/env/env_sumstats/amo_sample_presence_summarystats_month.csv", row.names = FALSE)
+
+amo_prev <- describeBy(presence$amo_prev, presence$year, mat = TRUE, digits = 2)
+amo_prev <- subset(amo_prev, select = c(group1, min, max, mean, range))
+names(amo_prev)[names(amo_prev)=="group1"] <- "year"
+write.csv(amo_prev, "../output/env/env_sumstats/amo_prev_presence_summarystats_year.csv", row.names = FALSE)
+
+amo_prev <- describeBy(presence$amo_prev, presence$month, mat = TRUE, digits = 2)
+amo_prev <- subset(amo_prev, select = c(group1, min, max, mean, range))
+names(amo_prev)[names(chl_depth)=="group1"] <- "month"
+write.csv(amo_prev, "../output/env/env_sumstats/amo_prev_presence_summarystats_month.csv", row.names = FALSE)
+
+amo_winter <- describeBy(presence$amo_winter, presence$year, mat = TRUE, digits = 2)
+amo_winter <- subset(amo_winter, select = c(group1, min, max, mean, range))
+names(amo_winter)[names(amo_winter)=="group1"] <- "year"
+write.csv(amo_winter, "../output/env/env_sumstats/amo_winter_presence_summarystats_year.csv", row.names = FALSE)
+
+amo_winter <- describeBy(presence$amo_winter, presence$month, mat = TRUE, digits = 2)
+amo_winter <- subset(amo_winter, select = c(group1, min, max, mean, range))
+names(amo_winter)[names(chl_depth)=="group1"] <- "month"
+write.csv(amo_winter, "../output/env/env_sumstats/amo_winter_presence_summarystats_month.csv", row.names = FALSE)
+
+nao_sample <- describeBy(presence$nao_sample, presence$year, mat = TRUE, digits = 2)
+nao_sample <- subset(nao_sample, select = c(group1, min, max, mean, range))
+names(nao_sample)[names(nao_sample)=="group1"] <- "year"
+write.csv(nao_sample, "../output/env/env_sumstats/nao_sample_presence_summarystats_year.csv", row.names = FALSE)
+
+nao_sample <- describeBy(presence$nao_sample, presence$month, mat = TRUE, digits = 2)
+nao_sample <- subset(nao_sample, select = c(group1, min, max, mean, range))
+names(nao_sample)[names(chl_depth)=="group1"] <- "month"
+write.csv(nao_sample, "../output/env/env_sumstats/nao_sample_presence_summarystats_month.csv", row.names = FALSE)
+
+nao_prev <- describeBy(presence$nao_prev, presence$year, mat = TRUE, digits = 2)
+nao_prev <- subset(nao_prev, select = c(group1, min, max, mean, range))
+names(nao_prev)[names(nao_prev)=="group1"] <- "year"
+write.csv(nao_prev, "../output/env/env_sumstats/nao_prev_presence_summarystats_year.csv", row.names = FALSE)
+
+nao_prev <- describeBy(presence$nao_prev, presence$month, mat = TRUE, digits = 2)
+nao_prev <- subset(nao_prev, select = c(group1, min, max, mean, range))
+names(nao_prev)[names(chl_depth)=="group1"] <- "month"
+write.csv(nao_prev, "../output/env/env_sumstats/nao_prev_presence_summarystats_month.csv", row.names = FALSE)
+
+nao_winter <- describeBy(presence$nao_winter, presence$year, mat = TRUE, digits = 2)
+nao_winter <- subset(nao_winter, select = c(group1, min, max, mean, range))
+names(nao_winter)[names(nao_winter)=="group1"] <- "year"
+write.csv(nao_winter, "../output/env/env_sumstats/nao_winter_presence_summarystats_year.csv", row.names = FALSE)
+
+nao_winter <- describeBy(presence$nao_winter, presence$month, mat = TRUE, digits = 2)
+nao_winter <- subset(nao_winter, select = c(group1, min, max, mean, range))
+names(nao_winter)[names(chl_depth)=="group1"] <- "month"
+write.csv(nao_winter, "../output/env/env_sumstats/nao_winter_presence_summarystats_month.csv", row.names = FALSE)
+```
+
+and on background points
+
+```{r summary stats for env variable by year and month for background points}
+temp_depth <- describeBy(background$temp_depth, background$year, mat = TRUE, digits = 2)
+temp_depth <- subset(temp_depth, select = c(group1, min, max, mean, range))
+names(temp_depth)[names(temp_depth)=="group1"] <- "year"
+write.csv(temp_depth, "../output/env/env_sumstats/temp_depth_background_summarystats_year.csv", row.names = FALSE)
+
+temp_depth <- describeBy(background$temp_depth, background$month, mat = TRUE, digits = 2)
+temp_depth <- subset(temp_depth, select = c(group1, min, max, mean, range))
+names(temp_depth)[names(temp_depth)=="group1"] <- "month"
+write.csv(temp_depth, "../output/env/env_sumstats/temp_depth_background_summarystats_month.csv", row.names = FALSE)
+
+temp_surface <- describeBy(background$temp_surface, background$year, mat = TRUE, digits = 2)
+temp_surface <- subset(temp_surface, select = c(group1, min, max, mean, range))
+names(temp_surface)[names(temp_surface)=="group1"] <- "year"
+write.csv(temp_surface, "../output/env/env_sumstats/temp_dsurface_background_summarystats_year.csv", row.names = FALSE)
+
+temp_surface <- describeBy(background$temp_depth, background$month, mat = TRUE, digits = 2)
+temp_surface <- subset(temp_surface, select = c(group1, min, max, mean, range))
+names(temp_surface)[names(temp_surface)=="group1"] <- "month"
+write.csv(temp_surface, "../output/env/env_sumstats/temp_surface_background_summarystats_month.csv", row.names = FALSE)
+
+salinity_depth <- describeBy(background$salinity_depth, background$year, mat = TRUE, digits = 2)
+salinity_depth <- subset(salinity_depth, select = c(group1, min, max, mean, range))
+names(salinity_depth)[names(salinity_depth)=="group1"] <- "year"
+write.csv(salinity_depth, "../output/env/env_sumstats/salinity_depth_background_summarystats_year.csv", row.names = FALSE)
+
+salinity_depth <- describeBy(background$salinity_depth, background$month, mat = TRUE, digits = 2)
+salinity_depth <- subset(salinity_depth, select = c(group1, min, max, mean, range))
+names(salinity_depth)[names(salinity_depth)=="group1"] <- "month"
+write.csv(salinity_depth, "../output/env/env_sumstats/salinity_depth_background_summarystats_month.csv", row.names = FALSE)
+
+salinity_surface <- describeBy(background$salinity_surface, background$year, mat = TRUE, digits = 2)
+salinity_surface <- subset(salinity_surface, select = c(group1, min, max, mean, range))
+names(salinity_surface)[names(salinity_surface)=="group1"] <- "year"
+write.csv(salinity_surface, "../output/env/env_sumstats/salinity_dsurface_background_summarystats_year.csv", row.names = FALSE)
+
+salinity_surface <- describeBy(background$salinity_surface, background$month, mat = TRUE, digits = 2)
+salinity_surface <- subset(salinity_surface, select = c(group1, min, max, mean, range))
+names(salinity_surface)[names(salinity_surface)=="group1"] <- "month"
+write.csv(salinity_surface, "../output/env/env_sumstats/salinity_surface_background_summarystats_month.csv", row.names = FALSE)
+
+o2_depth <- describeBy(background$o2_depth, background$year, mat = TRUE, digits = 2)
+o2_depth <- subset(o2_depth, select = c(group1, min, max, mean, range))
+names(o2_depth)[names(o2_depth)=="group1"] <- "year"
+write.csv(o2_depth, "../output/env/env_sumstats/o2_depth_background_summarystats_year.csv", row.names = FALSE)
+
+o2_depth <- describeBy(background$o2_depth, background$month, mat = TRUE, digits = 2)
+o2_depth <- subset(o2_depth, select = c(group1, min, max, mean, range))
+names(o2_depth)[names(o2_depth)=="group1"] <- "month"
+write.csv(o2_depth, "../output/env/env_sumstats/o2_depth_background_summarystats_month.csv", row.names = FALSE)
+
+o2_surface <- describeBy(background$o2_surface, background$year, mat = TRUE, digits = 2)
+o2_surface <- subset(o2_surface, select = c(group1, min, max, mean, range))
+names(o2_surface)[names(o2_surface)=="group1"] <- "year"
+write.csv(o2_surface, "../output/env/env_sumstats/o2_dsurface_background_summarystats_year.csv", row.names = FALSE)
+
+o2_surface <- describeBy(background$o2_surface, background$month, mat = TRUE, digits = 2)
+o2_surface <- subset(o2_surface, select = c(group1, min, max, mean, range))
+names(o2_surface)[names(o2_surface)=="group1"] <- "month"
+write.csv(o2_surface, "../output/env/env_sumstats/o2_surface_background_summarystats_month.csv", row.names = FALSE)
+
+chl_depth <- describeBy(background$chl_depth, background$year, mat = TRUE, digits = 2)
+chl_depth <- subset(chl_depth, select = c(group1, min, max, mean, range))
+names(chl_depth)[names(chl_depth)=="group1"] <- "year"
+write.csv(chl_depth, "../output/env/env_sumstats/chl_depth_background_summarystats_year.csv", row.names = FALSE)
+
+chl_depth <- describeBy(background$chl_depth, background$month, mat = TRUE, digits = 2)
+chl_depth <- subset(chl_depth, select = c(group1, min, max, mean, range))
+names(chl_depth)[names(chl_depth)=="group1"] <- "month"
+write.csv(chl_depth, "../output/env/env_sumstats/chl_depth_background_summarystats_month.csv", row.names = FALSE)
+
+chl_surface <- describeBy(background$chl_surface, background$year, mat = TRUE, digits = 2)
+chl_surface <- subset(chl_surface, select = c(group1, min, max, mean, range))
+names(chl_surface)[names(chl_surface)=="group1"] <- "year"
+write.csv(chl_surface, "../output/env/env_sumstats/chl_surface_background_summarystats_year.csv", row.names = FALSE)
+
+chl_surface <- describeBy(background$chl_surface, background$month, mat = TRUE, digits = 2)
+chl_surface <- subset(chl_surface, select = c(group1, min, max, mean, range))
+names(chl_surface)[names(chl_surface)=="group1"] <- "month"
+write.csv(chl_surface, "../output/env/env_sumstats/chl_surface_background_summarystats_month.csv", row.names = FALSE)
+
+mlp <- describeBy(background$mlp_surface, background$year, mat = TRUE, digits = 2)
+mlp <- subset(mlp, select = c(group1, min, max, mean, range))
+names(mlp)[names(mlp)=="group1"] <- "year"
+write.csv(mlp, "../output/env/env_sumstats/mlp_background_summarystats_year.csv", row.names = FALSE)
+
+mlp <- describeBy(background$mlp_surface, background$month, mat = TRUE, digits = 2)
+mlp <- subset(mlp, select = c(group1, min, max, mean, range))
+names(mlp)[names(mlp)=="group1"] <- "month"
+write.csv(mlp, "../output/env/env_sumstats/mlp_background_summarystats_month.csv", row.names = FALSE)
+
+ssh <- describeBy(background$ssh_surface, background$year, mat = TRUE, digits = 2)
+ssh <- subset(ssh, select = c(group1, min, max, mean, range))
+names(ssh)[names(chl_depth)=="group1"] <- "year"
+write.csv(ssh, "../output/env/env_sumstats/ssh_background_summarystats_year.csv", row.names = FALSE)
+
+ssh <- describeBy(background$ssh_surface, background$month, mat = TRUE, digits = 2)
+ssh <- subset(ssh, select = c(group1, min, max, mean, range))
+names(ssh)[names(chl_depth)=="group1"] <- "month"
+write.csv(ssh, "../output/env/env_sumstats/ssh_background_summarystats_month.csv", row.names = FALSE)
+
+amo_sample <- describeBy(background$amo_sample, background$year, mat = TRUE, digits = 2)
+amo_sample <- subset(amo_sample, select = c(group1, min, max, mean, range))
+names(amo_sample)[names(amo_sample)=="group1"] <- "year"
+write.csv(amo_sample, "../output/env/env_sumstats/amo_sample_background_summarystats_year.csv", row.names = FALSE)
+
+amo_sample <- describeBy(background$amo_sample, background$month, mat = TRUE, digits = 2)
+amo_sample <- subset(amo_sample, select = c(group1, min, max, mean, range))
+names(amo_sample)[names(chl_depth)=="group1"] <- "month"
+write.csv(amo_sample, "../output/env/env_sumstats/amo_sample_background_summarystats_month.csv", row.names = FALSE)
+
+amo_prev <- describeBy(background$amo_prev, background$year, mat = TRUE, digits = 2)
+amo_prev <- subset(amo_prev, select = c(group1, min, max, mean, range))
+names(amo_prev)[names(amo_prev)=="group1"] <- "year"
+write.csv(amo_prev, "../output/env/env_sumstats/amo_prev_background_summarystats_year.csv", row.names = FALSE)
+
+amo_prev <- describeBy(background$amo_prev, background$month, mat = TRUE, digits = 2)
+amo_prev <- subset(amo_prev, select = c(group1, min, max, mean, range))
+names(amo_prev)[names(chl_depth)=="group1"] <- "month"
+write.csv(amo_prev, "../output/env/env_sumstats/amo_prev_background_summarystats_month.csv", row.names = FALSE)
+
+amo_winter <- describeBy(background$amo_winter, background$year, mat = TRUE, digits = 2)
+amo_winter <- subset(amo_winter, select = c(group1, min, max, mean, range))
+names(amo_winter)[names(amo_winter)=="group1"] <- "year"
+write.csv(amo_winter, "../output/env/env_sumstats/amo_winter_background_summarystats_year.csv", row.names = FALSE)
+
+amo_winter <- describeBy(background$amo_winter, background$month, mat = TRUE, digits = 2)
+amo_winter <- subset(amo_winter, select = c(group1, min, max, mean, range))
+names(amo_winter)[names(chl_depth)=="group1"] <- "month"
+write.csv(amo_winter, "../output/env/env_sumstats/amo_winter_background_summarystats_month.csv", row.names = FALSE)
+
+nao_sample <- describeBy(background$nao_sample, background$year, mat = TRUE, digits = 2)
+nao_sample <- subset(nao_sample, select = c(group1, min, max, mean, range))
+names(nao_sample)[names(nao_sample)=="group1"] <- "year"
+write.csv(nao_sample, "../output/env/env_sumstats/nao_sample_background_summarystats_year.csv", row.names = FALSE)
+
+nao_sample <- describeBy(background$nao_sample, background$month, mat = TRUE, digits = 2)
+nao_sample <- subset(nao_sample, select = c(group1, min, max, mean, range))
+names(nao_sample)[names(chl_depth)=="group1"] <- "month"
+write.csv(nao_sample, "../output/env/env_sumstats/nao_sample_background_summarystats_month.csv", row.names = FALSE)
+
+nao_prev <- describeBy(background$nao_prev, background$year, mat = TRUE, digits = 2)
+nao_prev <- subset(nao_prev, select = c(group1, min, max, mean, range))
+names(nao_prev)[names(nao_prev)=="group1"] <- "year"
+write.csv(nao_prev, "../output/env/env_sumstats/nao_prev_background_summarystats_year.csv", row.names = FALSE)
+
+nao_prev <- describeBy(background$nao_prev, background$month, mat = TRUE, digits = 2)
+nao_prev <- subset(nao_prev, select = c(group1, min, max, mean, range))
+names(nao_prev)[names(chl_depth)=="group1"] <- "month"
+write.csv(nao_prev, "../output/env/env_sumstats/nao_prev_background_summarystats_month.csv", row.names = FALSE)
+
+nao_winter <- describeBy(background$nao_winter, background$year, mat = TRUE, digits = 2)
+nao_winter <- subset(nao_winter, select = c(group1, min, max, mean, range))
+names(nao_winter)[names(nao_winter)=="group1"] <- "year"
+write.csv(nao_winter, "../output/env/env_sumstats/nao_winter_background_summarystats_year.csv", row.names = FALSE)
+
+nao_winter <- describeBy(background$nao_winter, background$month, mat = TRUE, digits = 2)
+nao_winter <- subset(nao_winter, select = c(group1, min, max, mean, range))
+names(nao_winter)[names(chl_depth)=="group1"] <- "month"
+write.csv(nao_winter, "../output/env/env_sumstats/nao_winter_background_summarystats_month.csv", row.names = FALSE)
+```
+
+
+
+
+
+
+
+
+
+
 
 #maxent?
 
