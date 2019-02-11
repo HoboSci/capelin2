@@ -1829,7 +1829,7 @@ write.csv(vif_nogear_cor_mar, "../output/bio/vif/monthly_vifs/vif_nogear_cor_mar
 vif_nogear_cor_mar
 
 #with gear
-vif_gear_cor_apr <- vif(lm(occurrence ~ temp_depth + salinity_depth + o2_depth + chl_surface + gear + nao_sample + nao_prev + nao_winter + amo_sample + amo_winter, data = aprpresab))
+vif_gear_cor_apr <- vif(lm(occurrence ~ temp_depth + salinity_depth + o2_depth + chl_surface + gear + nao_sample + nao_prev + nao_winter + amo_sample + amo_prev + amo_winter, data = aprpresab))
 write.csv(vif_gear_cor_apr, "../output/bio/vif/monthly_vifs/vif_gear_cor_apr.csv", row.names = TRUE)
 
 vif_gear_cor_apr <- read.csv("../output/bio/vif/monthly_vifs/vif_gear_cor_apr.csv", header = TRUE)
@@ -1838,7 +1838,7 @@ write.csv(vif_gear_cor_apr, "../output/bio/vif/monthly_vifs/vif_gear_cor_apr.csv
 vif_gear_cor_apr
 
 #without gear
-vif_nogear_cor_apr <- vif(lm(occurrence ~ temp_depth + salinity_depth + o2_depth + chl_surface + nao_sample + nao_prev + nao_winter + amo_sample + amo_winter, data = aprpresab))
+vif_nogear_cor_apr <- vif(lm(occurrence ~ temp_depth + salinity_depth + o2_depth + chl_surface + nao_sample + nao_prev + nao_winter + amo_sample + amo_prev + amo_winter, data = aprpresab))
 write.csv(vif_nogear_cor_apr, "../output/bio/vif/monthly_vifs/vif_nogear_cor_apr.csv", row.names = TRUE)
 vif_nogear_cor_apr
 
@@ -1852,12 +1852,12 @@ write.csv(vif_nogear_cor_may, "../output/bio/vif/monthly_vifs/vif_nogear_cor_may
 vif_nogear_cor_may
 
 #with gear
-vif_gear_cor_jun <- vif(lm(occurrence ~ temp_depth + salinity_depth + o2_depth + chl_surface + gear + nao_sample + nao_prev + nao_winter + amo_sample + amo_winter, data = junpresab))
+vif_gear_cor_jun <- vif(lm(occurrence ~ temp_depth + salinity_depth + o2_depth + gear + nao_sample + nao_prev + nao_winter + amo_sample + amo_winter, data = junpresab))
 write.csv(vif_gear_cor_jun, "../output/bio/vif/monthly_vifs/vif_gear_cor_jun.csv", row.names = TRUE)
 vif_gear_cor_jun
 
 #without gear
-vif_nogear_cor_jun <- vif(lm(occurrence ~ temp_depth + salinity_depth + o2_depth + chl_surface + nao_sample + nao_prev + nao_winter + amo_sample + amo_winter, data = junpresab))
+vif_nogear_cor_jun <- vif(lm(occurrence ~ temp_depth + salinity_depth + o2_depth + nao_sample + nao_prev + nao_winter + amo_sample + amo_winter, data = junpresab))
 write.csv(vif_nogear_cor_jun, "../output/bio/vif/monthly_vifs/vif_nogear_cor_jun.csv", row.names = TRUE)
 vif_nogear_cor_jun
 
@@ -1904,7 +1904,7 @@ write.csv(vif_nogear_cor_sep, "../output/bio/vif/monthly_vifs/vif_nogear_cor_sep
 vif_nogear_cor_sep
 
 #with gear
-vif_gear_cor_oct <- vif(lm(occurrence ~ temp_depth + salinity_depth + o2_depth + chl_surface + gear + nao_sample + nao_prev + nao_winter + amo_sample + amo_winter, data = octpresab))
+vif_gear_cor_oct <- vif(lm(occurrence ~ temp_depth + salinity_depth + o2_depth + gear + nao_sample + nao_prev + nao_winter + amo_sample + amo_winter, data = octpresab))
 write.csv(vif_gear_cor_oct, "../output/bio/vif/monthly_vifs/vif_gear_cor_oct.csv", row.names = TRUE)
 vif_gear_cor_oct
 
@@ -1914,7 +1914,7 @@ write.csv(vif_gear_cor_oct, "../output/bio/vif/monthly_vifs/vif_gear_cor_oct.csv
 vif_gear_cor_oct
 
 #without gear
-vif_nogear_cor_oct <- vif(lm(occurrence ~ temp_depth + salinity_depth + o2_depth + chl_surface + nao_sample + nao_prev + nao_winter + amo_sample + amo_winter, data = octpresab))
+vif_nogear_cor_oct <- vif(lm(occurrence ~ temp_depth + salinity_depth + o2_depth + nao_sample + nao_prev + nao_winter + amo_sample + amo_winter, data = octpresab))
 write.csv(vif_nogear_cor_oct, "../output/bio/vif/monthly_vifs/vif_nogear_cor_oct.csv", row.names = TRUE)
 vif_nogear_cor_oct
 
@@ -2021,7 +2021,10 @@ write.csv(year_by_mt, file = "../output/bio/year_by_mth_missingvalsout.csv")
 year_by_mt
 ```
 
+
+# chan/mj - samples per cell by year and month. 
 ok now as per MJ/Chan, count of cell sampled by year, and then cell sampled by month (do this on the data with obs with missing env. data out)
+note this is a summary of the month/year - cells can be sampled more than one, but never more than once at the same month/year
 
 ```{r}
 timescellsampledtotal <- count(presab_missingvals_obs, "cell_id_3d")
@@ -2624,9 +2627,47 @@ write.csv(nao_winter, "../output/env/env_sumstats/nao_winter_background_summarys
 
 #maxent?
 
+This test will be run on january data
+
+subset the presab dataset to january only
+
 ```{r}
-library("raster")
-library("dismo")
-library("rgeos")
+janpresabmax <- subset(presab_missingvals, month == "1")
+head(janpresabmax)
+```
+
+ok so maxent files need to be in a particular format: species name, x (longitude), y (latitude), env variable, env variable,....
+
+Maxent doesn't have a way to deal with 3D locations (it only takes xy coordinates), however it is possible to use dummy xy coordinates (see appendicies of Elith 2011 A statistical explanation of MaxEnt for ecologists). In my case, I will use the 'id' (the unique id assigned to the sample) for x and "cell_id_xyzt" (the unique cell id on xyzt) for y. I will also want to split the dataset by presence and background, so include here
+
+```{r}
+janpresabmax <- subset (janpresabmax, select = c(occurrence, originalscientificname, id, cell_id_xyzt, temp_depth, salinity_depth, o2_depth, chl_surface, nao_sample, nao_winter))
+head(janpresabmax)
+```
+
+now split into presence and background
+
+```{r}
+janpresmax <- subset(janpresabmax, occurrence == "1")
+janpresmax <- subset (janpresmax, select = -c(occurrence))
+janabmax <- subset(janpresabmax, occurrence == "0")
+janabmax <- subset (janabmax, select = -c(occurrence))
+```
+
+ok so for maxent you need to install the jar file. see https://cran.r-project.org/web/packages/dismo/vignettes/sdm.pdf but note that the location of the jar file has changed http://biodiversityinformatics.amnh.org/open_source/maxent/
+
+citation: Steven J. Phillips, Miroslav Dudík, Robert E. Schapire. [Internet] Maxent software for modeling species niches and distributions (Version 3.4.1). Available from url: http://biodiversityinformatics.amnh.org/open_source/maxent/. Accessed on 2019-2-11.
+
+```{r}
+system.file("java", package="dismo") #finding location to put maxent jar file
+system("java -version")
+```
+
+
+```{r}
+library(dismo)
+library(rJava)
+jar <- paste(system.file(package="dismo"), "C:/Users/bunny/Documents/GitHub/Chapter_1/packrat/lib/x86_64-w64-mingw32/3.5.1/dismo/java/maxent.jar", sep='')
+testmax <- maxent(janpresmax, janabmax)
 ```
 
