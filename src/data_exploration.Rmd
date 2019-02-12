@@ -2642,6 +2642,9 @@ Maxent doesn't have a way to deal with 3D locations (it only takes xy coordinate
 
 ```{r}
 janpresabmax <- subset (janpresabmax, select = c(occurrence, originalscientificname, id, cell_id_xyzt, temp_depth, salinity_depth, o2_depth, chl_surface, nao_sample, nao_winter))
+colnames(janpresabmax)[colnames(janpresabmax)=="cell_id_xyzt"] <- "x"
+colnames(janpresabmax)[colnames(janpresabmax)=="id"] <- "y"
+janpresabmax$x <- gsub("_", "", janpresabmax$x) #this is needed as maxent thinks these are coordinates
 head(janpresabmax)
 ```
 
@@ -2650,8 +2653,10 @@ now split into presence and background
 ```{r}
 janpresmax <- subset(janpresabmax, occurrence == "1")
 janpresmax <- subset (janpresmax, select = -c(occurrence))
+write.csv(janpresmax, "../output/bio/maxenttestjanpr.csv", row.names = FALSE)
 janabmax <- subset(janpresabmax, occurrence == "0")
 janabmax <- subset (janabmax, select = -c(occurrence))
+write.csv(janabmax, "../output/bio/maxenttestjanab.csv", row.names = FALSE)
 ```
 
 ok so for maxent you need to install the jar file. see https://cran.r-project.org/web/packages/dismo/vignettes/sdm.pdf but note that the location of the jar file has changed http://biodiversityinformatics.amnh.org/open_source/maxent/
@@ -2668,6 +2673,7 @@ system("java -version")
 library(dismo)
 library(rJava)
 jar <- paste(system.file(package="dismo"), "C:/Users/bunny/Documents/GitHub/Chapter_1/packrat/lib/x86_64-w64-mingw32/3.5.1/dismo/java/maxent.jar", sep='')
+p
 testmax <- maxent(janpresmax, janabmax)
 ```
 
