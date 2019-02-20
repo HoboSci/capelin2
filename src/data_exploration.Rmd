@@ -2669,11 +2669,26 @@ system("java -version")
 ```
 
 
+loop creating layer stacks
+```{r}
+jan98_86.9 <- stack(list.files("../data/jan_test_86.9", pattern = glob2rx("*1998_01*_86.9294*.asc"), full.names = TRUE))    # this folder currently contains other dummy files. its just a test to automate stacks
+names(jan98_86.9) # now need to rename to match maxent expectations
+names(jan98_86.9) <- (pattern = "*chl_surface*" paste0("chl_surface"))
+```
+
+
+
 ```{r}
 library(dismo)
 library(rJava)
 jar <- paste(system.file(package="dismo"), "C:/Users/bunny/Documents/GitHub/Chapter_1/packrat/lib/x86_64-w64-mingw32/3.5.1/dismo/java/maxent.jar", sep='')
-p
-testmax <- maxent(janpresmax, janabmax)
+
+testmax <- maxent(janpresabmax, janpresabmax$occurrence)
+
+
+
+
+
+
 ```
 
