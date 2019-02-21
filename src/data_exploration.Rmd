@@ -2669,12 +2669,34 @@ system("java -version")
 ```
 
 
-loop creating layer stacks
+zt stratified stack with layer names that match swd
 ```{r}
-jan98_86.9 <- stack(list.files("../data/jan_test_86.9", pattern = glob2rx("*1998_01*_86.9294*.asc"), full.names = TRUE))    # this folder currently contains other dummy files. its just a test to automate stacks
-names(jan98_86.9) # now need to rename to match maxent expectations
-names(jan98_86.9) <- (pattern = "*chl_surface*" paste0("chl_surface"))
+chl_surface <- raster(list.files("../data/jan_test_86.9", pattern = glob2rx("*1998_01*chl_surface_86.9294*.asc"), full.names = TRUE))
+names(chl_surface) <- "chl_surface"
+nao_sample <- raster(list.files("../data/jan_test_86.9", pattern = glob2rx("*1998_01*nao_sample_86.9294*.asc"), full.names = TRUE))
+names(nao_sample) <- "nao_sample"
+nao_winter <- raster(list.files("../data/jan_test_86.9", pattern = glob2rx("*1998_01*nao_winter_86.9294*.asc"), full.names = TRUE))
+names(nao_winter) <- "nao_winter"
+o2_depth <- raster(list.files("../data/jan_test_86.9", pattern = glob2rx("*1998_01*o2_depth_86.9294*.asc"), full.names = TRUE)) 
+names(o2_depth) <- "o2_depth"
+salinity_depth <- raster(list.files("../data/jan_test_86.9", pattern = glob2rx("*1998_01*salinity_depth_86.9294*.asc"), full.names = TRUE))
+names(salinity_depth) <- "salinity_depth"
+temp_depth <- raster(list.files("../data/jan_test_86.9", pattern = glob2rx("*1998_01*temp_depth_86.9294*.asc"), full.names = TRUE))
+names(temp_depth) <- "temp_depth"
+
+stack1998_01_86.9294 <- stack(chl_surface, nao_sample, nao_winter, o2_depth, salinity_depth, temp_depth)
+
+
 ```
+
+
+asclist <- stack(list.files("../data/jan_test_86.9", pattern = glob2rx("*1998_01*_86.9294*.asc"), full.names = TRUE))    # this folder currently contains other dummy files. its just a test to automate stacks
+ascfile <- names(asclist[[1]])
+ascyear <- as.character(sapply(strsplit(ascfile[[1]], "_"), "[[", 1))
+ascmonth <- as.character(sapply(strsplit(ascfile[[1]], "_"), "[[", 2))
+ascdepth <- as.character(sapply(strsplit(ascfile[[1]], "_"), "[[", 5))
+ascname <- paste(ascyear, ascmonth, ascdepth, sep = "_") #once you figure out how to rename the layers in the stack, you will rename the stack this () or not - maybe just manual
+asclist # now need to rename to match maxent expectations
 
 
 
@@ -2682,7 +2704,7 @@ names(jan98_86.9) <- (pattern = "*chl_surface*" paste0("chl_surface"))
 library(dismo)
 library(rJava)
 jar <- paste(system.file(package="dismo"), "C:/Users/bunny/Documents/GitHub/Chapter_1/packrat/lib/x86_64-w64-mingw32/3.5.1/dismo/java/maxent.jar", sep='')
-
+file.exists(jar)
 testmax <- maxent(janpresabmax, janpresabmax$occurrence)
 
 
