@@ -2743,13 +2743,67 @@ stack1998_01_86.9294 <- stack(chl_surface, nao_sample, nao_winter, o2_depth, sal
 ```
 
 
-asclist <- (list.files("../data/jan_test_86.9", pattern = glob2rx("*1998_01*_86.9294*.asc"), full.names = TRUE))    # this folder currently contains other dummy files. its just a test to automate stacks
-ascfile <- names(asclist[[1]])
-ascyear <- as.character(sapply(strsplit(ascfile[[1]], "_"), "[[", 1))
-ascmonth <- as.character(sapply(strsplit(ascfile[[1]], "_"), "[[", 2))
-ascdepth <- as.character(sapply(strsplit(ascfile[[1]], "_"), "[[", 5))
-ascname <- paste(ascyear, ascmonth, ascdepth, sep = "_") #once you figure out how to rename the layers in the stack, you will rename the stack this () or not - maybe just manual
-asclist # now need to rename to match maxent expectations
+
+```{r}
+```{r}
+system.file("java", package="dismo") #finding location to put maxent jar file
+system("java -version")
+```
+
+
+messing with code to see if can do for unique year month depth
+```{r}
+ascname <- list.files("../data/jan_test_86.9", pattern = "*.asc", full.names = TRUE)    # this folder currently contains other dummy files. its just a test to automate stacks
+noasc <- length(ascname)
+  year <- "1998"
+  month <- "01"
+  depth <- "86.9294.asc"
+  tempvar <- "temp"
+  chlvar <- "chl"
+  o2var <- "o2"
+  salvar <- "salinity"
+  depthvar <- "depth"
+  surfacevar <- "surface"
+  naovar <- "nao"
+  amovar <- "amo"
+  samplevar <- "sample"
+  wintervar <- "winter"
+  
+for (i in 1:length(asclist)){
+  ascyear <- (sapply(strsplit(ascname[i], "_"), "[[", 1))
+  ascmonth <- (sapply(strsplit(ascname[i], "_"), "[[", 2))
+  ascdepth <- (sapply(strsplit(ascname[i], "_"), "[[", 5))
+  ascvar1 <- (sapply(strsplit(ascname[i], "_"), "[[", 3))
+  ascvar2 <- (sapply(strsplit(ascname[i], "_"), "[[", 4))
+  ascfile <- ascname[i]
+
+  if (ascyear == year & ascmonth == month & ascvar1 == tempvar & ascvar2 == depthvar & ascdepth == depth){
+    #print(ascfile)
+    temp_depth <- raster(ascfile)
+    names(temp_depth) <- "temp_depth"
+  } else if (ascyear == year & ascmonth == month & ascvar1 == chlvar & ascvar2 == surfacevar & ascdepth == depth){
+    chl_surface <- raster(ascfile)
+    names(chl_surface) <- "chl_surface"
+  } else if (ascyear == year & ascmonth == month & ascvar1 == o2var & ascvar2 == depthvar & ascdepth == depth){
+    o2_depth <- raster(ascfile)
+    names(o2_depth) <- "o2_depth"
+  } else if (ascyear == year & ascmonth == month & ascvar1 == salvar & ascvar2 == depthvar & ascdepth == depth){
+    salinity_depth <- raster(ascfile)
+    names(salinity_depth) <- "salinity_depth"
+  } else if (ascyear == year & ascmonth == month & ascvar1 == naovar & ascvar2 == samplevar){
+    nao_sample <- raster(ascfile)
+    names(nao_sample <- "nao_sample")
+  } else if (ascyear == year & ascmonth == month & ascvar1 == naovar & ascvar2 == wintervar){
+    nao_winter <- raster(ascfile)
+    names(nao_winter) <- "nao_winter"
+  }
+  st19980186.9 <- stack(temp_depth, chl_surface, o2_depth, salinity_depth, nao_sample, nao_winter)
+
+}
+```
+
+
+
 
 
 
