@@ -1,5 +1,87 @@
-messing with code to see if can do for unique year month depth
+This works
+
 ```{r}
+ascname <- list.files("../data/jan_test_86.9/", pattern = "*.asc", full.names = TRUE)    # this folder currently contains other dummy files. its just a test to automate stacks
+rasters <- lapply(paste0(ascname), raster)  
+
+
+year <- "X1998"
+month <- "01"
+depth <- "86.9294"
+tempvar <- "temp"
+chlvar <- "chl"
+o2var <- "o2"
+salvar <- "salinity"
+depthvar <- "depth"
+surfacevar <- "surface"
+naovar <- "nao"
+amovar <- "amo"
+samplevar <- "sample"
+wintervar <- "winter"
+  
+for (i in 1:length(rasters)){
+  ascyear <- (sapply(strsplit(names(rasters[[i]]), "_"), "[[", 1))
+  ascmonth <- (sapply(strsplit(names(rasters[[i]]), "_"), "[[", 2))
+  ascdepth <- (sapply(strsplit(names(rasters[[i]]), "_"), "[[", 5))
+  ascvar1 <- (sapply(strsplit(names(rasters[[i]]), "_"), "[[", 3))
+  ascvar2 <- (sapply(strsplit(names(rasters[[i]]), "_"), "[[", 4))
+  ascfile <- rasters[i]
+
+
+    if (ascyear == year & ascmonth == month & ascvar1 == tempvar & ascvar2 == depthvar & ascdepth == depth){
+    #print(ascfile)
+    temp_depth <- ascfile[[1]]
+    names(temp_depth) <- "temp_depth"
+  } else if (ascyear == year & ascmonth == month & ascvar1 == chlvar & ascvar2 == surfacevar & ascdepth == depth){
+    chl_surface <- ascfile[[1]]
+    names(chl_surface) <- "chl_surface"
+  } else if (ascyear == year & ascmonth == month & ascvar1 == o2var & ascvar2 == depthvar & ascdepth == depth){
+    o2_depth <- ascfile[[1]]
+    names(o2_depth) <- "o2_depth"
+  } else if (ascyear == year & ascmonth == month & ascvar1 == salvar & ascvar2 == depthvar & ascdepth == depth){
+    salinity_depth <- ascfile[[1]]
+    names(salinity_depth) <- "salinity_depth"
+  } else if (ascyear == year & ascmonth == month & ascvar1 == naovar & ascvar2 == wintervar){
+    nao_winter <- ascfile[[1]]
+    names(nao_winter) <- "nao_winter"
+  } else if (ascyear == year & ascmonth == month  & ascvar1 == naovar & ascvar2 == samplevar){
+    nao_sample <- ascfile[[1]]
+    names(nao_sample) <- "nao_sample"
+
+  }
+   st19980186.9 <- stack(temp_depth, chl_surface, o2_depth, salinity_depth, nao_sample, nao_winter)
+  }
+st19980186.9
+```
+
+
+
+
+messing with code to see if can do for unique year month depth
+
+need tidyr package
+```{r}
+unyears <- as.character(c(1992, 1998)) 
+x <- "X"
+unyears <- paste0(x, unyears, collapse = NULL) #this adds an X to each year to match with raster naming
+unmonths <- c(01, 03)
+undepths <- c(10, 86.9294)
+
+unlayer <- crossing(unyears, unmonths, undepths)
+
+for (uny in unyears){
+  for (unm in unmonths){
+    for (und in undepths){
+      year <- unyears[uny]
+      month <- unmonths[unm]
+      depth <- undepths[und]
+    }
+  }
+}
+
+
+
+
 ascname <- list.files("../data/jan_test_86.9/", pattern = "*.asc", full.names = TRUE)    # this folder currently contains other dummy files. its just a test to automate stacks
 rasters <- lapply(paste0(ascname), raster)  
 
@@ -51,4 +133,4 @@ for (i in 1:length(rasters)){
    # st19980186.9 <- stack(temp_depth, chl_surface, o2_depth, salinity_depth, nao_sample, nao_winter)
   }
 #st19980186.9
-```
+
