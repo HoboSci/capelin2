@@ -61,34 +61,20 @@ messing with code to see if can do for unique year month depth
 
 need tidyr package
 ```{r}
-unyears <- as.character(c(1992, 1998)) 
-x <- "X"
-unyears <- paste0(x, unyears, collapse = NULL) #this adds an X to each year to match with raster naming
-unmonths <- c(01, 03)
-undepths <- c(10, 86.9294)
+unyears <- as.character(c("1992", "1998")) 
+unyears <- paste0("X", unyears) #this adds an X to each year to match with raster naming
+unmonths <- c("01", "03")
+undepths <- c("10", "86.9294")
 
 unlayer <- crossing(unyears, unmonths, undepths)
-
-for (uny in unyears){
-  for (unm in unmonths){
-    for (und in undepths){
-      year <- unyears[uny]
-      month <- unmonths[unm]
-      depth <- undepths[und]
-    }
-  }
-}
-
-
-
+unlayer$stackname <- paste0("st", unlayer$unyears, unlayer$unmonths, unlayer$undepths) #this creates the name of the stack that will be used
 
 ascname <- list.files("../data/jan_test_86.9/", pattern = "*.asc", full.names = TRUE)    # this folder currently contains other dummy files. its just a test to automate stacks
 rasters <- lapply(paste0(ascname), raster)  
 
-
-year <- "X1998"
-month <- "01"
-depth <- "86.9294"
+#year <- "X1998"
+#month <- "01"
+#depth <- "86.9294"
 tempvar <- "temp"
 chlvar <- "chl"
 o2var <- "o2"
@@ -99,14 +85,20 @@ naovar <- "nao"
 amovar <- "amo"
 samplevar <- "sample"
 wintervar <- "winter"
-  
-for (i in 1:length(rasters)){
-  ascyear <- (sapply(strsplit(names(rasters[[i]]), "_"), "[[", 1))
-  ascmonth <- (sapply(strsplit(names(rasters[[i]]), "_"), "[[", 2))
-  ascdepth <- (sapply(strsplit(names(rasters[[i]]), "_"), "[[", 5))
-  ascvar1 <- (sapply(strsplit(names(rasters[[i]]), "_"), "[[", 3))
-  ascvar2 <- (sapply(strsplit(names(rasters[[i]]), "_"), "[[", 4))
-  ascfile <- rasters[i]
+
+for (k in 1:nrow(unlayer)){
+    print(unlayer$stackname[k])
+    year <- unlayer$unyears[k]
+    month <- unlayer$unmonths[k]
+    depth <- unlayer$undepths[k]
+    for (i in 1:length(rasters)){
+    ascyear <- (sapply(strsplit(names(rasters[[i]]), "_"), "[[", 1))
+    ascmonth <- (sapply(strsplit(names(rasters[[i]]), "_"), "[[", 2))
+    ascdepth <- (sapply(strsplit(names(rasters[[i]]), "_"), "[[", 5))
+    ascvar1 <- (sapply(strsplit(names(rasters[[i]]), "_"), "[[", 3))
+    ascvar2 <- (sapply(strsplit(names(rasters[[i]]), "_"), "[[", 4))
+    ascfile <- rasters[[i]]
+
 
 
     if (ascyear == year & ascmonth == month & ascvar1 == tempvar & ascvar2 == depthvar & ascdepth == depth){
@@ -128,9 +120,52 @@ for (i in 1:length(rasters)){
   } else if (ascyear == year & ascmonth == month  & ascvar1 == naovar & ascvar2 == samplevar){
     nao_sample <- ascfile[[1]]
     names(nao_sample) <- "nao_sample"
+  }
+}
+  }
 
-  }
-   # st19980186.9 <- stack(temp_depth, chl_surface, o2_depth, salinity_depth, nao_sample, nao_winter)
-  }
+test <- stack(temp_depth, chl_surface, o2_depth, salinity_depth, nao_sample, nao_winter)
+
+#stacklist <- as.list(unlayer$stackname)
+#stacklist[2] <- temp_depth
+
+
 #st19980186.9
+
+
+#stacktest <- read.csv("../output/bio/stackttest.csv", header = TRUE)
+#stacktest$chl <- as.character(stacktest$chl)
+#stacktest
+
+```
+
+```{r}
+var <- raster(stacktest$chl[1])
+var
+a <- raster(var)
+a
+```
+
+#maxent
+maxnet throwing errors...
+```{r}
+janpres <- read.csv("../output/bio/maxenttestjanpr.csv", header = TRUE)
+janpres$occ <- 1
+janab <- read.csv("../output/bio/maxenttestjanab.csv", header = TRUE)
+janab$occ <- 0
+prab <- rbind(janpres, janab)
+prab$originalscientificname <- "cap" #because species name needs to be the same
+pa <- prab$occ
+prab <- subset(prab, select = -c(x, y, occ, originalscientificname)) #ok so for maxent in r just need the variables
+prab
+
+system.file("java", package="dismo") #finding location to put maxent jar file
+system("java -version")
+mod1 <- maxent(x = prab, p = pa, path = paste0("../output/maxentout"), args =  c("responsecurves"), save(md, file = "../output/maxentmod"))
+pre1 <- predict(mod1, test,  args='outputformat=cloglog')
+plot(pre1)
+plot(mod1)
+
+
+```
 
