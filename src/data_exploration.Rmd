@@ -2744,7 +2744,7 @@ stack1998_01_86.9294 <- stack(chl_surface, nao_sample, nao_winter, o2_depth, sal
 
 
 
-```{r}
+
 ```{r}
 system.file("java", package="dismo") #finding location to put maxent jar file
 system("java -version")

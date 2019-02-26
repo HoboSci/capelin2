@@ -61,20 +61,36 @@ messing with code to see if can do for unique year month depth
 
 need tidyr package
 ```{r}
-unyears <- as.character(c("1992", "1998")) 
-unyears <- paste0("X", unyears) #this adds an X to each year to match with raster naming
-unmonths <- c("01", "03")
-undepths <- c("10", "86.9294")
+unyears <- as.character(c("1998", "1999", "2000", "2001", "2002", "2003", "2004", "2005", "2006", "2007", "2008", "2009", "2010", "2011", "2012", "2013", "2014", "2015")) 
+#unyears <- paste0("X", unyears) #this adds an X to each year to match with raster naming
+unmonths <- c("01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12")
+undepths <- c("0.505760014", "1.55585527", "2.66768169", "3.85627985" , "5.14036131", "6.5430336", "8.09251881", "9.82275009", "11.7736797" , "13.9910383", "16.525322" , "19.4298019", "22.757616", "26.5583", "30.8745613", "35.7402039", "41.1800232", "47.211895", "53.8506355", "61.1128387" , "69.0216827" , "77.6111603", "86.9294281", "97.0413132", "108.030281", "120", "133.075821", "147.40625", "163.164459" , "180.549927", "199.789963", "221.141174", "244.890625" , "271.356384", "300.887512", "333.862823" , "370.688477", "411.793854", "457.62561", "508.639893", "565.292297", "628.026001", "697.258667", "773.368286", "856.678955", "947.447876", "1045.85425", "1151.99121", "1265.86145", "1387.37695", "1045.854", "1151.99097", "1265.86096") #this is biomer + the 3 glorys layers that are different... but that's not the best way because you are creating extra depth rows here... actually recommend you rename the asc files in windows powershell to match
 
 unlayer <- crossing(unyears, unmonths, undepths)
 unlayer$stackname <- paste0("st", unlayer$unyears, unlayer$unmonths, unlayer$undepths) #this creates the name of the stack that will be used
+unlayer$temp_depth <- NA
+unlayer$temp_surface <- NA
+unlayer$chl_depth <- NA
+unlayer$chl_surface <- NA
+unlayer$o2_depth <- NA
+unlayer$o2_surface <- NA
+unlayer$salinity_depth <- NA
+unlayer$salinity_surface <- NA
+unlayer$nao_sample <- NA
+unlayer$nao_prev <- NA
+unlayer$nao_winter <- NA
+unlayer$amo_sample <- NA
+unlayer$amo_prev <- NA
+unlayer$amo_winter <- NA
 
-ascname <- list.files("../data/jan_test_86.9/", pattern = "*.asc", full.names = TRUE)    # this folder currently contains other dummy files. its just a test to automate stacks
-rasters <- lapply(paste0(ascname), raster)  
 
-#year <- "X1998"
-#month <- "01"
-#depth <- "86.9294"
+ascname <- list.files("../data/jan_test_86.9/", pattern = "*.asc", full.names = FALSE)    # this folder currently contains other dummy files. its just a test to automate stacks
+ascpath <- list.files("../data/jan_test_86.9/", pattern = "*.asc", full.names = TRUE)    # this folder currently contains other dummy files. its just a test to automate stacks
+
+
+year <- "X1998"
+month <- "01"
+depth <- "86.9294"
 tempvar <- "temp"
 chlvar <- "chl"
 o2var <- "o2"
@@ -91,53 +107,74 @@ for (k in 1:nrow(unlayer)){
     year <- unlayer$unyears[k]
     month <- unlayer$unmonths[k]
     depth <- unlayer$undepths[k]
-    for (i in 1:length(rasters)){
-    ascyear <- (sapply(strsplit(names(rasters[[i]]), "_"), "[[", 1))
-    ascmonth <- (sapply(strsplit(names(rasters[[i]]), "_"), "[[", 2))
-    ascdepth <- (sapply(strsplit(names(rasters[[i]]), "_"), "[[", 5))
-    ascvar1 <- (sapply(strsplit(names(rasters[[i]]), "_"), "[[", 3))
-    ascvar2 <- (sapply(strsplit(names(rasters[[i]]), "_"), "[[", 4))
-    ascfile <- rasters[[i]]
+    for (i in 1:length(ascname)){
+
+    ascyear <- (sapply(strsplit(ascname[[i]], "_"), "[[", 1))
+    ascmonth <- (sapply(strsplit(ascname[[i]], "_"), "[[", 2))
+    ascdepth <- (sapply(strsplit(ascname[[i]], "_"), "[[", 5))
+    ascdepth <- gsub(".asc", "", ascdepth)
+    ascvar1 <- (sapply(strsplit(ascname[[i]], "_"), "[[", 3))
+    ascvar2 <- (sapply(strsplit(ascname[[i]], "_"), "[[", 4))
+    ascfile <- ascpath[[i]]
+    print(ascfile)
 
 
 
     if (ascyear == year & ascmonth == month & ascvar1 == tempvar & ascvar2 == depthvar & ascdepth == depth){
-    #print(ascfile)
-    temp_depth <- ascfile[[1]]
-    names(temp_depth) <- "temp_depth"
+    unlayer$temp_depth[k] <- ascfile
   } else if (ascyear == year & ascmonth == month & ascvar1 == chlvar & ascvar2 == surfacevar & ascdepth == depth){
-    chl_surface <- ascfile[[1]]
-    names(chl_surface) <- "chl_surface"
-  } else if (ascyear == year & ascmonth == month & ascvar1 == o2var & ascvar2 == depthvar & ascdepth == depth){
-    o2_depth <- ascfile[[1]]
-    names(o2_depth) <- "o2_depth"
-  } else if (ascyear == year & ascmonth == month & ascvar1 == salvar & ascvar2 == depthvar & ascdepth == depth){
-    salinity_depth <- ascfile[[1]]
-    names(salinity_depth) <- "salinity_depth"
-  } else if (ascyear == year & ascmonth == month & ascvar1 == naovar & ascvar2 == wintervar){
-    nao_winter <- ascfile[[1]]
-    names(nao_winter) <- "nao_winter"
-  } else if (ascyear == year & ascmonth == month  & ascvar1 == naovar & ascvar2 == samplevar){
-    nao_sample <- ascfile[[1]]
-    names(nao_sample) <- "nao_sample"
-  }
+   unlayer$chl_surface[k] <- ascfile
+ } else if (ascyear == year & ascmonth == month & ascvar1 == o2var & ascvar2 == depthvar & ascdepth == depth){
+  unlayer$o2_depth[k] <- ascfile
+ } else if (ascyear == year & ascmonth == month & ascvar1 == salvar & ascvar2 == depthvar & ascdepth == depth){
+  unlayer$salinity_depth[k] <- ascfile
+ } else if (ascyear == year & ascmonth == month & ascvar1 == naovar & ascvar2 == wintervar){
+  unlayer$nao_winter[k] <- ascfile
+ } else if (ascyear == year & ascmonth == month  & ascvar1 == naovar & ascvar2 == samplevar){
+  unlayer$nao_sample[k] <- ascfile
+ }
+  
+    }
+    write.csv(unlayer, "../data/env/asc_layerlist.csv", row.names = TRUE)
 }
-  }
-
-test <- stack(temp_depth, chl_surface, o2_depth, salinity_depth, nao_sample, nao_winter)
-
-#stacklist <- as.list(unlayer$stackname)
-#stacklist[2] <- temp_depth
 
 
-#st19980186.9
 
+# now loop to create stacks
+unlayer <- read.csv("../data/env/asc_layerlist.csv", header = TRUE)
+unlayer[] <- lapply(unlayer, as.character) #from https://stackoverflow.com/questions/2851015/convert-data-frame-columns-from-factors-to-characters
 
-#stacktest <- read.csv("../output/bio/stackttest.csv", header = TRUE)
-#stacktest$chl <- as.character(stacktest$chl)
-#stacktest
-
+for (td in 1:nrow(unlayer)){
+  temp_depth <- raster(unlayer$temp_depth[td])
+  names(temp_depth) <- "temp_depth"
+  chl_surface <- raster(unlayer$chl_surface[td])
+  names(chl_surface) <- "chl_surface"
+  o2_depth <- raster(unlayer$o2_depth[td])
+  names(o2_depth) <- "o2_depth"
+  salinity_depth <- raster(unlayer$salinity_depth[td])
+  names(salinity_depth) <- "salinity_depth"
+  nao_sample <- raster(unlayer$nao_sample[td])
+  names(nao_sample) <- "nao_sample"
+  nao_winter <- raster(unlayer$nao_winter[td])
+  names(nao_winter) <- "nao_winter"
+  stackn <- unlayer$stackname[td]
+  test <- stack(temp_depth, chl_surface, o2_depth, salinity_depth, nao_sample, nao_winter)
+  #stackSave(test,unlayer$stackname[td])
+  pred <- predict(mod1, test, file = paste0("../output/maxentpredict/", stackn), overwrite=TRUE) 
+  preplot <- plot(pred, png(paste0("../output/maxentpredict/", stackn, ".png")))
+  paste("maxplot_", stackn, ".png", sep = "") # to automatically save the plot to a png AND show it inline
+  
+}
+dev.off() # stops automatic saving of the plot to a png
+# now call the stack...
+{
+stack <- stackOpen("st19920310.stk")
+}
 ```
+
+
+  preplot <- plot(pred, png(paste0(stackn, ".png")))
+
 
 ```{r}
 var <- raster(stacktest$chl[1])
@@ -162,10 +199,10 @@ prab
 system.file("java", package="dismo") #finding location to put maxent jar file
 system("java -version")
 mod1 <- maxent(x = prab, p = pa, path = paste0("../output/maxentout"), args =  c("responsecurves"), save(md, file = "../output/maxentmod"))
-pre1 <- predict(mod1, test,  args='outputformat=cloglog')
+pre1 <- predict(mod1, test) #,  args='outputformat=cloglog'
 plot(pre1)
 plot(mod1)
 
-
+plot(pre1)
 ```
 
