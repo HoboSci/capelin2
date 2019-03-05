@@ -1,0 +1,125 @@
+---
+title: "asc_file_database"
+author: "Samantha Andrews"
+output: html_notebook
+---
+
+# Overview
+Preperation database to extract and stack asc files 
+
+A note to anyone who might happen to stumble across this... I am a beginner in R and have had no exposure to similar languages. I don't know what I'm doing. The code herein is unlikely to be elegant and there are probably more efficient ways of running the code.
+
+Built with 'r getRversion()'.
+
+# Package dependencies
+You can load them using the following code which uses a function called [ipak](https://gist.github.com/stevenworthington/3178163). 
+Note this function checks to see if the packages are installed first.
+
+```{r pre-install packages, message=FALSE}
+packages <- c("tidyr")
+source("../src/ipak.R")
+ipak(packages)
+suppressMessages(ipak)
+```
+
+
+```{r}
+ascyears <- as.character(c("1998", "1999", "2000", "2001", "2002", "2003", "2004", "2005", "2006", "2007", "2008", "2009", "2010", "2011", "2012", "2013", "2014", "2015")) 
+#unyears <- paste0("X", unyears) #this adds an X to each year to match with raster naming
+ascmonths <- c("01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12")
+ascdepths <- c("0.50576", "1.55586", "2.66768", "3.85628" , "5.14036", "6.54303", "8.09252", "9.82275", "11.7737" , "13.991", "16.5253" , "19.4298", "22.7576", "26.5583", "30.8746", "35.7402", "041.18", "47.2119", "53.8506", "61.1128" , "69.0217" , "77.6112", "86.9294", "97.0413", "108.03", "000120", "133.076", "147.406", "163.165" , "180.55", "199.79", "221.141", "244.891" , "271.356", "300.888", "333.863" , "370.689", "411.794", "457.626", "508.64", "565.292", "628.026", "697.259", "773.368", "856.679", "947.448", "1045.85", "1151.99", "1265.86", "1387.38") 
+#this depth list is based on how the files are named when split into depth layers. note that chl and o2 have had two minor name changed - 163.164 to 163.165 and 370.658 to 370.659, to match all layers
+
+asclayer <- crossing(ascyears, ascmonths, ascdepths)
+asclayer$stackname <- paste0("st", asclayer$ascyears, asclayer$ascmonths, asclayer$ascdepths) #this creates the name of the stack that will be used
+asclayer$temp_depth <- NA
+asclayer$temp_surface <- NA
+asclayer$chl_depth <- NA
+asclayer$chl_surface <- NA
+asclayer$o2_depth <- NA
+asclayer$o2_surface <- NA
+asclayer$salinity_depth <- NA
+asclayer$salinity_surface <- NA
+asclayer$ssh_surface <- NA
+asclayer$mlp_surface <- NA
+asclayer$nao_sample <- NA
+asclayer$nao_prev <- NA
+asclayer$nao_winter <- NA
+asclayer$amo_sample <- NA
+asclayer$amo_prev <- NA
+asclayer$amo_winter <- NA
+
+
+ascname <- list.files("../data/env/ascii/", pattern = "*.asc", full.names = FALSE)    # this folder currently contains other dummy files. its just a test to automate stacks
+ascpath <- list.files("../data/env/ascii/", pattern = "*.asc", full.names = TRUE)    # this folder currently contains other dummy files. its just a test to automate stacks
+
+tempvar <- "temp"
+chlvar <- "chl"
+o2var <- "o2"
+salvar <- "salinity"
+mlpvar <- "mlp"
+sshvar <- "ssh"
+naosamplevar <- "naosample"
+amosamplevar <- "amosample"
+naoprev <- "naoprev"
+amoprev <- "amoprev"
+naowinter <- "naowinter"
+amowinter <- "amowinter"
+climatedepth <- "1"
+surfacevar <- "0.50576"
+
+for (i in 1:nrow(asclayer)){
+    print(asclayer$stackname[i])
+    year <- asclayer$ascyears[i]
+    month <- asclayer$ascmonths[i]
+    depth <- asclayer$ascdepths[i]
+    
+    for (k in 1:length(ascname)){
+        ascyear <- (sapply(strsplit(ascname[k], "_"), "[[", 1))
+        ascmonth <- (sapply(strsplit(ascname[k], "_"), "[[", 2))
+        ascdepth <- (sapply(strsplit(ascname[k], "_"), "[[", 4))
+        ascdepth <- gsub(".asc", "", ascdepth)
+        ascvar <- (sapply(strsplit(ascname[k], "_"), "[[", 3))
+        ascfile <- ascpath[k]
+        print(ascfile)
+
+        if (ascyear == year & ascmonth == month & ascvar == tempvar & ascdepth == depth){
+          asclayer$temp_depth[i] <- ascfile
+        } else if(ascyear == year & ascmonth == month & ascvar == tempvar & ascdepth == surfacevar){
+          asclayer$temp_surface[i] <- ascfile
+        } else if(ascyear == year & ascmonth == month & ascvar == salvar & ascdepth == depth){
+          asclayer$temp_depth[i] <- ascfile
+        } else if(ascyear == year & ascmonth == month & ascvar == salvar & ascdepth == surfacevar){
+          asclayer$salinity_surface[i] <- ascfile
+        } else if(ascyear == year & ascmonth == month & ascvar == chlvar & ascdepth == depth){
+          asclayer$chl_depth[i] <- ascfile
+        } else if(ascyear == year & ascmonth == month & ascvar == chlvar & ascdepth == surfacevar){
+          asclayer$chl_surface[i] <- ascfile
+        } else if(ascyear == year & ascmonth == month & ascvar == o2lvar & ascdepth == depth){
+          asclayer$temp_depth[i] <- ascfile
+        } else if(ascyear == year & ascmonth == month & ascvar == o2var & ascdepth == surfacevar){
+          asclayer$o2_surface[i] <- ascfile
+        } else if(ascyear == year & ascmonth == month & ascvar == mlpvar){
+          asclayer$mlp_surface[i] <- ascfile
+        } else if(ascyear == year & ascmonth == month & ascvar == sshvar){
+          asclayer$ssh_surface[i] <- ascfile
+        } else if(ascyear == year & ascmonth == month & ascvar == naosample){
+          asclayer$nao_sample[i] <- ascfile
+        } else if(ascyear == year & ascmonth == month & ascvar == amosample){
+          asclayer$amo_sample[i] <- ascfile
+        } else if(ascyear == year & ascmonth == month & ascvar == naoprev){
+          asclayer$nao_prev[i] <- ascfile
+        } else if(ascyear == year & ascmonth == month & ascvar == amoprev){
+          asclayer$amo_prev[i] <- ascfile
+        } else if(ascyear == year & ascmonth == month & ascvar == naowinter){
+          asclayer$nao_winter[i] <- ascfile
+        } else if(ascyear == year & ascmonth == month & ascvar == amowinter){
+          asclayer$amo_winter[i] <- ascfile
+        }
+    }
+  write.csv(asclayer, "../data/env/asc_layerlist.csv", row.names = TRUE)
+}
+```
+
+
+
