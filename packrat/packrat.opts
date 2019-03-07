@@ -5,7 +5,6 @@ vcs.ignore.lib: TRUE
 vcs.ignore.src: FALSE
 external.packages: 
 local.repos:
-    
     ~/GitHub/Chapter_1/packrat/lib/x86_64-w64-mingw32/3.5.1
     ~
     ~
