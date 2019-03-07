@@ -21,7 +21,7 @@ You can load them using the following code which uses a function called [ipak](h
 Note this function checks to see if the packages are installed first.
 The "include=FALSE" supresses the package installation text appearing in the document...
 ```{r pre-install packages, include=FALSE}
-packages <- c("plyr", "graphics", "ggplot2", "corrplot", "FSA", "car", "rworldmap", "fastmatch") 
+packages <- c("plyr", "graphics", "ggplot2", "corrplot", "FSA", "car", "rworldmap", "fastmatch", "tables") 
 source("../src/ipak.R")
 ipak(packages)
 ```
@@ -1209,6 +1209,15 @@ gearby_mth <- with(presence, table(gear, month))
 write.csv(gearby_mth, file = "../output/bio/gear_by_mth.csv")
 gearby_mth
 ```
+
+and by year
+
+```{r}
+gearby_yr <- with(presence, table(gear, year))
+write.csv(gearby_yr, file = "../output/bio/gear_by_yr.csv")
+gearby_yr
+```
+
 
 What I want to see if if there is a marked difference between the env. correlates of the presence points between gear type used. This is also to try deal with detection bias between gear type (b/c the whole region is not uniformly sampled by the same gear type)
 
