@@ -1182,7 +1182,7 @@ for (i in 1:nrow(asclayer)){
 ```{r}
 #!!!!!!  CHANGE ASCNAME, ASCPATH AND CSV FILE NAME
 
-asclayer <- subset(asclayerall, ascyears == 2103)
+asclayer <- subset(asclayerall, ascyears == 2013)
 
 ascname <- list.files("../data/env/ascii/ascii2013/", pattern = "*.asc", full.names = FALSE)    # this folder currently contains other dummy files. its just a test to automate stacks
 ascpath <- list.files("../data/env/ascii/ascii2013/", pattern = "*.asc", full.names = TRUE)    # this folder currently contains other dummy files. its just a test to automate stacks
