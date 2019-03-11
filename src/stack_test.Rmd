@@ -301,3 +301,65 @@ for (k in 1:nrow(unlayer)){
 
 ```
 
+```{r}
+# now loop to create stacks
+janpres <- read.csv("../output/bio/maxenttestjanpr.csv", header = TRUE)
+janpres$occ <- 1
+janab <- read.csv("../output/bio/maxenttestjanab.csv", header = TRUE)
+janab$occ <- 0
+prab <- rbind(janpres, janab)
+prab$originalscientificname <- "cap" #because species name needs to be the same
+pa <- prab$occ
+prab <- subset(prab, select = -c(x, y, occ, originalscientificname)) #ok so for maxent in r just need the variables
+prab
+
+system.file("java", package="dismo") #finding location to put maxent jar file
+system("java -version")
+mod1 <- maxent(x = prab, p = pa, path = paste0("../output/maxentout"), args =  c("responsecurves"), save(md, file = "../output/maxentmod"))
+
+unlayer <- read.csv("../data/env/asc_layerlist1998.csv", header = TRUE)
+unlayer <- subset(unlayer, ascmonths == 1)
+unlayer <- unlayer[-c(1), ]
+unlayer[] <- lapply(unlayer, as.character) #from https://stackoverflow.com/questions/2851015/convert-data-frame-columns-from-factors-to-characters
+aea <- raster("../output/env/aea.tif") 
+
+for (td in 1:nrow(unlayer)){
+  temp_depth <- raster(unlayer$temp_depth[td])
+  crs(temp_depth) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0" 
+  names(temp_depth) <- "temp_depth"
+  temp_depth <- projectRaster(temp_depth, aea)
+  chl_surface <- raster(unlayer$chl_surface[td])
+  crs(chl_surface) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0" 
+  names(chl_surface) <- "chl_surface"
+  chl_surface <- projectRaster(chl_surface, aea)
+  o2_depth <- raster(unlayer$o2_depth[td])
+  crs(o2_depth) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0" 
+  names(o2_depth) <- "o2_depth"
+  o2_depth <- projectRaster(o2_depth, aea)
+  salinity_depth <- raster(unlayer$salinity_depth[td])
+  crs(salinity_depth) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0" 
+  names(salinity_depth) <- "salinity_depth"
+  salinity_depth <- projectRaster(salinity_depth, aea)
+  nao_sample <- raster(unlayer$nao_sample[td])
+  crs(nao_sample) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0" 
+  names(nao_sample) <- "nao_sample"
+  nao_sample <- projectRaster(nao_sample, aea)
+  nao_winter <- raster(unlayer$nao_winter[td])
+  crs(nao_winter) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"
+  names(nao_winter) <- "nao_winter"
+  nao_winter <- projectRaster(nao_winter, aea)
+  stackn <- unlayer$stackname[td]
+  test <- stack(temp_depth, chl_surface, o2_depth, salinity_depth, nao_sample, nao_winter)
+  #stackSave(test,unlayer$stackname[td])
+  pred <- predict(mod1, test, file = paste0("../output/maxentpredict/", stackn), overwrite=TRUE) 
+  paste("maxplot_", stackn, ".png", sep = "") # to automatically save the plot to a png AND show it inline
+  preplot <- plot(pred, png(paste0("../output/maxentpredict/", stackn, ".png")))
+  dev.off() # stops automatic saving of the plot to a png
+}
+
+
+
+
+
+```
+
