@@ -363,3 +363,31 @@ for (td in 1:nrow(unlayer)){
 
 ```
 
+testing model fiddling
+
+```{r}
+janpres <- read.csv("../output/bio/maxenttestjanpr.csv", header = TRUE)
+janpres$occ <- 1
+janab <- read.csv("../output/bio/maxenttestjanab.csv", header = TRUE)
+janab$occ <- 0
+prab <- rbind(janpres, janab)
+prab$originalscientificname <- "cap" #because species name needs to be the same
+pa <- prab$occ
+prab <- subset(prab, select = -c(x, y, occ, originalscientificname)) #ok so for maxent in r just need the variables
+prab
+
+
+
+
+test <- stack(temp_depth, chl_surface, o2_depth, salinity_depth, nao_sample, nao_winter)
+
+system.file("java", package="dismo") #finding location to put maxent jar file
+system("java -version")
+mod1 <- maxent(x = prab, p = pa)
+
+pre1 <- predict(mod1, test, args='outputformat=raw' ) #, args = c("outputformat=cloglog")
+preplot <- plot(pre1)
+preplot
+
+```
+
