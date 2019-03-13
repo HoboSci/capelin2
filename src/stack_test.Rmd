@@ -375,19 +375,87 @@ prab$originalscientificname <- "cap" #because species name needs to be the same
 pa <- prab$occ
 prab <- subset(prab, select = -c(x, y, occ, originalscientificname)) #ok so for maxent in r just need the variables
 prab
+#write.csv(prab, "../output/bio/maxjan98test.csv", row.names = FALSE)
 
 
+stacklist <- read.csv("../data/env/asc_layerlist1998.csv", header = TRUE)
+stacklist <- subset(stacklist, stackname == "st199801000120")
+stacklist[] <- lapply(stacklist, as.character)
+stacklist
+aea <- raster("../output/env/aea.tif") 
 
+temp_depth <- raster(stacklist$temp_depth)
+crs(temp_depth) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0" 
+names(temp_depth) <- "temp_depth"
+temp_depth <- projectRaster(temp_depth, aea)
+chl_surface <- raster(stacklist$chl_surface)
+crs(chl_surface) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0" 
+names(chl_surface) <- "chl_surface"
+chl_surface <- projectRaster(chl_surface, aea)
+o2_depth <- raster(stacklist$o2_depth)
+crs(o2_depth) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0" 
+names(o2_depth) <- "o2_depth"
+o2_depth <- projectRaster(o2_depth, aea)
+salinity_depth <- raster(stacklist$salinity_depth)
+crs(salinity_depth) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0" 
+names(salinity_depth) <- "salinity_depth"
+salinity_depth <- projectRaster(salinity_depth, aea)
+nao_sample <- raster(stacklist$nao_sample)
+crs(nao_sample) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0" 
+names(nao_sample) <- "nao_sample"
+nao_sample <- projectRaster(nao_sample, aea)
+nao_winter <- raster(stacklist$nao_winter)
+crs(nao_winter) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"
+names(nao_winter) <- "nao_winter"
+nao_winter <- projectRaster(nao_winter, aea)
 
 test <- stack(temp_depth, chl_surface, o2_depth, salinity_depth, nao_sample, nao_winter)
 
 system.file("java", package="dismo") #finding location to put maxent jar file
 system("java -version")
-mod1 <- maxent(x = prab, p = pa)
 
-pre1 <- predict(mod1, test, args='outputformat=raw' ) #, args = c("outputformat=cloglog")
-preplot <- plot(pre1)
-preplot
 
+mod1 <- maxent(x = prab, p = pa, args=c("maximumiterations=5000")) #maxiterations increased to ensure model convergence
+mod1
+
+pre1 <- predict(mod1, test, args='outputformat=raw' ) 
+preplot1 <- plot(pre1)
+preplot1
+
+pre2 <- predict(mod1, test, args='outputformat=logistic' ) 
+preplot2 <- plot(pre2)
+preplot2
+
+pre3 <- predict(mod1, test, args='outputformat=cloglog' ) 
+preplot3 <- plot(pre3)
+preplot3
+
+#------------------------
+
+mod2 <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "defaultprevalence=0.8")) # changing the prev seems to do nothing
+mod2
+
+mod3 <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "defaultprevalence=0.1")) # changing the prev seems to do nothing
+mod3
+
+pre2.2 <- predict(mod2, test, args='outputformat=logistic' ) 
+preplot2.2 <- plot(pre2.2)
+preplot2.2
+
+pre2.3 <- predict(mod3, test, args='outputformat=logistic' ) 
+preplot2.3 <- plot(pre2.3)
+preplot2.3
+
+#-----------------------------
+
+mod4 <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE")) 
+mod4
+
+mod5 <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "maximumbackground=100")) #because i am using swd, this command is overwridden.  
+mod5
+
+pre5 <- predict(mod5, test, args='outputformat=logistic' ) 
+preplot5 <- plot(pre5)
+preplot5
 ```
 
