@@ -457,5 +457,201 @@ mod5
 pre5 <- predict(mod5, test, args='outputformat=logistic' ) 
 preplot5 <- plot(pre5)
 preplot5
+
+#-----------------------
+
+mod6 <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "replicates=5", "replicatetype=crossvalidate")) #replicates with crossvalidate result in multiple map outputs (one for each replicate). It is not possible to 'merge' these maps https://stackoverflow.com/questions/28885987/r-how-to-get-one-summary-prediction-map-instead-for-5-when-using-5-fold-cros
+mod6
+
+pre6 <- predict(mod6, test, args='outputformat=logistic' ) 
+preplot6 <- plot(pre6)
+preplot6
+
+#-----------------------
+strt <- Sys.time() #get the start time
+mod7 <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=4")) #threads should speed things up...
+mod7
+
+pre7 <- predict(mod7, test, args='outputformat=logistic' ) 
+preplot7 <- plot(pre7)
+preplot7
+print(Sys.time()-strt) #time it took to run
+
+#43 secs
+
+strt <- Sys.time() #get the start time
+mod7.2 <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE"))
+mod7.2
+
+pre7.2 <- predict(mod7.2, test, args='outputformat=logistic' ) 
+preplot7.2 <- plot(pre7)
+preplot7.2
+print(Sys.time()-strt) #time it took to run
+
+#1.75 mins
+
+#conf that threads does indeed speed up process
+
+#---------------------
+#follwoing radosavljevic 2014
+
+
+mod8.1 <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=4", "betamultiplier=0.25")) #playing with multiplier
+mod8.1
+
+pre8.1 <- predict(mod8.1, test, args='outputformat=logistic' ) 
+preplot8.1 <- plot(pre8.1)
+preplot8.1
+
+mod8 <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=4")) #default setting for betam is 1
+mod8
+
+pre8 <- predict(mod8, test, args='outputformat=logistic' ) 
+preplot8 <- plot(pre8)
+preplot8
+
+mod8.4 <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=4", "betamultiplier=1.25")) #playing with multiplier
+mod8.4
+
+pre8.4 <- predict(mod8.4, test, args='outputformat=logistic' ) 
+preplot8.4 <- plot(pre8.4)
+preplot8.4
+
+mod8.2 <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=4", "betamultiplier=2")) 
+mod8.2
+
+pre8.2 <- predict(mod8.2, test, args='outputformat=logistic' ) 
+preplot8.2 <- plot(pre8.2)
+preplot8.2
+
+mod8.3 <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=4", "betamultiplier=6")) 
+mod8.3
+
+pre8.3 <- predict(mod8.3, test, args='outputformat=logistic' ) 
+preplot8.3 <- plot(pre8.3)
+preplot8.3
+
+
+
 ```
 
+
+one maxent run with all variables
+
+
+```{r}
+presaball <- read.csv("../output/bio/presab_10k.csv", header = TRUE)
+janpresaball <- subset(presaball, month == 1)
+janpresaball <- subset(janpresaball, select = c(occurrence, temp_depth, temp_surface, chl_depth, chl_surface, o2_depth, o2_surface, salinity_depth, salinity_surface, ssh_surface, mlp_surface, nao_sample, nao_prev, nao_winter, amo_sample, amo_prev, amo_winter))
+paall <- janpresaball$occurrence
+janpresaball <- subset(janpresaball, select = -c(occurrence))
+
+stacklist <- read.csv("../data/env/asc_layerlist1998.csv", header = TRUE)
+stacklist <- subset(stacklist, stackname == "st199801000120")
+stacklist[] <- lapply(stacklist, as.character)
+stacklist
+aea <- raster("../output/env/aea.tif") 
+
+temp_depth <- raster(stacklist$temp_depth)
+crs(temp_depth) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0" 
+names(temp_depth) <- "temp_depth"
+temp_depth <- projectRaster(temp_depth, aea)
+temp_surface <- raster(stacklist$temp_surface)
+crs(temp_surface) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0" 
+names(temp_surface) <- "temp_surface"
+temp_surface <- projectRaster(temp_surface, aea)
+chl_depth <- raster(stacklist$chl_depth)
+crs(chl_depth) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0" 
+names(chl_depth) <- "chl_depth"
+chl_depth <- projectRaster(chl_depth, aea)
+chl_surface <- raster(stacklist$chl_surface)
+crs(chl_surface) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0" 
+names(chl_surface) <- "chl_surface"
+chl_surface <- projectRaster(chl_surface, aea)
+o2_depth <- raster(stacklist$o2_depth)
+crs(o2_depth) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0" 
+names(o2_depth) <- "o2_depth"
+o2_depth <- projectRaster(o2_depth, aea)
+o2_surface <- raster(stacklist$o2_surface)
+crs(o2_surface) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0" 
+names(o2_surface) <- "o2_surface"
+o2_surface <- projectRaster(o2_surface, aea)
+salinity_depth <- raster(stacklist$salinity_depth)
+crs(salinity_depth) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0" 
+names(salinity_depth) <- "salinity_depth"
+salinity_depth <- projectRaster(salinity_depth, aea)
+salinity_surface <- raster(stacklist$salinity_surface)
+crs(salinity_surface) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0" 
+names(salinity_surface) <- "salinity_surface"
+salinity_surface <- projectRaster(salinity_surface, aea)
+ssh_surface <- raster(stacklist$ssh_surface)
+crs(ssh_surface) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0" 
+names(ssh_surface) <- "ssh_surface"
+ssh_surface <- projectRaster(ssh_surface, aea)
+mlp_surface <- raster(stacklist$mlp_surface)
+crs(mlp_surface) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0" 
+names(mlp_surface) <- "mlp_surface"
+mlp_surface <- projectRaster(mlp_surface, aea)
+nao_sample <- raster(stacklist$nao_sample)
+crs(nao_sample) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0" 
+names(nao_sample) <- "nao_sample"
+nao_sample <- projectRaster(nao_sample, aea)
+nao_prev <- raster(stacklist$nao_prev)
+crs(nao_prev) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0" 
+names(nao_prev) <- "nao_prev"
+nao_prev <- projectRaster(nao_prev, aea)
+nao_winter <- raster(stacklist$nao_winter)
+crs(nao_winter) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"
+names(nao_winter) <- "nao_winter"
+nao_winter <- projectRaster(nao_winter, aea)
+amo_sample <- raster(stacklist$amo_sample)
+crs(amo_sample) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0" 
+names(amo_sample) <- "amo_sample"
+amo_sample <- projectRaster(amo_sample, aea)
+amo_prev <- raster(stacklist$amo_prev)
+crs(amo_prev) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0" 
+names(amo_prev) <- "amo_prev"
+amo_prev <- projectRaster(amo_prev, aea)
+amo_winter <- raster(stacklist$amo_winter)
+crs(amo_winter) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"
+names(amo_winter) <- "amo_winter"
+amo_winter <- projectRaster(amo_winter, aea)
+
+testall <- stack(temp_depth, temp_surface, chl_depth, chl_surface, o2_depth, o2_surface, salinity_depth, salinity_surface, ssh_surface, mlp_surface, nao_sample, nao_prev, nao_winter, amo_sample, amo_prev, amo_winter)
+
+system.file("java", package="dismo") #finding location to put maxent jar file
+system("java -version")
+
+mod1all <- maxent(x = janpresaball, p = paall, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=4")) 
+mod1all
+
+pre1all <- predict(mod1all, testall, args='outputformat=logistic' ) 
+preplot1all <- plot(pre1all)
+preplot1all
+
+```
+
+# maxentvariableselection package
+
+https://cran.r-project.org/web/packages/MaxentVariableSelection/MaxentVariableSelection.pdf + https://cran.r-project.org/web/packages/MaxentVariableSelection/vignettes/MaxentVariableSelection.pdf
+
+
+```{r}
+janaball <- read.csv("../output/bio/background_10k.csv", header = TRUE)
+janpresall <- read.csv("../output/bio/pres_nomissing.csv", header = TRUE)
+janpresaball <- rbind.fill(janaball, janpresall)
+janpresaball <- subset(janpresaball, month == 1)
+janpresaball <- subset(janpresaball, select = c(occurrence, longitude_meters, latitude_meters, temp_depth, temp_surface, chl_depth, chl_surface, o2_depth, o2_surface, salinity_depth, salinity_surface, ssh_surface, mlp_surface, nao_sample, nao_prev, nao_winter, amo_sample, amo_prev, amo_winter))
+names(janpresaball)[names(janpresaball)=="occurrence"] <- "species"
+names(janpresaball)[names(janpresaball)=="longitude_meters"] <- "longitude"
+names(janpresaball)[names(janpresaball)=="latitude_meters"] <- "latitude"
+janpresall <- subset(janpresaball, species == 1)
+janpresall$species <- replace(janpresall$species, janpresall$species == "1", "fish")
+write.csv(janpresall, "../output/maxentvariableselection/presence.csv", row.names = FALSE)
+janaball <- subset(janpresaball, species == 0)
+janpresall$species <- replace(janpresall$species, janpresall$species == "0", "bg")
+write.csv(janaball, "../output/maxentvariableselection/background.csv", row.names = FALSE)
+
+
+VariableSelection(maxent="C:/Users/bunny/Downloads/maxent/maxent.jar", outdir=("C:/Users/bunny/Documents/GitHub/Chapter_1/output/maxentvariableselection/output"), gridfolder=("C:/Users/bunny/Documents/GitHub/Chapter_1/output/maxentvariableselection/testgrid"), occurrencelocations= ("C:/Users/bunny/Documents/GitHub/Chapter_1/output/maxentvariableselection/presence.csv"), backgroundlocations= ("C:/Users/bunny/Documents/GitHub/Chapter_1/output/maxentvariableselection/background.csv"), additionalargs="nolinear noquadratic noproduct nothreshold noautofeature", contributionthreshold=5, correlationthreshold=0.9, betamultiplier=seq(0.5, 4, 0.25))
+```

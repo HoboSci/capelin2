@@ -2812,21 +2812,8 @@ for (i in 1:length(asclist)){
 ```
 
 
+# maxentvariableselection package
 
+https://cran.r-project.org/web/packages/MaxentVariableSelection/MaxentVariableSelection.pdf
 
-
-
-```{r}
-library(dismo)
-library(rJava)
-jar <- paste(system.file(package="dismo"), "C:/Users/bunny/Documents/GitHub/Chapter_1/packrat/lib/x86_64-w64-mingw32/3.5.1/dismo/java/maxent.jar", sep='')
-file.exists(jar)
-testmax <- maxent(janpresabmax, janpresabmax$occurrence)
-
-
-
-
-
-
-```
 
