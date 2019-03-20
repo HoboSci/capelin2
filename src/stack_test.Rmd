@@ -635,7 +635,7 @@ preplot1all
 
 https://cran.r-project.org/web/packages/MaxentVariableSelection/MaxentVariableSelection.pdf + https://cran.r-project.org/web/packages/MaxentVariableSelection/vignettes/MaxentVariableSelection.pdf
 
-
+with all variables
 ```{r}
 janaball <- read.csv("../output/bio/background_10k.csv", header = TRUE)
 janpresall <- read.csv("../output/bio/pres_nomissing.csv", header = TRUE)
@@ -653,5 +653,33 @@ janpresall$species <- replace(janpresall$species, janpresall$species == "0", "bg
 write.csv(janaball, "../output/maxentvariableselection/background.csv", row.names = FALSE)
 
 
-VariableSelection(maxent="C:/Users/bunny/Downloads/maxent/maxent.jar", outdir=("C:/Users/bunny/Documents/GitHub/Chapter_1/output/maxentvariableselection/output"), gridfolder=("C:/Users/bunny/Documents/GitHub/Chapter_1/output/maxentvariableselection/testgrid"), occurrencelocations= ("C:/Users/bunny/Documents/GitHub/Chapter_1/output/maxentvariableselection/presence.csv"), backgroundlocations= ("C:/Users/bunny/Documents/GitHub/Chapter_1/output/maxentvariableselection/background.csv"), additionalargs="nolinear noquadratic noproduct nothreshold noautofeature", contributionthreshold=5, correlationthreshold=0.9, betamultiplier=seq(0.5, 4, 0.25))
+VariableSelection(maxent="C:/Users/bunny/Downloads/maxent/maxent.jar", outdir=("C:/Users/bunny/Documents/GitHub/Chapter_1/output/maxentvariableselection/output"), gridfolder=("C:/Users/bunny/Documents/GitHub/Chapter_1/output/maxentvariableselection/testgrid"), occurrencelocations= ("C:/Users/bunny/Documents/GitHub/Chapter_1/output/maxentvariableselection/presence.csv"), backgroundlocations= ("C:/Users/bunny/Documents/GitHub/Chapter_1/output/maxentvariableselection/background.csv"), additionalargs="nolinear noquadratic noproduct nothreshold noautofeature", contributionthreshold=5, correlationthreshold=0.9, betamultiplier=seq(0.5, 3, 0.25))
 ```
+
+
+
+
+with my manually selected variables for jan (temp_depth, chl_surface, o2_depth, salinity_depth, nao_sample, nao_winter)
+```{r}
+janaball <- read.csv("../output/bio/background_10k.csv", header = TRUE)
+janpresall <- read.csv("../output/bio/pres_nomissing.csv", header = TRUE)
+janpresaball_red <- rbind.fill(janaball, janpresall)
+janpresaball_red <- subset(janpresaball_red, month == 1)
+janpresaball_red <- subset(janpresaball_red, select = c(occurrence, longitude_meters, latitude_meters, temp_depth, chl_surface, o2_depth, salinity_depth, nao_sample, nao_winter))
+names(janpresaball_red)[names(janpresaball_red)=="occurrence"] <- "species"
+names(janpresaball_red)[names(janpresaball_red)=="longitude_meters"] <- "longitude"
+names(janpresaball_red)[names(janpresaball_red)=="latitude_meters"] <- "latitude"
+janpresall_red <- subset(janpresaball_red, species == 1)
+janpresall_red$species <- replace(janpresall_red$species, janpresall_red$species == "1", "fish")
+write.csv(janpresall_red, "../output/maxentvariableselection/presence_red.csv", row.names = FALSE)
+janaball_red <- subset(janpresaball_red, species == 0)
+janpresall_red$species <- replace(janpresall_red$species, janpresall_red$species == "0", "bg")
+write.csv(janaball_red, "../output/maxentvariableselection/background_red.csv", row.names = FALSE)
+
+
+VariableSelection(maxent="C:/Users/bunny/Downloads/maxent/maxent.jar", outdir=("C:/Users/bunny/Documents/GitHub/Chapter_1/output/maxentvariableselection/output"), gridfolder=("C:/Users/bunny/Documents/GitHub/Chapter_1/output/maxentvariableselection/testgrid"), occurrencelocations= ("C:/Users/bunny/Documents/GitHub/Chapter_1/output/maxentvariableselection/presence_red.csv"), backgroundlocations= ("C:/Users/bunny/Documents/GitHub/Chapter_1/output/maxentvariableselection/background_red.csv"), additionalargs="nolinear noquadratic noproduct nothreshold noautofeature", contributionthreshold=5, correlationthreshold=0.9, betamultiplier=seq(0.25, 3, 0.25))
+```
+
+so this is all lovely... the two runs suggest b-multipliers of <1 (0.75 and 0.25 respectively). In my test runs above, 0.25 gives a 'tighter fit' thatn 1 (the default). Apparently changin the b-multiplier helps reduce over and underfitting... "the default setting in Maxent is 1. Smaller values will constrain the model more, whereas larger numbers will relax the model, making it “smoother”...... 
+
+maybe try enmval?

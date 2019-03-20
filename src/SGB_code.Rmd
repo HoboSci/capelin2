@@ -1,0 +1,614 @@
+---
+title: "simon_test_loop"
+output: html_notebook
+---
+-----
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*.
+
+```{r}
+plot(cars) # if you put a # in the code block, it makes the text after a comment!
+```
+
+Add a new chunk by clicking the *Insert Chunk* button on the tool-bar or by pressing *Ctrl+Alt+I*. SIMON - THIS DOESN'T WORK SO WELL ON WINDOWS.ON THE TOOLBAR GO TO TOOL - MODIFY KEYBOARD SHORTCUTS - SEARCH FOR INSERT CHUNK AND CHANGE TO WHATEVER YOU WANT (I USE CTRL + ALT + K)
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed
+
+Package dependencies
+
+You can load them using the following code which uses a function called ipak. I've popped the code for 
+Note this function checks to see if the packages are installed first.
+
+```{r pre-install packages, message=FALSE}
+packages <- c("netcdf", "rgdal", "sp", "raster")
+source("./ipak.R")
+ipak(packages)
+suppressMessages(ipak)
+```
+---
+OK this is fun ...
+Hay Samsam I likes this coding format, being able to fully describe your code separately but still linked to the code is great.
+
+I have put away my crampons and rope and I think I survived the learning curve, wow your a good teacher.
+I also did some you-tubing and even looked at the first level of an R course but quickly realised the best way to learn for me is to dive in and learn as I go :-
+
+OK I don't know how well this will work but I am going to try and keep this document going as I work out, what it is I am going to be able to do here. 
+Haven't decided yet if your going to get to read this or not so the narrative is probably going to jump from first person reminders to comments I think might help you, also the tense is going to jump as I go back and update stuff ...
+
+For me this is a new final target, none business/database, a new coding language (R) and a new data structure (raster files, netcdf) and I'm sure many others I have yet to find out about.
+
+All that said I do have experience in data manipulation and other coding languages, so here goes ...
+
+Look at Sam's original code and especially her loop which she is concerned about.
+
+Basic requirements:
+Take a specific netcdf file, make it into a brick, extract values by :-
+the variable of the netcdf,
+xy location,
+layer,
+time period
+
+(Maybe some indexing could be done ...)
+Then add that data to specific columns on a data-frame
+
+All based on data provided in another file :-
+xyz location of the point
+layer
+(More indexing ...)
+
+Final goals 
+Deal with worse-case scenario,
+~200,000 points at every month at every year for every variable
+
+Need to look at options for :-
+Splitting the csv file and the netcdf files into smaller time periods
+Whole process needs to be as fire and forget as possible, if it can't be reduced hugely in time.
+
+
+Enter the, in Sam's words 'horribly inefficient loop (but works)'
+
+Focus on, it works, it's a great starting point, I could not have got started without something like this!
+---
+```{r}
+start_time <- Sys.time()
+netcdf_list <- list.files("./data/env/netcdf", pattern = '*.nc', full.names = TRUE) #true means the full path is included
+no_netcdf <- length(netcdf_list) #for the loop - need to know how many files to cycle through
+netcdf_name <- list.files("./data/env/netcdf", pattern = '*.nc', full.names = FALSE) #false means the path is not included
+aea <- raster("./data/env/aea.tif") 
+for (i in 1:no_netcdf) {  
+  print(netcdf_name[i]) #this just prints the name of the netCDF R is working one
+  brkyr <- (sapply(strsplit(netcdf_name[i], "_"), "[[", 1)) # extracting the first part of the netcdf filename (which is the year)
+  brkmth <- (sapply(strsplit(netcdf_name[i], "_"), "[[", 2)) # extracting the second part of the netcdf filename (which is the month)
+  brkvar <- (sapply(strsplit(netcdf_name[i], "_"), "[[", 3)) # extracting the third part of the netcdf (inc.nc)
+  temp_brick <- brick(netcdf_list[i], lvar = 4)
+  temp_brick <- projectRaster(temp_brick, aea) 
+    for (j in 1:nrow(background_all_sp)) {  
+      de <- background_all_sp$depthlayerno[[j]]  # a variable for the observation depth layer
+      yr <- (background_all_sp$year[j])  # a variable for the observation year
+      mth <- (background_all_sp$month[j])  # a variable for the observation month
+          if (brkyr == yr & brkmth == mth & brkvar == "temp.nc"){
+              background_all_sp$temp_surface[j] <- extract(x=temp_brick[[1]], y = background_all_sp[j, ]) 
+              if (is.na(de)){
+                background_all_sp$temp_depth[j] <- NA
+              } else  
+                background_all_sp$temp_depth[j] <- extract(x=temp_brick[[de]], y = background_all_sp[j, ])
+          } else if (brkyr == yr & brkmth == mth & brkvar == "salinity.nc") {
+              background_all_sp$salinity_surface[j] <- extract(x=temp_brick[[1]], y = background_all_sp[j, ]) 
+              if (is.na(de)){
+                background_all_sp$salinity_depth[j] <- NA
+              } else  
+                background_all_sp$salinity_depth[j] <- extract(x=temp_brick[[de]], y = background_all_sp[j, ]) 
+          } else if (brkyr == yr & brkmth == mth & brkvar == "chl.nc") {
+              background_all_sp$chl_surface[j] <- extract(x=temp_brick[[1]], y = background_all_sp[j, ]) 
+              if (is.na(de)){
+                background_all_sp$chl_depth[j] <- NA
+              } else  
+                background_all_sp$chl_depth[j] <- extract(x=temp_brick[[de]], y = background_all_sp[j, ]) 
+          } else if (brkyr == yr & brkmth == mth & brkvar == "o2.nc") {
+              background_all_sp$o2_surface[j] <- extract(x=temp_brick[[1]], y = background_all_sp[j, ]) 
+              if (is.na(de)){
+                background_all_sp$o2_depth[j] <- NA
+              } else  
+                background_all_sp$o2_depth[j] <- extract(x=temp_brick[[de]], y = background_all_sp[j, ]) 
+          } else if (brkyr == yr & brkmth == mth & brkvar == "mlp.nc") {
+              background_all_sp$mlp_surface[j] <- extract(x=temp_brick[[1]], y = background_all_sp[j, ])
+          } else if (brkyr == yr & brkmth == mth & brkvar == "ssh.nc") {
+              background_all_sp$ssh_surface[j] <- extract(x=temp_brick[[1]], y = background_all_sp[j, ]) 
+            
+          }
+     
+    }
+}
+write.csv(background_all_sp, "./output/points_with_data.csv", row.names = FALSE) #this ... writes a csv file so i have a permanent record that I can work with
+end_time <- Sys.time()
+print(end_time - start_time)
+```
+---
+First thing I think I will do is try to understand what this is doing and why, best way is to do that is try and rewrite it using coding practices I like to use :-
+KISS - Keep it simple, stupid
+Write as little code as possible, 
+try not to repeat code, if you find similar code think about a function that deals with the differences.
+Only evaluate stuff once if possible, each evaluation takes processing time where as referring to a memory location or variable takes very little.
+---
+```{r}
+#Basic rework of the existing logic
+start_time <- Sys.time()
+background_all2 <- read.csv("./data/simon_test_points.csv", header = TRUE)
+xy <- background_all2[ ,c("longitude_meters","latitude_meters")] # This is to tell R where the coordinates are. 
+background_all_sp <- SpatialPointsDataFrame(coords = xy, data = background_all2, proj4string = CRS("+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-60 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")) # The CRS is used here is for the albers equal area projection.
+head(background_all_sp)
+
+netcdf_list <- list.files("./data/env/netcdf", pattern = '*.nc', full.names = TRUE) #true means the full path is included
+no_netcdf <- length(netcdf_list) #for the loop - need to know how many files to cycle through
+netcdf_name <- list.files("./data/env/netcdf", pattern = '*.nc', full.names = FALSE) #false means the path is not included
+aea <- raster("./data/env/aea.tif")
+print(paste("start time",start_time,sep=" "))
+for (i in 1:no_netcdf) {
+  netcdf_active <- netcdf_name[i]
+  print(netcdf_active) #this just prints the name of the netCDF R is working one
+  netcdf_split <- strsplit(netcdf_name[i], "_")
+  brkyr <- unlist(netcdf_split)[1] # extracting the first part of the netcdf filename (which is the year)
+  brkmth <-unlist(netcdf_split)[2] # extracting the second part of the netcdf filename (which is the month)
+  brkvar <- unlist(netcdf_split)[3] # extracting the third part of the netcdf (inc.nc)
+  fileIndex = paste(brkyr,brkmth,sep="_")
+  temp_brick <- brick(netcdf_list[i], lvar = 4)
+  temp_brick <- projectRaster(temp_brick, aea)
+  #j <- nrow(background_all_sp)
+  #while(j > 0){
+  for (j in 1:nrow(background_all_sp)) {
+    de <- background_all_sp$depthlayerno[[j]]  # a variable for the observation depth layer
+    yr <- (background_all_sp$year[j])  # a variable for the observation year
+    mth <- (background_all_sp$month[j])  # a variable for the observation month
+    objIndex <- paste(yr,mth,sep="_")
+    if(fileIndex == objIndex){
+      temp_brick_1 <- extract(x=temp_brick[[1]], y = background_all_sp[j, ])
+      if (!(brkvar == "mlp.nc") & !(brkvar == "ssh.nc")){
+        if (is.na(de)){
+          temp_brick_de <- NA
+        } else {
+          temp_brick_de <- extract(x=temp_brick[[de]], y = background_all_sp[j, ]) 
+        }
+      }
+      if(brkvar == "temp.nc"){
+        background_all_sp$temp_surface[j] <- temp_brick_1
+        background_all_sp$temp_depth[j] <-  temp_brick_de
+      } else if (brkvar == "salinity.nc") {
+        background_all_sp$salinity_surface[j] <- temp_brick_1 
+        background_all_sp$salinity_depth[j] <- temp_brick_de
+      } else if (brkvar == "chl.nc") {
+        background_all_sp$chl_surface[j] <- temp_brick_1   
+        background_all_sp$chl_depth[j] <- temp_brick_de 
+      } else if (brkvar == "o2.nc") {
+        background_all_sp$o2_surface[j] <- temp_brick_1
+        background_all_sp$o2_depth[j] <- temp_brick_de
+      } else if (brkvar == "mlp.nc") {
+        background_all_sp$mlp_surface[j] <- temp_brick_1
+      } else if (brkvar == "ssh.nc") {
+        background_all_sp$ssh_surface[j] <- temp_brick_1
+      }
+    }
+  }
+}
+write.csv(background_all_sp, "./output/points_with_data_1.csv", row.names = FALSE) #this ... writes a csv file so i have a permanent record that I can work with
+end_time <- Sys.time()
+print(end_time - start_time)
+```
+---
+OK hopefully this is still recognisable, basically I have simplified the logic a little and tried to cut down on evaluations by setting data to variables, I have also added some simple time metrics so I can track my progress.
+Also added some to Sam's code as there is no point me making it, supposedly better code if it is then slower than what she had.
+Also renamed my output files so that I can compare each against the original to check that I am not introducing data errors without realising it.
+
+First run was almost identical to the original but at I have to get to grips with the studio environment.
+In most environments I have worked with when you finish running the code the variables and data disappear but here they  persist, will need to work out how to clear unwanted stuff out and to make sure I don't trip up by having a value in a variable that I am not updating any more but relying on in my code!
+
+First thing I noticed is the netcdf files contain allot of data but we only want a small amount so I wonder if I can find a way of only pulling the files that we need and then mapping the data onto the data brick ...
+---
+```{r}
+#Attempt to reverse loops.
+start_time <- Sys.time()
+
+background_all2 <- read.csv("./data/simon_test_points.csv", header = TRUE)
+xy <- background_all2[ ,c("longitude_meters","latitude_meters")] # This is to tell R where the coordinates are. 
+background_all_sp <- SpatialPointsDataFrame(coords = xy, data = background_all2, proj4string = CRS("+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-60 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")) # The CRS is used here is for the albers equal area projection.
+head(background_all_sp)
+
+netcdf_list <- list.files("./data/env/netcdf", pattern = '*.nc', full.names = TRUE) #true means the full path is included
+no_netcdf <- length(netcdf_list) #for the loop - need to know how many files to cycle through
+netcdf_name <- list.files("./data/env/netcdf", pattern = '*.nc', full.names = FALSE) #false means the path is not included
+aea <- raster("./data/env/aea.tif")
+
+# Loop through required data list rows
+for (j in 1:nrow(background_all_sp)) {
+    de <- background_all_sp$depthlayerno[[j]]  # a variable for the observation depth layer
+    yr <- (background_all_sp$year[j])  # a variable for the observation year
+    mth <- (background_all_sp$month[j])  # a variable for the observation month
+    objIndex <- paste(yr,mth,sep="_")
+	objType <- c("chl.nc","mlp.nc","o2.nc","salinity.nc","ssh.nc","temp.nc")
+	intTypeMax <- length(objType)
+	# Loop through required data columns
+	#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	# tried while loops but makes little difference
+	#intType <- intTypeMax
+	#while(intType > 1){
+	#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	for (intType in 1:intTypeMax){
+		brkvar <- unlist(objType)[intType]
+		netcdf_name_req <- paste(objIndex,brkvar,sep="_")
+		print(paste("search for",netcdf_name_req,sep=" "))
+		# Check if you have a file for the relevant row and relevant column data
+		indexLoc <- which(sapply(netcdf_name, function(e) is.element(netcdf_name_req, e)))
+		if (indexLoc > 0){
+			# load data
+			print(netcdf_name_req)
+			temp_brick <- brick(netcdf_list[indexLoc], lvar = 4)
+			temp_brick <- projectRaster(temp_brick, aea) 
+			temp_brick_1 =  extract(x=temp_brick[[1]], y = background_all_sp[j, ])
+			if (!(brkvar == "mlp.nc") & !(brkvar == "ssh.nc")){
+				if (is.na(de)){
+					temp_brick_de <- NA
+				} else {
+					temp_brick_de <- extract(x=temp_brick[[de]], y = background_all_sp[j, ]) 
+				}
+			}
+			 if(brkvar == "temp.nc"){
+				background_all_sp$temp_surface[j] <- temp_brick_1
+				background_all_sp$temp_depth[j] <-  temp_brick_de
+			  } else if (brkvar == "salinity.nc") {
+				background_all_sp$salinity_surface[j] <- temp_brick_1 
+				background_all_sp$salinity_depth[j] <- temp_brick_de
+			  } else if (brkvar == "chl.nc") {
+				background_all_sp$chl_surface[j] <- temp_brick_1   
+				background_all_sp$chl_depth[j] <- temp_brick_de 
+			  } else if (brkvar == "o2.nc") {
+				background_all_sp$o2_surface[j] <- temp_brick_1
+				background_all_sp$o2_depth[j] <- temp_brick_de
+			  } else if (brkvar == "mlp.nc") {
+				background_all_sp$mlp_surface[j] <- temp_brick_1
+			  } else if (brkvar == "ssh.nc") {
+				background_all_sp$ssh_surface[j] <- temp_brick_1
+			  }
+		}
+		#intType <- intType - 1 #required for While loop
+	}
+}
+write.csv(background_all_sp, "./output/points_with_data_2.csv", row.names = FALSE) #this ... writes a csv file so i have a permanent record that I can work with
+end_time <- Sys.time()
+print(end_time - start_time)
+```
+---
+Ouch !!
+That took nearly three times as long as the original but at least I now understand why and it has given me a better understanding of the data and the underlying problem.
+Very strange to not have a clear idea of the data, I'm used to looking at tables of data on databases this all seems like black box data, need to look more into how to read these netcdf files.
+
+What it showed me is how out of step the two sets of files are ...
+
+Note:
+---
+I tried converting the for loops to while loops as I found in my Sudoku coding that made a huge difference with large loops, it does very little evaluation when starting a new loop where as a for loop can do loads if your not careful.
+But as the loops are so small it made very little difference just left one commented in to show the difference.
+
+---
+Went back to previous code and added some more metrics to work out how efficient it is.
+---
+```{r}
+#Basic rework of the existing logic
+no_all_netcdf_rows <- 0
+no_all_netcdf_used_rows <- 0
+start_time <- Sys.time()
+background_all2 <- read.csv("./data/simon_test_points.csv", header = TRUE)
+xy <- background_all2[ ,c("longitude_meters","latitude_meters")] # This is to tell R where the coordinates are. 
+background_all_sp <- SpatialPointsDataFrame(coords = xy, data = background_all2, proj4string = CRS("+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-60 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")) # The CRS is used here is for the albers equal area projection.
+head(background_all_sp)
+
+netcdf_list <- list.files("./data/env/netcdf", pattern = '*.nc', full.names = TRUE) #true means the full path is included
+no_netcdf <- length(netcdf_list) #for the loop - need to know how many files to cycle through
+netcdf_name <- list.files("./data/env/netcdf", pattern = '*.nc', full.names = FALSE) #false means the path is not included
+aea <- raster("./data/env/aea.tif")
+print(paste("start time",start_time,sep=" "))
+for (i in 1:no_netcdf) {
+  netcdf_active <- netcdf_name[i]
+  print(netcdf_active) #this just prints the name of the netCDF R is working one
+  netcdf_split <- strsplit(netcdf_name[i], "_")
+  brkyr <- unlist(netcdf_split)[1] # extracting the first part of the netcdf filename (which is the year)
+  brkmth <-unlist(netcdf_split)[2] # extracting the second part of the netcdf filename (which is the month)
+  brkvar <- unlist(netcdf_split)[3] # extracting the third part of the netcdf (inc.nc)
+  fileIndex = paste(brkyr,brkmth,sep="_")
+  temp_brick <- brick(netcdf_list[i], lvar = 4)
+  temp_brick <- projectRaster(temp_brick, aea)
+  no_netcdf_rows <- nrow(background_all_sp)
+  no_all_netcdf_rows <- no_all_netcdf_rows + no_netcdf_rows
+  for (j in 1:no_nedcdf_rows) {
+    de <- background_all_sp$depthlayerno[[j]]  # a variable for the observation depth layer
+    yr <- (background_all_sp$year[j])  # a variable for the observation year
+    mth <- (background_all_sp$month[j])  # a variable for the observation month
+    objIndex <- paste(yr,mth,sep="_")
+    if(fileIndex == objIndex){
+      no_all_netcdf_used_rows <- no_all_netcdf_used_rows + 1
+      temp_brick_1 <- extract(x=temp_brick[[1]], y = background_all_sp[j, ])
+      if (!(brkvar == "mlp.nc") & !(brkvar == "ssh.nc")){
+        if (is.na(de)){
+          temp_brick_de <- NA
+        } else {
+          temp_brick_de <- extract(x=temp_brick[[de]], y = background_all_sp[j, ]) 
+        }
+      }
+      if(brkvar == "temp.nc"){
+        background_all_sp$temp_surface[j] <- temp_brick_1
+        background_all_sp$temp_depth[j] <-  temp_brick_de
+      } else if (brkvar == "salinity.nc") {
+        background_all_sp$salinity_surface[j] <- temp_brick_1 
+        background_all_sp$salinity_depth[j] <- temp_brick_de
+      } else if (brkvar == "chl.nc") {
+        background_all_sp$chl_surface[j] <- temp_brick_1   
+        background_all_sp$chl_depth[j] <- temp_brick_de 
+      } else if (brkvar == "o2.nc") {
+        background_all_sp$o2_surface[j] <- temp_brick_1
+        background_all_sp$o2_depth[j] <- temp_brick_de
+      } else if (brkvar == "mlp.nc") {
+        background_all_sp$mlp_surface[j] <- temp_brick_1
+      } else if (brkvar == "ssh.nc") {
+        background_all_sp$ssh_surface[j] <- temp_brick_1
+      }
+    }
+  }
+}
+write.csv(background_all_sp, "./output/points_with_data_3.csv", row.names = FALSE) #this ... writes a csv file so i have a permanent record that I can work with
+end_time <- Sys.time()
+print(end_time - start_time)
+print(paste("Out of",no_netcdf,"netcdf files that contain all together",no_all_netcdf_rows,"rows"))
+print(paste("Only",no_all_netcdf_used_rows,"are used"))
+```
+---
+OK this gave me the result that I thought it might.
+Out of 18 netcdf files that contain all together 198 rows
+Only 66 rows are used
+
+If this was a database project all I would do is create a query to reduce my data set to only matching data before I started to work with it ...
+Also I would have the subset of data indexed :-
+type, year, month, depth ext.
+
+I wonder what people use to do this, looking at the link Sam gave me it looks like he uses a shaping file, but I worked out that is only to change his data into the county he is working on.
+
+looked at :-
+[link](https://cran.r-project.org/web/packages/futureheatwaves/vignettes/starting_from_netcdf.html)
+[link](http://geog.uoregon.edu/bartlein/courses/geog490/week04-netCDF.html)
+[link](https://www.youtube.com/watch?v=DvfTZSJLRfw)
+Trying their examples using our data
+---
+Worried about package conflicts so found this if I need it :-
+It is possible to have multiple versions of a package loaded at once (for example, if you have a development version and a stable version in different libraries). To detach and guarantee that all copies are detached, use this function.
+
+```{r}
+detach_package <- function(pkg, character.only = FALSE)
+{
+  if(!character.only)
+  {
+    pkg <- deparse(substitute(pkg))
+  }
+  search_item <- paste("package", pkg, sep = ":")
+  while(search_item %in% search())
+  {
+    detach(search_item, unload = TRUE, character.only = TRUE)
+  }
+}
+```
+
+Usage is, for example
+
+detach_package(vegan)
+or
+
+detach_package("vegan", TRUE)
+
+to simply remove an object use
+rm(object_name)
+
+Back to the examples
+
+---
+
+Loading required packages 
+```{r}
+packages <- c("ncdf4.helpers","readr","tidyr","ggplot2")
+source("./ipak.R")
+ipak(packages)
+suppressMessages(ipak)
+
+library(ncdf4)
+library(ncdf4.helpers)
+library(PCICt)
+
+library(readr)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+```
+
+trying out with one file
+Got bored repeating the same code for each variable I wanted to check so wrote some small functions
+---
+```{r}
+netcdf_filepath <- paste0("./data/env/netcdf/",
+                            "1998_1_salinity.nc")
+get_variable_from_Netcdflink <- function(netcdflink,strVariable,PrintType = 0)
+{
+  # This function takes three variables
+  #netcdflink, this an object that has been opened useing nc_open
+  #strVariable, the required variable
+  #PrintType, defaults to no printing
+  # 1 a summary
+  # 2 full print
+  
+  object_return = ncvar_get(netcdflink, varid = strVariable)
+  if (PrintType == 1)
+  {
+    print(summary(object_return))
+  }else if (PrintType == 1)
+  {
+    print(object_return)
+  }
+  return(object_return)
+}
+
+print_from_netcdflink <- function(netcdflink,PrintType = 0)
+{
+  # This function takes two variables
+  #netcdflink, this an object that has been opened useing nc_open
+  #PrintType, defaults to no printing 
+  # 1 Filename,title, Origin date and calander type
+  # 2 full print
+  
+  if (PrintType == 1)
+  {
+    print(paste("File name,",netcdflink$filename))
+    print(paste("title",ncatt_get(netcdflink,0,"title")))
+    print(paste("date type of file",netcdflink$dim$time$units))
+    print(paste("calander type of file,",netcdflink$dim$time$calendar))
+  }else if (PrintType == 2)
+  {
+    print(netcdflink)
+  }
+}
+
+netcdf_output <- nc_open(netcdf_filepath)
+print_from_netcdflink(netcdf_output,1)
+netcdf_data <- ncvar_get(netcdf_output, attributes(netcdf_output$var)$names[1])
+
+salinity <- get_variable_from_Netcdflink(netcdf_output,"salinity",0)
+# salinity <- ncvar_get(netcdf_output,varid = "salinity")
+# print(salinity)
+
+time <- get_variable_from_Netcdflink(netcdf_output,"time",0)
+longitude <- get_variable_from_Netcdflink(netcdf_output,"longitude",2)
+latitude <- get_variable_from_Netcdflink(netcdf_output,"latitude",2)
+depth <- get_variable_from_Netcdflink(netcdf_output,"depth",0)
+
+time_index <- which.min(abs(time - 421140))
+longitude_index <- which.min(abs(longitude - -60.48507517))
+latitude_index <- which.min(abs(latitude - 62.37859726))
+depth_index <- which.min(abs(depth - 14))
+print(longitude_index)
+print(latitude_index)
+print(depth_index)
+
+netcdf_req_data <- netcdf_data[longitude_index,latitude_index,depth_index]
+print(netcdf_req_data)
+nc_close(netcdf_output)
+
+```
+
+Hmm some interesting stuff but still struggling to get to grips with this data.
+I had hoped I might have been able to get the same value that is on line one of the test point data under the column salinity_depth
+
+
+I think we want to be able get to the stage where we can read only the points that are required directly into the data used to create the csv data so a bigger csv would read more data and smaller less. That way I am hoping Sam can get an idea of a performance to data ratio.
+
+First things first, maybe I should try and wrap what we have now in function to see if I can get some performance benefits.
+---
+```{r}
+#Basic rework of code now uses functions and mclapply for parallel running (supposedly)
+
+#Detect cores automatically, I usually free one up.
+cores <- detectCores() - 1
+
+no_all_netcdf_rows <- 0
+no_all_netcdf_used_rows <- 0
+no_netcdf_rows <- 0
+intRow <- 0
+
+start_time <- Sys.time()
+print(paste("start time",start_time,sep=" "))
+background_all2 <- read.csv("./data/simon_test_points.csv", header = TRUE)
+xy <- background_all2[ ,c("longitude_meters","latitude_meters")] # This is to tell R where the coordinates are. 
+background_all_sp <- SpatialPointsDataFrame(coords = xy, data = background_all2, proj4string = CRS("+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-60 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")) # The CRS is used here is for the albers equal area projection.
+netcdf_Path <- "./data/env/netcdf"
+netcdf_list <- list.files("./data/env/netcdf", pattern = '*.nc', full.names = TRUE) #true means the full path is included
+no_netcdf <- length(netcdf_list) #for the loop - need to know how many files to cycle through
+aea <- raster("./data/env/aea.tif")
+
+deal_With_netncf_file <- function(strFilePath)
+{
+  strFileName <- basename(strFilePath)
+  netcdf_active <- strFileName
+  print(netcdf_active) #this just prints the name of the netCDF R is working one
+  netcdf_split <- strsplit(strFileName, "_")
+  brkyr <- unlist(netcdf_split)[1] # extracting the first part of the netcdf filename (which is the year)
+  brkmth <-unlist(netcdf_split)[2] # extracting the second part of the netcdf filename (which is the month)
+  brkvar <<- unlist(netcdf_split)[3] # extracting the third part of the netcdf (inc.nc)
+  fileIndex <<- paste(brkyr,brkmth,sep="_")
+  FileTimeStart <- Sys.time()
+  temp_brick <<- brick(strFilePath, lvar = 4)
+  FileTimeEnd <- Sys.time()
+  #print(paste("File read took",FileTimeEnd - FileTimeStart))
+  RasterTimeStart <- Sys.time()
+  temp_brick <<- projectRaster(temp_brick, aea)
+  RasterTimeEnd <- Sys.time()
+  #print(paste("Raster took",RasterTimeEnd - RasterTimeStart))
+  no_req_rows <- nrow(background_all_sp)
+  RowsTimeStart <- Sys.time()
+  #for (j in 1:no_req_rows) {
+  #  deal_With_netncf_row(j)
+    req_row_list <- 1:no_req_rows
+    mclapply(req_row_list,deal_With_netncf_row)
+  #}
+  RowsTimeEnd <- Sys.time()
+  #print(paste("Rows took",RowsTimeEnd - RowsTimeStart))
+}
+deal_With_netncf_row <- function(intRow)
+{
+  de <- background_all_sp$depthlayerno[[intRow]]  # a variable for the observation depth layer
+  yr <- (background_all_sp$year[intRow])  # a variable for the observation year
+  mth <- (background_all_sp$month[intRow])  # a variable for the observation month
+  objIndex <- paste(yr,mth,sep="_")
+  if(fileIndex == objIndex){
+    brkvar_split <- strsplit(brkvar, "\\.")
+    strColumn <- unlist(brkvar_split)[1]
+    temp_brick_1 <- raster::extract(x=temp_brick[[1]], y = background_all_sp[intRow, ])
+    if (!is.null(background_all_sp[[paste0(strColumn,"_surface")]])){
+      background_all_sp[[paste0(strColumn,"_surface")]][intRow] <<- temp_brick_1
+    } else {
+      #print(paste("column",paste0(strColumn,"_surface"),"not found on datasheet"))
+    }
+    #print(paste("temp_brick_1",temp_brick_1,"row",intRow))
+    if (!is.null(background_all_sp[[paste0(strColumn,"_depth")]])){
+      if (is.na(de)){
+        temp_brick_de <- NA
+      } else {
+        temp_brick_de <- raster::extract(x=temp_brick[[de]], y = background_all_sp[intRow, ]) 
+      }
+      background_all_sp[[paste0(strColumn,"_depth")]][intRow] <<- temp_brick_de
+      #print(paste("temp_brick_de",temp_brick_de,"row",intRow))
+    } else {
+      #print(paste("column",paste0(strColumn,"_depth"),"not found on datasheet"))
+    }
+    
+  } else {
+    #print(paste("ObjectIndex",objIndex,"Unread row",intRow))
+  }
+}
+
+c.deal_With_netncf_file <- compiler::cmpfun(deal_With_netncf_file)
+c.deal_With_netncf_row <- compiler::cmpfun(deal_With_netncf_row)
+
+mclapply(netcdf_list,deal_With_netncf_file) # Applies the list of files to deal with function'
+
+write.csv(background_all_sp, "./output/points_with_data_4.csv", row.names = FALSE) #this ... writes a csv file so i have a permanent record that I can work with
+end_time <- Sys.time()
+print(end_time - start_time)
+```
+---
+I have removed the if check on the files because now what it does is takes the first part of the file name and uses that with "_surface" or "_depth" to set the background_all_sp object.
+That way as long as the files you are loading have matching columns you can expand your table without the need to change the code.
+Put in mclapply to run lists in parallel for the file and the row
+Compiled functions
+
+But it does not not seem to improve the speed that much.
+The two parts that seem to take the most time are the file read and projectRaster, but I don't know enough about the data to speed that up.
+I even tried using ncdf4 which allows you to link to the file rather than loading it but again I don't know enough about your data to get it working.
+
+There seems to be a magical filtering process with the aea object but I dont understand it enough to get that working with the nc_open options.
+
+----
