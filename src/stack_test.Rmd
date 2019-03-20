@@ -499,7 +499,7 @@ print(Sys.time()-strt) #time it took to run
 mod8.1 <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=4", "betamultiplier=0.25")) #playing with multiplier
 mod8.1
 
-pre8.1 <- predict(mod8.1, test, args='outputformat=logistic' ) 
+pre8.1 <- predict(mod8.1, test, args=c('outputformat=logistic'), file="../output/maxtest.asc") # here i added an asc output so i could pop into arc for a test
 preplot8.1 <- plot(pre8.1)
 preplot8.1
 
@@ -682,4 +682,4 @@ VariableSelection(maxent="C:/Users/bunny/Downloads/maxent/maxent.jar", outdir=("
 
 so this is all lovely... the two runs suggest b-multipliers of <1 (0.75 and 0.25 respectively). In my test runs above, 0.25 gives a 'tighter fit' thatn 1 (the default). Apparently changin the b-multiplier helps reduce over and underfitting... "the default setting in Maxent is 1. Smaller values will constrain the model more, whereas larger numbers will relax the model, making it “smoother”...... 
 
-maybe try enmval?
+maybe try enmeval?
