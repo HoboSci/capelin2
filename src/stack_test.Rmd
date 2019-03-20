@@ -682,4 +682,5 @@ VariableSelection(maxent="C:/Users/bunny/Downloads/maxent/maxent.jar", outdir=("
 
 so this is all lovely... the two runs suggest b-multipliers of <1 (0.75 and 0.25 respectively). In my test runs above, 0.25 gives a 'tighter fit' thatn 1 (the default). Apparently changin the b-multiplier helps reduce over and underfitting... "the default setting in Maxent is 1. Smaller values will constrain the model more, whereas larger numbers will relax the model, making it “smoother”...... 
 
-maybe try enmeval?
+maybe try enmeval? NO CAN'T USE WITH SWD https://groups.google.com/forum/#!topic/maxent/lIT4tY_6toY
+
