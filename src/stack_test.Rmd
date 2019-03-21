@@ -578,13 +578,43 @@ preplot11
 
 #aic fiddling
 
-betamval <- 0.25
-mod9 <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=4", "randomtestpoints=30", "betamultiplier=0.25"), path = "../output/maxent/output/mod9foraic") 
-mod9
+AIClist <- read.csv("../data/env/AICcCalculations.csv", header = TRUE)
 
-pre9 <- predict(mod9, test, args='outputformat=logistic' ) 
-preplot9 <- plot(pre9)
-preplot9
+betamval <- 0.25
+modaic <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=4", "randomtestpoints=30", "betamultiplier=0.25"), path = "../output/maxent/output/mod9foraic") 
+
+#now based on glover-kapfer pdf with excel manual + https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/10-1171.1.... lets try automate some of this.. 
+
+#count number of non-zero coefficinets, excluding the final four rows
+coefile <- read.csv("../output/maxent/output/mod9foraic/species.lambdas", header = FALSE)
+coefile <- head(coefile, -4)
+coefile2 <- subset(coefile, V2 > 0 | V2 < 0)
+nocoeff <- nrow(coefile2)
+
+#no presences used in model (less those used for testing)
+maxresults <- read.csv("../output/maxent/output/mod9foraic/maxentResults.csv", header = TRUE)
+notrainingpoints <- maxresults$X.Training.samples
+testauc <- maxresults$Test.AUC
+trainauc <- maxresults$Training.AUC
+
+#natural log
+samplepred <- read.csv("../output/maxent/output/mod9foraic/species_samplePredictions.csv", header = TRUE)
+samplepred$nat_log <- log(samplepred$Raw.prediction)
+sumsamplepred <- sum(samplepred$nat_log)
+
+for (i in 1:nrow(AIClist)){
+  if(AIClist$regularization[i] == betamval){
+    AIClist$Test.AUC[i] <- testauc
+    AIClist$Train.AUC[i] <- trainauc
+    AIClist$n[i] <- notrainingpoints
+    AIClist$coefficients[i] <- nocoeff
+    AIClist$sum.of.logs[i] <- sumsamplepred
+    
+  }
+}
+
+betamval <- 0.50
+modaic <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=4", "randomtestpoints=30", "betamultiplier=0.50"), path = "../output/maxent/output/mod9foraic") 
 
 #now based on glover-kapfer pdf with excel manual.... lets try automate some of this..
 
@@ -605,7 +635,469 @@ samplepred <- read.csv("../output/maxent/output/mod9foraic/species_samplePredict
 samplepred$nat_log <- log(samplepred$Raw.prediction)
 sumsamplepred <- sum(samplepred$nat_log)
 
-AIClist <- read.csv("../data/env/AICcCalculations.csv", header = TRUE)
+
+for (i in 1:nrow(AIClist)){
+  if(AIClist$regularization[i] == betamval){
+    AIClist$Test.AUC[i] <- testauc
+    AIClist$Train.AUC[i] <- trainauc
+    AIClist$n[i] <- notrainingpoints
+    AIClist$coefficients[i] <- nocoeff
+    AIClist$sum.of.logs[i] <- sumsamplepred
+    
+  }
+}
+
+betamval <- 0.75
+modaic <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=4", "randomtestpoints=30", "betamultiplier=0.75"), path = "../output/maxent/output/mod9foraic") 
+
+#now based on glover-kapfer pdf with excel manual.... lets try automate some of this..
+
+#count number of non-zero coefficinets, excluding the final four rows
+coefile <- read.csv("../output/maxent/output/mod9foraic/species.lambdas", header = FALSE)
+coefile <- head(coefile, -4)
+coefile2 <- subset(coefile, V2 > 0 | V2 < 0)
+nocoeff <- nrow(coefile2)
+
+#no presences used in model (less those used for testing)
+maxresults <- read.csv("../output/maxent/output/mod9foraic/maxentResults.csv", header = TRUE)
+notrainingpoints <- maxresults$X.Training.samples
+testauc <- maxresults$Test.AUC
+trainauc <- maxresults$Training.AUC
+
+#natural log
+samplepred <- read.csv("../output/maxent/output/mod9foraic/species_samplePredictions.csv", header = TRUE)
+samplepred$nat_log <- log(samplepred$Raw.prediction)
+sumsamplepred <- sum(samplepred$nat_log)
+
+for (i in 1:nrow(AIClist)){
+  if(AIClist$regularization[i] == betamval){
+    AIClist$Test.AUC[i] <- testauc
+    AIClist$Train.AUC[i] <- trainauc
+    AIClist$n[i] <- notrainingpoints
+    AIClist$coefficients[i] <- nocoeff
+    AIClist$sum.of.logs[i] <- sumsamplepred
+    
+  }
+}
+
+betamval <- 1
+modaic <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=4", "randomtestpoints=30", "betamultiplier=1"), path = "../output/maxent/output/mod9foraic") 
+
+#now based on glover-kapfer pdf with excel manual.... lets try automate some of this..
+
+#count number of non-zero coefficinets, excluding the final four rows
+coefile <- read.csv("../output/maxent/output/mod9foraic/species.lambdas", header = FALSE)
+coefile <- head(coefile, -4)
+coefile2 <- subset(coefile, V2 > 0 | V2 < 0)
+nocoeff <- nrow(coefile2)
+
+#no presences used in model (less those used for testing)
+maxresults <- read.csv("../output/maxent/output/mod9foraic/maxentResults.csv", header = TRUE)
+notrainingpoints <- maxresults$X.Training.samples
+testauc <- maxresults$Test.AUC
+trainauc <- maxresults$Training.AUC
+
+#natural log
+samplepred <- read.csv("../output/maxent/output/mod9foraic/species_samplePredictions.csv", header = TRUE)
+samplepred$nat_log <- log(samplepred$Raw.prediction)
+sumsamplepred <- sum(samplepred$nat_log)
+
+for (i in 1:nrow(AIClist)){
+  if(AIClist$regularization[i] == betamval){
+    AIClist$Test.AUC[i] <- testauc
+    AIClist$Train.AUC[i] <- trainauc
+    AIClist$n[i] <- notrainingpoints
+    AIClist$coefficients[i] <- nocoeff
+    AIClist$sum.of.logs[i] <- sumsamplepred
+    
+  }
+}
+
+betamval <- 1.25
+modaic <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=4", "randomtestpoints=30", "betamultiplier=1.25"), path = "../output/maxent/output/mod9foraic") 
+
+#now based on glover-kapfer pdf with excel manual.... lets try automate some of this..
+
+#count number of non-zero coefficinets, excluding the final four rows
+coefile <- read.csv("../output/maxent/output/mod9foraic/species.lambdas", header = FALSE)
+coefile <- head(coefile, -4)
+coefile2 <- subset(coefile, V2 > 0 | V2 < 0)
+nocoeff <- nrow(coefile2)
+
+#no presences used in model (less those used for testing)
+maxresults <- read.csv("../output/maxent/output/mod9foraic/maxentResults.csv", header = TRUE)
+notrainingpoints <- maxresults$X.Training.samples
+testauc <- maxresults$Test.AUC
+trainauc <- maxresults$Training.AUC
+
+#natural log
+samplepred <- read.csv("../output/maxent/output/mod9foraic/species_samplePredictions.csv", header = TRUE)
+samplepred$nat_log <- log(samplepred$Raw.prediction)
+sumsamplepred <- sum(samplepred$nat_log)
+
+for (i in 1:nrow(AIClist)){
+  if(AIClist$regularization[i] == betamval){
+    AIClist$Test.AUC[i] <- testauc
+    AIClist$Train.AUC[i] <- trainauc
+    AIClist$n[i] <- notrainingpoints
+    AIClist$coefficients[i] <- nocoeff
+    AIClist$sum.of.logs[i] <- sumsamplepred
+    
+  }
+}
+
+betamval <- 1.50
+modaic <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=4", "randomtestpoints=30", "betamultiplier=1.50"), path = "../output/maxent/output/mod9foraic") 
+
+#now based on glover-kapfer pdf with excel manual.... lets try automate some of this..
+
+#count number of non-zero coefficinets, excluding the final four rows
+coefile <- read.csv("../output/maxent/output/mod9foraic/species.lambdas", header = FALSE)
+coefile <- head(coefile, -4)
+coefile2 <- subset(coefile, V2 > 0 | V2 < 0)
+nocoeff <- nrow(coefile2)
+
+#no presences used in model (less those used for testing)
+maxresults <- read.csv("../output/maxent/output/mod9foraic/maxentResults.csv", header = TRUE)
+notrainingpoints <- maxresults$X.Training.samples
+testauc <- maxresults$Test.AUC
+trainauc <- maxresults$Training.AUC
+
+#natural log
+samplepred <- read.csv("../output/maxent/output/mod9foraic/species_samplePredictions.csv", header = TRUE)
+samplepred$nat_log <- log(samplepred$Raw.prediction)
+sumsamplepred <- sum(samplepred$nat_log)
+
+for (i in 1:nrow(AIClist)){
+  if(AIClist$regularization[i] == betamval){
+    AIClist$Test.AUC[i] <- testauc
+    AIClist$Train.AUC[i] <- trainauc
+    AIClist$n[i] <- notrainingpoints
+    AIClist$coefficients[i] <- nocoeff
+    AIClist$sum.of.logs[i] <- sumsamplepred
+    
+  }
+}
+
+betamval <- 1.75
+modaic <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=4", "randomtestpoints=30", "betamultiplier=1.75"), path = "../output/maxent/output/mod9foraic") 
+
+#now based on glover-kapfer pdf with excel manual.... lets try automate some of this..
+
+#count number of non-zero coefficinets, excluding the final four rows
+coefile <- read.csv("../output/maxent/output/mod9foraic/species.lambdas", header = FALSE)
+coefile <- head(coefile, -4)
+coefile2 <- subset(coefile, V2 > 0 | V2 < 0)
+nocoeff <- nrow(coefile2)
+
+#no presences used in model (less those used for testing)
+maxresults <- read.csv("../output/maxent/output/mod9foraic/maxentResults.csv", header = TRUE)
+notrainingpoints <- maxresults$X.Training.samples
+testauc <- maxresults$Test.AUC
+trainauc <- maxresults$Training.AUC
+
+#natural log
+samplepred <- read.csv("../output/maxent/output/mod9foraic/species_samplePredictions.csv", header = TRUE)
+samplepred$nat_log <- log(samplepred$Raw.prediction)
+sumsamplepred <- sum(samplepred$nat_log)
+
+for (i in 1:nrow(AIClist)){
+  if(AIClist$regularization[i] == betamval){
+    AIClist$Test.AUC[i] <- testauc
+    AIClist$Train.AUC[i] <- trainauc
+    AIClist$n[i] <- notrainingpoints
+    AIClist$coefficients[i] <- nocoeff
+    AIClist$sum.of.logs[i] <- sumsamplepred
+    
+  }
+}
+
+betamval <- 2
+modaic <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=4", "randomtestpoints=30", "betamultiplier=2"), path = "../output/maxent/output/mod9foraic") 
+
+#now based on glover-kapfer pdf with excel manual.... lets try automate some of this..
+
+#count number of non-zero coefficinets, excluding the final four rows
+coefile <- read.csv("../output/maxent/output/mod9foraic/species.lambdas", header = FALSE)
+coefile <- head(coefile, -4)
+coefile2 <- subset(coefile, V2 > 0 | V2 < 0)
+nocoeff <- nrow(coefile2)
+
+#no presences used in model (less those used for testing)
+maxresults <- read.csv("../output/maxent/output/mod9foraic/maxentResults.csv", header = TRUE)
+notrainingpoints <- maxresults$X.Training.samples
+testauc <- maxresults$Test.AUC
+trainauc <- maxresults$Training.AUC
+
+#natural log
+samplepred <- read.csv("../output/maxent/output/mod9foraic/species_samplePredictions.csv", header = TRUE)
+samplepred$nat_log <- log(samplepred$Raw.prediction)
+sumsamplepred <- sum(samplepred$nat_log)
+
+for (i in 1:nrow(AIClist)){
+  if(AIClist$regularization[i] == betamval){
+    AIClist$Test.AUC[i] <- testauc
+    AIClist$Train.AUC[i] <- trainauc
+    AIClist$n[i] <- notrainingpoints
+    AIClist$coefficients[i] <- nocoeff
+    AIClist$sum.of.logs[i] <- sumsamplepred
+    
+  }
+}
+
+betamval <- 2.25
+modaic <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=4", "randomtestpoints=30", "betamultiplier=2.25"), path = "../output/maxent/output/mod9foraic") 
+
+#now based on glover-kapfer pdf with excel manual.... lets try automate some of this..
+
+#count number of non-zero coefficinets, excluding the final four rows
+coefile <- read.csv("../output/maxent/output/mod9foraic/species.lambdas", header = FALSE)
+coefile <- head(coefile, -4)
+coefile2 <- subset(coefile, V2 > 0 | V2 < 0)
+nocoeff <- nrow(coefile2)
+
+#no presences used in model (less those used for testing)
+maxresults <- read.csv("../output/maxent/output/mod9foraic/maxentResults.csv", header = TRUE)
+notrainingpoints <- maxresults$X.Training.samples
+testauc <- maxresults$Test.AUC
+trainauc <- maxresults$Training.AUC
+
+#natural log
+samplepred <- read.csv("../output/maxent/output/mod9foraic/species_samplePredictions.csv", header = TRUE)
+samplepred$nat_log <- log(samplepred$Raw.prediction)
+sumsamplepred <- sum(samplepred$nat_log)
+
+for (i in 1:nrow(AIClist)){
+  if(AIClist$regularization[i] == betamval){
+    AIClist$Test.AUC[i] <- testauc
+    AIClist$Train.AUC[i] <- trainauc
+    AIClist$n[i] <- notrainingpoints
+    AIClist$coefficients[i] <- nocoeff
+    AIClist$sum.of.logs[i] <- sumsamplepred
+    
+  }
+}
+
+betamval <- 2.50
+modaic <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=4", "randomtestpoints=30", "betamultiplier=2.50"), path = "../output/maxent/output/mod9foraic") 
+
+#now based on glover-kapfer pdf with excel manual.... lets try automate some of this..
+
+#count number of non-zero coefficinets, excluding the final four rows
+coefile <- read.csv("../output/maxent/output/mod9foraic/species.lambdas", header = FALSE)
+coefile <- head(coefile, -4)
+coefile2 <- subset(coefile, V2 > 0 | V2 < 0)
+nocoeff <- nrow(coefile2)
+
+#no presences used in model (less those used for testing)
+maxresults <- read.csv("../output/maxent/output/mod9foraic/maxentResults.csv", header = TRUE)
+notrainingpoints <- maxresults$X.Training.samples
+testauc <- maxresults$Test.AUC
+trainauc <- maxresults$Training.AUC
+
+#natural log
+samplepred <- read.csv("../output/maxent/output/mod9foraic/species_samplePredictions.csv", header = TRUE)
+samplepred$nat_log <- log(samplepred$Raw.prediction)
+sumsamplepred <- sum(samplepred$nat_log)
+
+for (i in 1:nrow(AIClist)){
+  if(AIClist$regularization[i] == betamval){
+    AIClist$Test.AUC[i] <- testauc
+    AIClist$Train.AUC[i] <- trainauc
+    AIClist$n[i] <- notrainingpoints
+    AIClist$coefficients[i] <- nocoeff
+    AIClist$sum.of.logs[i] <- sumsamplepred
+    
+  }
+}
+
+betamval <- 2.75
+modaic <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=4", "randomtestpoints=30", "betamultiplier=2.75"), path = "../output/maxent/output/mod9foraic") 
+
+#now based on glover-kapfer pdf with excel manual.... lets try automate some of this..
+
+#count number of non-zero coefficinets, excluding the final four rows
+coefile <- read.csv("../output/maxent/output/mod9foraic/species.lambdas", header = FALSE)
+coefile <- head(coefile, -4)
+coefile2 <- subset(coefile, V2 > 0 | V2 < 0)
+nocoeff <- nrow(coefile2)
+
+#no presences used in model (less those used for testing)
+maxresults <- read.csv("../output/maxent/output/mod9foraic/maxentResults.csv", header = TRUE)
+notrainingpoints <- maxresults$X.Training.samples
+testauc <- maxresults$Test.AUC
+trainauc <- maxresults$Training.AUC
+
+#natural log
+samplepred <- read.csv("../output/maxent/output/mod9foraic/species_samplePredictions.csv", header = TRUE)
+samplepred$nat_log <- log(samplepred$Raw.prediction)
+sumsamplepred <- sum(samplepred$nat_log)
+
+for (i in 1:nrow(AIClist)){
+  if(AIClist$regularization[i] == betamval){
+    AIClist$Test.AUC[i] <- testauc
+    AIClist$Train.AUC[i] <- trainauc
+    AIClist$n[i] <- notrainingpoints
+    AIClist$coefficients[i] <- nocoeff
+    AIClist$sum.of.logs[i] <- sumsamplepred
+    
+  }
+}
+
+betamval <- 3
+modaic <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=4", "randomtestpoints=30", "betamultiplier=3"), path = "../output/maxent/output/mod9foraic") 
+
+#now based on glover-kapfer pdf with excel manual.... lets try automate some of this..
+
+#count number of non-zero coefficinets, excluding the final four rows
+coefile <- read.csv("../output/maxent/output/mod9foraic/species.lambdas", header = FALSE)
+coefile <- head(coefile, -4)
+coefile2 <- subset(coefile, V2 > 0 | V2 < 0)
+nocoeff <- nrow(coefile2)
+
+#no presences used in model (less those used for testing)
+maxresults <- read.csv("../output/maxent/output/mod9foraic/maxentResults.csv", header = TRUE)
+notrainingpoints <- maxresults$X.Training.samples
+testauc <- maxresults$Test.AUC
+trainauc <- maxresults$Training.AUC
+
+#natural log
+samplepred <- read.csv("../output/maxent/output/mod9foraic/species_samplePredictions.csv", header = TRUE)
+samplepred$nat_log <- log(samplepred$Raw.prediction)
+sumsamplepred <- sum(samplepred$nat_log)
+
+for (i in 1:nrow(AIClist)){
+  if(AIClist$regularization[i] == betamval){
+    AIClist$Test.AUC[i] <- testauc
+    AIClist$Train.AUC[i] <- trainauc
+    AIClist$n[i] <- notrainingpoints
+    AIClist$coefficients[i] <- nocoeff
+    AIClist$sum.of.logs[i] <- sumsamplepred
+    
+  }
+}
+
+betamval <- 3.25
+modaic <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=4", "randomtestpoints=30", "betamultiplier=3.25"), path = "../output/maxent/output/mod9foraic") 
+
+#now based on glover-kapfer pdf with excel manual.... lets try automate some of this..
+
+#count number of non-zero coefficinets, excluding the final four rows
+coefile <- read.csv("../output/maxent/output/mod9foraic/species.lambdas", header = FALSE)
+coefile <- head(coefile, -4)
+coefile2 <- subset(coefile, V2 > 0 | V2 < 0)
+nocoeff <- nrow(coefile2)
+
+#no presences used in model (less those used for testing)
+maxresults <- read.csv("../output/maxent/output/mod9foraic/maxentResults.csv", header = TRUE)
+notrainingpoints <- maxresults$X.Training.samples
+testauc <- maxresults$Test.AUC
+trainauc <- maxresults$Training.AUC
+
+#natural log
+samplepred <- read.csv("../output/maxent/output/mod9foraic/species_samplePredictions.csv", header = TRUE)
+samplepred$nat_log <- log(samplepred$Raw.prediction)
+sumsamplepred <- sum(samplepred$nat_log)
+
+for (i in 1:nrow(AIClist)){
+  if(AIClist$regularization[i] == betamval){
+    AIClist$Test.AUC[i] <- testauc
+    AIClist$Train.AUC[i] <- trainauc
+    AIClist$n[i] <- notrainingpoints
+    AIClist$coefficients[i] <- nocoeff
+    AIClist$sum.of.logs[i] <- sumsamplepred
+    
+  }
+}
+
+betamval <- 3.50
+modaic <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=4", "randomtestpoints=30", "betamultiplier=3.50"), path = "../output/maxent/output/mod9foraic") 
+
+#now based on glover-kapfer pdf with excel manual.... lets try automate some of this..
+
+#count number of non-zero coefficinets, excluding the final four rows
+coefile <- read.csv("../output/maxent/output/mod9foraic/species.lambdas", header = FALSE)
+coefile <- head(coefile, -4)
+coefile2 <- subset(coefile, V2 > 0 | V2 < 0)
+nocoeff <- nrow(coefile2)
+
+#no presences used in model (less those used for testing)
+maxresults <- read.csv("../output/maxent/output/mod9foraic/maxentResults.csv", header = TRUE)
+notrainingpoints <- maxresults$X.Training.samples
+testauc <- maxresults$Test.AUC
+trainauc <- maxresults$Training.AUC
+
+#natural log
+samplepred <- read.csv("../output/maxent/output/mod9foraic/species_samplePredictions.csv", header = TRUE)
+samplepred$nat_log <- log(samplepred$Raw.prediction)
+sumsamplepred <- sum(samplepred$nat_log)
+
+for (i in 1:nrow(AIClist)){
+  if(AIClist$regularization[i] == betamval){
+    AIClist$Test.AUC[i] <- testauc
+    AIClist$Train.AUC[i] <- trainauc
+    AIClist$n[i] <- notrainingpoints
+    AIClist$coefficients[i] <- nocoeff
+    AIClist$sum.of.logs[i] <- sumsamplepred
+    
+  }
+}
+
+betamval <- 3.75
+modaic <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=4", "randomtestpoints=30", "betamultiplier=3.75"), path = "../output/maxent/output/mod9foraic") 
+
+#now based on glover-kapfer pdf with excel manual.... lets try automate some of this..
+
+#count number of non-zero coefficinets, excluding the final four rows
+coefile <- read.csv("../output/maxent/output/mod9foraic/species.lambdas", header = FALSE)
+coefile <- head(coefile, -4)
+coefile2 <- subset(coefile, V2 > 0 | V2 < 0)
+nocoeff <- nrow(coefile2)
+
+#no presences used in model (less those used for testing)
+maxresults <- read.csv("../output/maxent/output/mod9foraic/maxentResults.csv", header = TRUE)
+notrainingpoints <- maxresults$X.Training.samples
+testauc <- maxresults$Test.AUC
+trainauc <- maxresults$Training.AUC
+
+#natural log
+samplepred <- read.csv("../output/maxent/output/mod9foraic/species_samplePredictions.csv", header = TRUE)
+samplepred$nat_log <- log(samplepred$Raw.prediction)
+sumsamplepred <- sum(samplepred$nat_log)
+
+for (i in 1:nrow(AIClist)){
+  if(AIClist$regularization[i] == betamval){
+    AIClist$Test.AUC[i] <- testauc
+    AIClist$Train.AUC[i] <- trainauc
+    AIClist$n[i] <- notrainingpoints
+    AIClist$coefficients[i] <- nocoeff
+    AIClist$sum.of.logs[i] <- sumsamplepred
+    
+  }
+}
+
+betamval <- 4
+modaic <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=4", "randomtestpoints=30", "betamultiplier=4"), path = "../output/maxent/output/mod9foraic") 
+
+#now based on glover-kapfer pdf with excel manual.... lets try automate some of this..
+
+#count number of non-zero coefficinets, excluding the final four rows
+coefile <- read.csv("../output/maxent/output/mod9foraic/species.lambdas", header = FALSE)
+coefile <- head(coefile, -4)
+coefile2 <- subset(coefile, V2 > 0 | V2 < 0)
+nocoeff <- nrow(coefile2)
+
+#no presences used in model (less those used for testing)
+maxresults <- read.csv("../output/maxent/output/mod9foraic/maxentResults.csv", header = TRUE)
+notrainingpoints <- maxresults$X.Training.samples
+testauc <- maxresults$Test.AUC
+trainauc <- maxresults$Training.AUC
+
+#natural log
+samplepred <- read.csv("../output/maxent/output/mod9foraic/species_samplePredictions.csv", header = TRUE)
+samplepred$nat_log <- log(samplepred$Raw.prediction)
+sumsamplepred <- sum(samplepred$nat_log)
+
 for (i in 1:nrow(AIClist)){
   if(AIClist$regularization[i] == betamval){
     AIClist$Test.AUC[i] <- testauc
