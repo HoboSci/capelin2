@@ -351,7 +351,7 @@ for (td in 1:nrow(unlayer)){
   stackn <- unlayer$stackname[td]
   test <- stack(temp_depth, chl_surface, o2_depth, salinity_depth, nao_sample, nao_winter)
   #stackSave(test,unlayer$stackname[td])
-  pred <- predict(mod1, test, file = paste0("../output/maxentpredict/", stackn), overwrite=TRUE) 
+  pred <- predict(mod1, test, file = paste0("../output/maxentpredict/", stackn, ".asc"), overwrite=TRUE) #sam you just added.asc but have not tested
   paste("maxplot_", stackn, ".png", sep = "") # to automatically save the plot to a png AND show it inline
   preplot <- plot(pred, png(paste0("../output/maxentpredict/", stackn, ".png")))
   dev.off() # stops automatic saving of the plot to a png
@@ -532,6 +532,93 @@ preplot8.3 <- plot(pre8.3)
 preplot8.3
 
 
+#--------------------------
+
+#play with test and training data - note will want to give your own file in the 'real model'
+mod9 <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=4", "randomtestpoints=30")) 
+mod9
+
+pre9 <- predict(mod9, test, args='outputformat=logistic' ) 
+preplot9 <- plot(pre9)
+preplot9
+
+#ok this works but doesnt show much difference in the map
+
+
+#------------------------
+
+#run a model with all years data and project as you have been 
+presaball <- read.csv("../output/bio/presab_10k.csv", header = TRUE)
+subpresaball <- subset(presaball, select = c(occurrence, temp_depth, chl_surface, o2_depth, salinity_depth, nao_sample, nao_winter))
+subpaall <- subpresaball$occurrence
+subpresaball <- subset(subpresaball, select = -c(occurrence))
+
+mod10 <- maxent(x = subpresaball, p = subpaall, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=4", "randomtestpoints=30")) 
+mod10
+
+pre10 <- predict(mod10, test, args='outputformat=logistic' ) 
+preplot10 <- plot(pre10)
+preplot10
+
+# well this makes a terrible mess... the habitat is predicted to be everywhere and the response curves a mess! Was just curious. 
+
+#--------------------
+
+#back to fiddling
+
+mod11 <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=4", "replicatetype=boo", "replicates=10")) 
+mod11
+
+pre11 <- predict(mod11, test, args='outputformat=logistic' ) 
+preplot11 <- plot(pre11)
+preplot11
+
+
+#-------------------
+
+#aic fiddling
+
+betamval <- 0.25
+mod9 <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=4", "randomtestpoints=30", "betamultiplier=0.25"), path = "../output/maxent/output/mod9foraic") 
+mod9
+
+pre9 <- predict(mod9, test, args='outputformat=logistic' ) 
+preplot9 <- plot(pre9)
+preplot9
+
+#now based on glover-kapfer pdf with excel manual.... lets try automate some of this..
+
+#count number of non-zero coefficinets, excluding the final four rows
+coefile <- read.csv("../output/maxent/output/mod9foraic/species.lambdas", header = FALSE)
+coefile <- head(coefile, -4)
+coefile2 <- subset(coefile, V2 > 0 | V2 < 0)
+nocoeff <- nrow(coefile2)
+
+#no presences used in model (less those used for testing)
+maxresults <- read.csv("../output/maxent/output/mod9foraic/maxentResults.csv", header = TRUE)
+notrainingpoints <- maxresults$X.Training.samples
+testauc <- maxresults$Test.AUC
+trainauc <- maxresults$Training.AUC
+
+#natural log
+samplepred <- read.csv("../output/maxent/output/mod9foraic/species_samplePredictions.csv", header = TRUE)
+samplepred$nat_log <- log(samplepred$Raw.prediction)
+sumsamplepred <- sum(samplepred$nat_log)
+
+AIClist <- read.csv("../data/env/AICcCalculations.csv", header = TRUE)
+for (i in 1:nrow(AIClist)){
+  if(AIClist$regularization[i] == betamval){
+    AIClist$Test.AUC[i] <- testauc
+    AIClist$Train.AUC[i] <- trainauc
+    AIClist$n[i] <- notrainingpoints
+    AIClist$coefficients[i] <- nocoeff
+    AIClist$sum.of.logs[i] <- sumsamplepred
+    
+  }
+}
+
+AIClist$AIC <- ((2*AIClist$coefficients)-(2*AIClist$sum.of.logs))
+AIClist$AICc <- (-2*(AIClist$sum.of.logs)+((2*AIClist$coefficients)*(AIClist$n/(AIClist$n - AIClist$coefficients-1))))
 
 ```
 
@@ -682,5 +769,31 @@ VariableSelection(maxent="C:/Users/bunny/Downloads/maxent/maxent.jar", outdir=("
 
 so this is all lovely... the two runs suggest b-multipliers of <1 (0.75 and 0.25 respectively). In my test runs above, 0.25 gives a 'tighter fit' thatn 1 (the default). Apparently changin the b-multiplier helps reduce over and underfitting... "the default setting in Maxent is 1. Smaller values will constrain the model more, whereas larger numbers will relax the model, making it “smoother”...... 
 
+try changing some of the settings here - paerticularly you want aic
+```{r}
+VariableSelection(maxent="C:/Users/bunny/Downloads/maxent/maxent.jar", outdir=("C:/Users/bunny/Documents/GitHub/Chapter_1/output/maxentvariableselection/output"), gridfolder=("C:/Users/bunny/Documents/GitHub/Chapter_1/output/maxentvariableselection/testgrid"), occurrencelocations= ("C:/Users/bunny/Documents/GitHub/Chapter_1/output/maxentvariableselection/presence_red.csv"), backgroundlocations= ("C:/Users/bunny/Documents/GitHub/Chapter_1/output/maxentvariableselection/background_red.csv"), additionalargs="nohinge", contributionthreshold=5, correlationthreshold=0.9, betamultiplier=seq(0.25, 2, 0.25))
+```
+no you cant - you need to use the grids...
+
 maybe try enmeval? NO CAN'T USE WITH SWD https://groups.google.com/forum/#!topic/maxent/lIT4tY_6toY
+
+
+# for mj thing - no points per nafo zone
+
+I previously worked out the area for each nafo zone in arcgis. This caclulates the  number of points per nafo zone
+
+```{r}
+allpoints <- read.csv("../output/bio/background/correct_random_files/background_point_na_removal_nona.csv", header = TRUE) #you may want to move the files once you figure out what mess you created..
+nafo_points <- count(allpoints, "nafo_zone")
+total_points <- sum(nafo_points$freq) #191055 -correct
+nafo_points$points_percentage <- (nafo_points$freq/total_points)*100
+
+#combine with the arcgis output...
+nafovolume <- read.csv("../data/env/volume_all_nafo.csv", header = TRUE) #note the hudson strait points will be invalid as there is no polygon to calculate volume on. change to NA
+nafo_points$volume <- nafovolume$Volume
+nafo_points$volume_percentage <- nafovolume$volume_perc
+
+write.csv(nafo_points, file = "../output/env/no_points_per_nafo.csv")
+```
+
 

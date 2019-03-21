@@ -15,15 +15,10 @@ Built with 'r getRversion()'..
 You can install and load them using the following code which uses a function called [ipak](https://gist.github.com/stevenworthington/3178163). Note this function checks to see if the packages are installed first before loading.
 
 
-New package attempt to do this...
-old code 
-packages <- c("raster", "dplyr", "data.table", "sp", "adehabitatHR", "maptools")
+```{r pre-install & load packages, include=FALSE}
+packages <- c("raster", "dplyr", "data.table", "sp", "adehabitatHR", "maptools", "rgdal", "rworldmap", "ncdf4", "marmap", "plyr", "weathermetrics")
 source("../src/ipak.R")
 ipak(packages)
-
-```{r pre-install & load packages, include=FALSE}
-if (!require("pacman")) install.packages("pacman")
-p_load(raster, dplyr, data.table, sp, adehabitatHR, rgdal, rworldmap, ncdf4, marmap, plyr, weathermetrics)
 ```
 
 # the show
