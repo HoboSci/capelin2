@@ -61,87 +61,6 @@ st19980186.9
 
 messing with code to see if can do for unique year month depth
 
-need tidyr package
-```{r}
-unyears <- as.character(c("1998", "1999", "2000", "2001", "2002", "2003", "2004", "2005", "2006", "2007", "2008", "2009", "2010", "2011", "2012", "2013", "2014", "2015")) 
-#unyears <- paste0("X", unyears) #this adds an X to each year to match with raster naming
-unmonths <- c("01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12")
-undepths <- c("0.50576", "1.55586", "2.66768", "3.85628" , "5.14036", "6.54303", "8.09252", "9.82275", "11.7737" , "13.991", "16.5253" , "19.4298", "22.7576", "26.5583", "30.8746", "35.7402", "041.18", "47.2119", "53.8506", "61.1128" , "69.0217" , "77.6112", "86.9294", "97.0413", "108.03", "000120", "133.076", "147.406", "163.165" , "180.55", "199.79", "221.141", "244.891" , "271.356", "300.888", "333.863" , "370.689", "411.794", "457.626", "508.64", "565.292", "628.026", "697.259", "773.368", "856.679", "947.448", "1045.85", "1151.99", "1265.86", "1387.38") #this list is based on how the files are named when split into depth layers. note that chl and o2 have had two minor name changed - 163.164 to 163.165 and 370.658 to 370.659, to match all layers
-
-unlayer <- crossing(unyears, unmonths, undepths)
-unlayer$stackname <- paste0("st", unlayer$unyears, unlayer$unmonths, unlayer$undepths) #this creates the name of the stack that will be used
-unlayer$temp_depth <- NA
-unlayer$temp_surface <- NA
-unlayer$chl_depth <- NA
-unlayer$chl_surface <- NA
-unlayer$o2_depth <- NA
-unlayer$o2_surface <- NA
-unlayer$salinity_depth <- NA
-unlayer$salinity_surface <- NA
-unlayer$nao_sample <- NA
-unlayer$nao_prev <- NA
-unlayer$nao_winter <- NA
-unlayer$amo_sample <- NA
-unlayer$amo_prev <- NA
-unlayer$amo_winter <- NA
-
-
-ascname <- list.files("../data/jan_test_86.9/", pattern = "*.asc", full.names = FALSE)    # this folder currently contains other dummy files. its just a test to automate stacks
-ascpath <- list.files("../data/jan_test_86.9/", pattern = "*.asc", full.names = TRUE)    # this folder currently contains other dummy files. its just a test to automate stacks
-
-
-#year <- "X1998"
-#month <- "01"
-#depth <- "86.9294"
-tempvar <- "temp"
-chlvar <- "chl"
-o2var <- "o2"
-salvar <- "salinity"
-depthvar <- "depth"
-surfacevar <- "surface"
-naovar <- "nao"
-amovar <- "amo"
-samplevar <- "sample"
-wintervar <- "winter"
-
-for (k in 1:nrow(unlayer)){
-    print(unlayer$stackname[k])
-    year <- unlayer$unyears[k]
-    month <- unlayer$unmonths[k]
-    depth <- unlayer$undepths[k]
-    for (i in 1:length(ascname)){
-
-    ascyear <- (sapply(strsplit(ascname[[i]], "_"), "[[", 1))
-    ascmonth <- (sapply(strsplit(ascname[[i]], "_"), "[[", 2))
-    ascdepth <- (sapply(strsplit(ascname[[i]], "_"), "[[", 5))
-    ascdepth <- gsub(".asc", "", ascdepth)
-    ascvar1 <- (sapply(strsplit(ascname[[i]], "_"), "[[", 3))
-    ascvar2 <- (sapply(strsplit(ascname[[i]], "_"), "[[", 4))
-    ascfile <- ascpath[[i]]
-    print(ascfile)
-
-
-
-    if (ascyear == year & ascmonth == month & ascvar1 == tempvar & ascvar2 == depthvar & ascdepth == depth){
-    unlayer$temp_depth[k] <- ascfile
-  } else if (ascyear == year & ascmonth == month & ascvar1 == chlvar & ascvar2 == surfacevar & ascdepth == depth){
-   unlayer$chl_surface[k] <- ascfile
- } else if (ascyear == year & ascmonth == month & ascvar1 == o2var & ascvar2 == depthvar & ascdepth == depth){
-  unlayer$o2_depth[k] <- ascfile
- } else if (ascyear == year & ascmonth == month & ascvar1 == salvar & ascvar2 == depthvar & ascdepth == depth){
-  unlayer$salinity_depth[k] <- ascfile
- } else if (ascyear == year & ascvar1 == naovar & ascvar2 == wintervar){
-  unlayer$nao_winter[k] <- ascfile
- } else if (ascyear == year & ascmonth == month  & ascvar1 == naovar & ascvar2 == samplevar){
-  unlayer$nao_sample[k] <- ascfile
- }
-  
-    }
-    write.csv(unlayer, "../data/env/asc_layerlist.csv", row.names = TRUE)
-}
-
-
-
 # now loop to create stacks
 janpres <- read.csv("../output/bio/maxenttestjanpr.csv", header = TRUE)
 janpres$occ <- 1
@@ -159,6 +78,14 @@ mod1 <- maxent(x = prab, p = pa, path = paste0("../output/maxentout"), args =  c
 pre1 <- predict(mod1, test) #,  args='outputformat=cloglog'
 plot(pre1)
 plot(mod1)
+
+need tidyr package
+```{r}
+
+
+
+
+
 
 
 unlayer <- read.csv("../data/env/asc_layerlist1998.csv", header = TRUE)
@@ -198,15 +125,6 @@ dev.off() # stops automatic saving of the plot to a png
 ```
 
 
-  preplot <- plot(pred, png(paste0(stackn, ".png")))
-
-
-```{r}
-var <- raster(stacktest$chl[1])
-var
-a <- raster(var)
-a
-```
 
 #maxent
 maxnet throwing errors...
@@ -241,65 +159,6 @@ plot(pre1)
 
 
 
-```{r}
-unyears <- as.character(c("1992", "1998")) 
-unmonths <- c("01", "03")
-undepths <- c("10", "86.9294")
-unlayer <- crossing(unyears, unmonths, undepths)
-unlayer$stackname <- paste0("st", unlayer$unyears, unlayer$unmonths, unlayer$undepths) #this creates the name of the stack that will be used
-
-
-unlayer$temp_depth <- NA
-unlayer$temp_surface <- NA
-unlayer$chl_depth <- NA
-unlayer$chl_surface <- NA
-unlayer$o2_depth <- NA
-unlayer$o2_surface <- NA
-unlayer$salinity_depth <- NA
-unlayer$salinity_surface <- NA
-unlayer$nao_sample <- NA
-unlayer$nao_prev <- NA
-unlayer$nao_winter <- NA
-unlayer$amo_sample <- NA
-unlayer$amo_prev <- NA
-unlayer$amo_winter <- NA
-
-tempvar <- "temp"
-chlvar <- "chl"
-o2var <- "o2"
-salvar <- "salinity"
-depthvar <- "depth"
-surfacevar <- "0.50576"
-naovar <- "nao"
-amovar <- "amo"
-samplevar <- "sample"
-wintervar <- "winter"
-
-ascname <- list.files("../data/jan_test_86.9/", pattern = "*.asc", full.names = FALSE)    # this folder currently contains other dummy files. its just a test to automate stacks
-ascpath <- list.files("../data/jan_test_86.9/", pattern = "*.asc", full.names = TRUE)    # this folder currently contains other dummy files. its just a test to automate stacks
-
-for (k in 1:nrow(unlayer)){
-    year <- unlayer$unyears[k]
-    month <- unlayer$unmonths[k]
-    depth <- unlayer$undepths[k]
-    
-    for (i in 1:length(ascname)){
-    ascyear <- (sapply(strsplit(ascname[[i]], "_"), "[[", 1))
-    ascmonth <- (sapply(strsplit(ascname[[i]], "_"), "[[", 2))
-    ascvar <- (sapply(strsplit(ascname[[i]], "_"), "[[", 3))
-    ascdepth <- (sapply(strsplit(ascname[[i]], "_"), "[[", 4))
-    ascdepth <- gsub(".asc", "", ascdepth)
-    ascfile <- ascpath[[i]]
-    print(ascfile)
-    if (ascyear == year & ascmonth == month & ascvar == tempvar & ascdepth == depth){
-      unlayer$temp_depth[k] <- ascfile
-    } else if(ascyear == year & ascmonth == month & ascvar == tempvar & ascdepth == surfacevar){
-        unlayer$temp_surface[i] <- ascfile
-    }
-    }
-}
-
-```
 
 ```{r}
 # now loop to create stacks
@@ -313,10 +172,9 @@ pa <- prab$occ
 prab <- subset(prab, select = -c(x, y, occ, originalscientificname)) #ok so for maxent in r just need the variables
 prab
 
-system.file("java", package="dismo") #finding location to put maxent jar file
-system("java -version")
 mod1 <- maxent(x = prab, p = pa, path = paste0("../output/maxentout"), args =  c("responsecurves"), save(md, file = "../output/maxentmod"))
 
+#THIS IS THE GOOD CODE!
 unlayer <- read.csv("../data/env/asc_layerlist1998.csv", header = TRUE)
 unlayer <- subset(unlayer, ascmonths == 1)
 unlayer <- unlayer[-c(1), ]
@@ -365,7 +223,7 @@ for (td in 1:nrow(unlayer)){
 
 testing model fiddling
 
-```{r}
+```{r fiddling with maxent args}
 janpres <- read.csv("../output/bio/maxenttestjanpr.csv", header = TRUE)
 janpres$occ <- 1
 janab <- read.csv("../output/bio/maxenttestjanab.csv", header = TRUE)
@@ -593,7 +451,7 @@ preplot12
 one maxent run with all variables
 
 
-```{r}
+```{r maxent with all variables}
 presaball <- read.csv("../output/bio/presab_10k.csv", header = TRUE)
 janpresaball <- subset(presaball, month == 1)
 janpresaball <- subset(janpresaball, select = c(occurrence, temp_depth, temp_surface, chl_depth, chl_surface, o2_depth, o2_surface, salinity_depth, salinity_surface, ssh_surface, mlp_surface, nao_sample, nao_prev, nao_winter, amo_sample, amo_prev, amo_winter))
@@ -690,7 +548,7 @@ preplot1all
 https://cran.r-project.org/web/packages/MaxentVariableSelection/MaxentVariableSelection.pdf + https://cran.r-project.org/web/packages/MaxentVariableSelection/vignettes/MaxentVariableSelection.pdf
 
 with all variables
-```{r}
+```{r maxent variable selection package - not used}
 janaball <- read.csv("../output/bio/background_10k.csv", header = TRUE)
 janpresall <- read.csv("../output/bio/pres_nomissing.csv", header = TRUE)
 janpresaball <- rbind.fill(janaball, janpresall)
@@ -765,7 +623,7 @@ write.csv(nafo_points, file = "../output/env/no_points_per_nafo.csv")
 
 #AIC for regularization
 
-```{r}
+```{r AIC for regularization selection}
 #aic fiddling
 
 AIClist <- read.csv("../data/env/AICcCalculations.csv", header = TRUE)

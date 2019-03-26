@@ -16,14 +16,14 @@ You can load them using the following code which uses a function called [ipak](h
 Note this function checks to see if the packages are installed first.
 
 ```{r pre-install packages, message=FALSE}
-packages <- c("tidyr")
+packages <- c("tidyr", "rJava", "dismo")
 source("../src/ipak.R")
 ipak(packages)
 suppressMessages(ipak)
 ```
 
 
-```{r}
+```{r base list or ascii layers}
 ascyears <- as.character(c("1998", "1999", "2000", "2001", "2002", "2003", "2004", "2005", "2006", "2007", "2008", "2009", "2010", "2011", "2012", "2013", "2014", "2015")) 
 #unyears <- paste0("X", unyears) #this adds an X to each year to match with raster naming
 ascmonths <- c("01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12")
@@ -49,11 +49,11 @@ asclayerall$amo_sample <- NA
 asclayerall$amo_prev <- NA
 asclayerall$amo_winter <- NA
 
-
+write.csv(asclayerall, "../data/env/asc_stacklist.csv", row.names = FALSE)
 ```
 
 
-```{r}
+```{r asclist for 1998}
 #!!!!!!  CHANGE ASCNAME, ASCPATH AND CSV FILE NAME
 
 asclayer <- subset(asclayerall, ascyears == 1998)
@@ -129,7 +129,7 @@ for (i in 1:nrow(asclayer)){
 ```
 
 
-```{r}
+```{r asclist for 1999}
 #!!!!!!  CHANGE ASCLAYER ASCNAME, ASCPATH AND CSV FILE NAME
 
 asclayer <- subset(asclayerall, ascyears == 1999)
@@ -204,7 +204,7 @@ for (i in 1:nrow(asclayer)){
 }
 ```
 
-```{r}
+```{r asclist for 2000}
 #!!!!!!  CHANGE ASCNAME, ASCPATH AND CSV FILE NAME
 
 asclayer <- subset(asclayerall, ascyears == 2000)
@@ -279,7 +279,7 @@ for (i in 1:nrow(asclayer)){
 }
 ```
 
-```{r}
+```{r asclist for 2001}
 #!!!!!!  CHANGE ASCNAME, ASCPATH AND CSV FILE NAME
 
 asclayer <- subset(asclayerall, ascyears == 2001)
@@ -354,7 +354,7 @@ for (i in 1:nrow(asclayer)){
 }
 ```
 
-```{r}
+```{r asclist for 2002}
 #!!!!!!  CHANGE ASCNAME, ASCPATH AND CSV FILE NAME
 
 asclayer <- subset(asclayerall, ascyears == 2002)
@@ -429,7 +429,7 @@ for (i in 1:nrow(asclayer)){
 }
 ```
 
-```{r}
+```{r asclist for 2003}
 #!!!!!!  CHANGE ASCNAME, ASCPATH AND CSV FILE NAME
 
 asclayer <- subset(asclayerall, ascyears == 2003)
@@ -504,7 +504,7 @@ for (i in 1:nrow(asclayer)){
 }
 ```
 
-```{r}
+```{r asclist for 2004}
 #!!!!!!  CHANGE ASCNAME, ASCPATH AND CSV FILE NAME
 
 asclayer <- subset(asclayerall, ascyears == 2004)
@@ -579,7 +579,7 @@ for (i in 1:nrow(asclayer)){
 }
 ```
 
-```{r}
+```{r asclist for 2005}
 #!!!!!!  CHANGE ASCNAME, ASCPATH AND CSV FILE NAME
 
 asclayer <- subset(asclayerall, ascyears == 2005)
@@ -654,7 +654,7 @@ for (i in 1:nrow(asclayer)){
 }
 ```
 
-```{r}
+```{r asclist for 2006}
 #!!!!!!  CHANGE ASCNAME, ASCPATH AND CSV FILE NAME
 
 asclayer <- subset(asclayerall, ascyears == 2006)
@@ -729,7 +729,7 @@ for (i in 1:nrow(asclayer)){
 }
 ```
 
-```{r}
+```{r asclist for 2007}
 #!!!!!!  CHANGE ASCNAME, ASCPATH AND CSV FILE NAME
 
 asclayer <- subset(asclayerall, ascyears == 2007)
@@ -804,7 +804,7 @@ for (i in 1:nrow(asclayer)){
 }
 ```
 
-```{r}
+```{r asclist for 2008}
 #!!!!!!  CHANGE ASCNAME, ASCPATH AND CSV FILE NAME
 
 asclayer <- subset(asclayerall, ascyears == 2008)
@@ -879,7 +879,7 @@ for (i in 1:nrow(asclayer)){
 }
 ```
 
-```{r}
+```{r asclist for 2009}
 #!!!!!!  CHANGE ASCNAME, ASCPATH AND CSV FILE NAME
 
 asclayer <- subset(asclayerall, ascyears == 2009)
@@ -954,7 +954,7 @@ for (i in 1:nrow(asclayer)){
 }
 ```
 
-```{r}
+```{r asclist for 2010}
 #!!!!!!  CHANGE ASCNAME, ASCPATH AND CSV FILE NAME
 
 asclayer <- subset(asclayerall, ascyears == 2010)
@@ -1029,7 +1029,7 @@ for (i in 1:nrow(asclayer)){
 }
 ```
 
-```{r}
+```{r asclist for 2011}
 #!!!!!!  CHANGE ASCNAME, ASCPATH AND CSV FILE NAME
 
 asclayer <- subset(asclayerall, ascyears == 2011)
@@ -1104,7 +1104,7 @@ for (i in 1:nrow(asclayer)){
 }
 ```
 
-```{r}
+```{r asclist for 2012}
 #!!!!!!  CHANGE ASCNAME, ASCPATH AND CSV FILE NAME
 
 asclayer <- subset(asclayerall, ascyears == 2012)
@@ -1179,7 +1179,7 @@ for (i in 1:nrow(asclayer)){
 }
 ```
 
-```{r}
+```{r asclist for 2013}
 #!!!!!!  CHANGE ASCNAME, ASCPATH AND CSV FILE NAME
 
 asclayer <- subset(asclayerall, ascyears == 2013)
@@ -1254,7 +1254,7 @@ for (i in 1:nrow(asclayer)){
 }
 ```
 
-```{r}
+```{r asclist for 2014}
 #!!!!!!  CHANGE ASCNAME, ASCPATH AND CSV FILE NAME
 
 asclayer <- subset(asclayerall, ascyears == 2014)
@@ -1329,7 +1329,7 @@ for (i in 1:nrow(asclayer)){
 }
 ```
 
-```{r}
+```{r asclist for 2015}
 #!!!!!!  CHANGE ASCNAME, ASCPATH AND CSV FILE NAME
 
 asclayer <- subset(asclayerall, ascyears == 2015)
