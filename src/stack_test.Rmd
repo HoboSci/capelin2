@@ -79,50 +79,7 @@ pre1 <- predict(mod1, test) #,  args='outputformat=cloglog'
 plot(pre1)
 plot(mod1)
 
-need tidyr package
-```{r}
 
-
-
-
-
-
-
-unlayer <- read.csv("../data/env/asc_layerlist1998.csv", header = TRUE)
-unlayer <- subset(unlayer, ascmonths == 1)
-unlayer <- unlayer[-c(1), ]
-unlayer[] <- lapply(unlayer, as.character) #from https://stackoverflow.com/questions/2851015/convert-data-frame-columns-from-factors-to-characters
-aea <- raster("../output/env/aea.tif") 
-
-for (td in 1:nrow(unlayer)){
-  temp_depth <- raster(unlayer$temp_depth[td])
-  #crs(temp_depth) <- +proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0 
-  names(temp_depth) <- "temp_depth"
-  #temp_depth <- projectRaster(temp_depth, aea)
-  chl_surface <- raster(unlayer$chl_surface[td])
-  names(chl_surface) <- "chl_surface"
-  o2_depth <- raster(unlayer$o2_depth[td])
-  names(o2_depth) <- "o2_depth"
-  salinity_depth <- raster(unlayer$salinity_depth[td])
-  names(salinity_depth) <- "salinity_depth"
-  nao_sample <- raster(unlayer$nao_sample[td])
-  names(nao_sample) <- "nao_sample"
-  nao_winter <- raster(unlayer$nao_winter[td])
-  names(nao_winter) <- "nao_winter"
-  stackn <- unlayer$stackname[td]
-  test <- stack(temp_depth, chl_surface, o2_depth, salinity_depth, nao_sample, nao_winter)
-  #stackSave(test,unlayer$stackname[td])
-  pred <- predict(mod1, test, file = paste0("../output/maxentpredict/", stackn), overwrite=TRUE) 
-  preplot <- plot(pred, png(paste0("../output/maxentpredict/", stackn, ".png")))
-  paste("maxplot_", stackn, ".png", sep = "") # to automatically save the plot to a png AND show it inline
-  
-}
-dev.off() # stops automatic saving of the plot to a png
-# now call the stack...
-
-
-
-```
 
 
 
@@ -172,8 +129,6 @@ pa <- prab$occ
 prab <- subset(prab, select = -c(x, y, occ, originalscientificname)) #ok so for maxent in r just need the variables
 prab
 
-mod1 <- maxent(x = prab, p = pa, path = paste0("../output/maxentout"), args =  c("responsecurves"), save(md, file = "../output/maxentmod"))
-
 #THIS IS THE GOOD CODE!
 unlayer <- read.csv("../data/env/asc_layerlist1998.csv", header = TRUE)
 unlayer <- subset(unlayer, ascmonths == 1)
@@ -209,10 +164,10 @@ for (td in 1:nrow(unlayer)){
   stackn <- unlayer$stackname[td]
   test <- stack(temp_depth, chl_surface, o2_depth, salinity_depth, nao_sample, nao_winter)
   #stackSave(test,unlayer$stackname[td])
-  pred <- predict(mod1, test, file = paste0("../output/maxentpredict/", stackn, ".asc"), overwrite=TRUE) #sam you just added.asc but have not tested
+  pred <- predict(mod1, test, file = paste0("../output/maxentpredict/", stackn, ".asc"), overwrite=FALSE) 
   paste("maxplot_", stackn, ".png", sep = "") # to automatically save the plot to a png AND show it inline
-  preplot <- plot(pred, png(paste0("../output/maxentpredict/", stackn, ".png")))
-  dev.off() # stops automatic saving of the plot to a png
+  #preplot <- plot(pred, png(paste0("../output/maxentpredict/", stackn, ".png"))) #keep these out if using xvalidation
+  #dev.off() # stops automatic saving of the plot to a png #keep these out if using xvalidation
 }
 
 
@@ -327,7 +282,7 @@ preplot6
 
 #-----------------------
 strt <- Sys.time() #get the start time
-mod7 <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=4")) #threads should speed things up...
+mod7 <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8")) #threads should speed things up...
 mod7
 
 pre7 <- predict(mod7, test, args='outputformat=logistic' ) 
@@ -354,35 +309,35 @@ print(Sys.time()-strt) #time it took to run
 #follwoing radosavljevic 2014
 
 
-mod8.1 <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=4", "betamultiplier=0.25")) #playing with multiplier
+mod8.1 <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "betamultiplier=0.25")) #playing with multiplier
 mod8.1
 
 pre8.1 <- predict(mod8.1, test, args=c('outputformat=logistic'), file="../output/maxtest.asc") # here i added an asc output so i could pop into arc for a test
 preplot8.1 <- plot(pre8.1)
 preplot8.1
 
-mod8 <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=4")) #default setting for betam is 1
+mod8 <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8")) #default setting for betam is 1
 mod8
 
 pre8 <- predict(mod8, test, args='outputformat=logistic' ) 
 preplot8 <- plot(pre8)
 preplot8
 
-mod8.4 <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=4", "betamultiplier=1.25")) #playing with multiplier
+mod8.4 <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "betamultiplier=1.25")) #playing with multiplier
 mod8.4
 
 pre8.4 <- predict(mod8.4, test, args='outputformat=logistic' ) 
 preplot8.4 <- plot(pre8.4)
 preplot8.4
 
-mod8.2 <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=4", "betamultiplier=2")) 
+mod8.2 <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "betamultiplier=2")) 
 mod8.2
 
 pre8.2 <- predict(mod8.2, test, args='outputformat=logistic' ) 
 preplot8.2 <- plot(pre8.2)
 preplot8.2
 
-mod8.3 <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=4", "betamultiplier=6")) 
+mod8.3 <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "betamultiplier=6")) 
 mod8.3
 
 pre8.3 <- predict(mod8.3, test, args='outputformat=logistic' ) 
@@ -393,7 +348,7 @@ preplot8.3
 #--------------------------
 
 #play with test and training data - note will want to give your own file in the 'real model'
-mod9 <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=4", "randomtestpoints=30")) 
+mod9 <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "randomtestpoints=30")) 
 mod9
 
 pre9 <- predict(mod9, test, args='outputformat=logistic' ) 
@@ -411,7 +366,7 @@ subpresaball <- subset(presaball, select = c(occurrence, temp_depth, chl_surface
 subpaall <- subpresaball$occurrence
 subpresaball <- subset(subpresaball, select = -c(occurrence))
 
-mod10 <- maxent(x = subpresaball, p = subpaall, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=4", "randomtestpoints=30")) 
+mod10 <- maxent(x = subpresaball, p = subpaall, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "randomtestpoints=30")) 
 mod10
 
 pre10 <- predict(mod10, test, args='outputformat=logistic' ) 
@@ -424,7 +379,7 @@ preplot10
 
 #back to fiddling
 
-mod11 <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=4", "replicates=10")) #replicates added
+mod11 <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "replicates=10")) #replicates added
 mod11
 
 pre11 <- predict(mod11, test, args='outputformat=logistic' ) 
@@ -435,8 +390,10 @@ preplot11
 
 #-------------------
 
-mod12 <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=4", "addsamplestobackground=TRUE")) #add to samples because field study with biased data - see https://esajournals.onlinelibrary.wiley.com/doi/10.1890/10-1171.1. note this should be the default but keep here as a note
+mod12 <- maxent(x = prab, p = pa, file = .asc, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "addsamplestobackground=TRUE", "replicatetype=crossvalidate", "replicates=5")) #add to samples because field study with biased data - see https://esajournals.onlinelibrary.wiley.com/doi/10.1890/10-1171.1. note this should be the default but keep here as a note
 mod12
+
+mod12[2]
 
 pre12 <- predict(mod12, test, args='outputformat=logistic' ) 
 preplot12 <- plot(pre12)
@@ -534,7 +491,7 @@ testall <- stack(temp_depth, temp_surface, chl_depth, chl_surface, o2_depth, o2_
 system.file("java", package="dismo") #finding location to put maxent jar file
 system("java -version")
 
-mod1all <- maxent(x = janpresaball, p = paall, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=4")) 
+mod1all <- maxent(x = janpresaball, p = paall, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8")) 
 mod1all
 
 pre1all <- predict(mod1all, testall, args='outputformat=logistic' ) 
@@ -629,7 +586,7 @@ write.csv(nafo_points, file = "../output/env/no_points_per_nafo.csv")
 AIClist <- read.csv("../data/env/AICcCalculations.csv", header = TRUE)
 
 betamval <- 0.25
-modaic <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=4", "randomtestpoints=30", "betamultiplier=0.25"), path = "../output/maxent/output/mod9foraic") 
+modaic <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "randomtestpoints=30", "betamultiplier=0.25"), path = "../output/maxent/output/mod9foraic") 
 
 #now based on glover-kapfer pdf with excel manual + https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/10-1171.1.... lets try automate some of this.. 
 
@@ -662,7 +619,7 @@ for (i in 1:nrow(AIClist)){
 }
 
 betamval <- 0.50
-modaic <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=4", "randomtestpoints=30", "betamultiplier=0.50"), path = "../output/maxent/output/mod9foraic") 
+modaic <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "randomtestpoints=30", "betamultiplier=0.50"), path = "../output/maxent/output/mod9foraic") 
 
 #now based on glover-kapfer pdf with excel manual.... lets try automate some of this..
 
@@ -696,7 +653,7 @@ for (i in 1:nrow(AIClist)){
 }
 
 betamval <- 0.75
-modaic <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=4", "randomtestpoints=30", "betamultiplier=0.75"), path = "../output/maxent/output/mod9foraic") 
+modaic <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "randomtestpoints=30", "betamultiplier=0.75"), path = "../output/maxent/output/mod9foraic") 
 
 #now based on glover-kapfer pdf with excel manual.... lets try automate some of this..
 
@@ -729,7 +686,7 @@ for (i in 1:nrow(AIClist)){
 }
 
 betamval <- 1
-modaic <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=4", "randomtestpoints=30", "betamultiplier=1"), path = "../output/maxent/output/mod9foraic") 
+modaic <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "randomtestpoints=30", "betamultiplier=1"), path = "../output/maxent/output/mod9foraic") 
 
 #now based on glover-kapfer pdf with excel manual.... lets try automate some of this..
 
@@ -762,7 +719,7 @@ for (i in 1:nrow(AIClist)){
 }
 
 betamval <- 1.25
-modaic <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=4", "randomtestpoints=30", "betamultiplier=1.25"), path = "../output/maxent/output/mod9foraic") 
+modaic <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "randomtestpoints=30", "betamultiplier=1.25"), path = "../output/maxent/output/mod9foraic") 
 
 #now based on glover-kapfer pdf with excel manual.... lets try automate some of this..
 
@@ -795,7 +752,7 @@ for (i in 1:nrow(AIClist)){
 }
 
 betamval <- 1.50
-modaic <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=4", "randomtestpoints=30", "betamultiplier=1.50"), path = "../output/maxent/output/mod9foraic") 
+modaic <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "randomtestpoints=30", "betamultiplier=1.50"), path = "../output/maxent/output/mod9foraic") 
 
 #now based on glover-kapfer pdf with excel manual.... lets try automate some of this..
 
@@ -828,7 +785,7 @@ for (i in 1:nrow(AIClist)){
 }
 
 betamval <- 1.75
-modaic <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=4", "randomtestpoints=30", "betamultiplier=1.75"), path = "../output/maxent/output/mod9foraic") 
+modaic <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "randomtestpoints=30", "betamultiplier=1.75"), path = "../output/maxent/output/mod9foraic") 
 
 #now based on glover-kapfer pdf with excel manual.... lets try automate some of this..
 
@@ -861,7 +818,7 @@ for (i in 1:nrow(AIClist)){
 }
 
 betamval <- 2
-modaic <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=4", "randomtestpoints=30", "betamultiplier=2"), path = "../output/maxent/output/mod9foraic") 
+modaic <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "randomtestpoints=30", "betamultiplier=2"), path = "../output/maxent/output/mod9foraic") 
 
 #now based on glover-kapfer pdf with excel manual.... lets try automate some of this..
 
@@ -894,7 +851,7 @@ for (i in 1:nrow(AIClist)){
 }
 
 betamval <- 2.25
-modaic <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=4", "randomtestpoints=30", "betamultiplier=2.25"), path = "../output/maxent/output/mod9foraic") 
+modaic <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "randomtestpoints=30", "betamultiplier=2.25"), path = "../output/maxent/output/mod9foraic") 
 
 #now based on glover-kapfer pdf with excel manual.... lets try automate some of this..
 
@@ -927,7 +884,7 @@ for (i in 1:nrow(AIClist)){
 }
 
 betamval <- 2.50
-modaic <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=4", "randomtestpoints=30", "betamultiplier=2.50"), path = "../output/maxent/output/mod9foraic") 
+modaic <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "randomtestpoints=30", "betamultiplier=2.50"), path = "../output/maxent/output/mod9foraic") 
 
 #now based on glover-kapfer pdf with excel manual.... lets try automate some of this..
 
@@ -960,7 +917,7 @@ for (i in 1:nrow(AIClist)){
 }
 
 betamval <- 2.75
-modaic <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=4", "randomtestpoints=30", "betamultiplier=2.75"), path = "../output/maxent/output/mod9foraic") 
+modaic <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "randomtestpoints=30", "betamultiplier=2.75"), path = "../output/maxent/output/mod9foraic") 
 
 #now based on glover-kapfer pdf with excel manual.... lets try automate some of this..
 
@@ -993,7 +950,7 @@ for (i in 1:nrow(AIClist)){
 }
 
 betamval <- 3
-modaic <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=4", "randomtestpoints=30", "betamultiplier=3"), path = "../output/maxent/output/mod9foraic") 
+modaic <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "randomtestpoints=30", "betamultiplier=3"), path = "../output/maxent/output/mod9foraic") 
 
 #now based on glover-kapfer pdf with excel manual.... lets try automate some of this..
 
@@ -1026,7 +983,7 @@ for (i in 1:nrow(AIClist)){
 }
 
 betamval <- 3.25
-modaic <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=4", "randomtestpoints=30", "betamultiplier=3.25"), path = "../output/maxent/output/mod9foraic") 
+modaic <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "randomtestpoints=30", "betamultiplier=3.25"), path = "../output/maxent/output/mod9foraic") 
 
 #now based on glover-kapfer pdf with excel manual.... lets try automate some of this..
 
@@ -1059,7 +1016,7 @@ for (i in 1:nrow(AIClist)){
 }
 
 betamval <- 3.50
-modaic <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=4", "randomtestpoints=30", "betamultiplier=3.50"), path = "../output/maxent/output/mod9foraic") 
+modaic <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "randomtestpoints=30", "betamultiplier=3.50"), path = "../output/maxent/output/mod9foraic") 
 
 #now based on glover-kapfer pdf with excel manual.... lets try automate some of this..
 
@@ -1092,7 +1049,7 @@ for (i in 1:nrow(AIClist)){
 }
 
 betamval <- 3.75
-modaic <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=4", "randomtestpoints=30", "betamultiplier=3.75"), path = "../output/maxent/output/mod9foraic") 
+modaic <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "randomtestpoints=30", "betamultiplier=3.75"), path = "../output/maxent/output/mod9foraic") 
 
 #now based on glover-kapfer pdf with excel manual.... lets try automate some of this..
 
@@ -1125,7 +1082,7 @@ for (i in 1:nrow(AIClist)){
 }
 
 betamval <- 4
-modaic <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=4", "randomtestpoints=30", "betamultiplier=4"), path = "../output/maxent/output/mod9foraic") 
+modaic <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "randomtestpoints=30", "betamultiplier=4"), path = "../output/maxent/output/mod9foraic") 
 
 #now based on glover-kapfer pdf with excel manual.... lets try automate some of this..
 
@@ -1163,3 +1120,64 @@ AIClist$AICc <- (-2*(AIClist$sum.of.logs)+((2*AIClist$coefficients)*(AIClist$n/(
 write.csv(AIClist, "../output/bio/AICforMaxentReg.csv", row.names = FALSE)
 ```
 
+
+#subset background points
+
+```{r}
+# now loop to create stacks
+janpres <- read.csv("../output/bio/maxenttestjanpr.csv", header = TRUE)
+janpres$occ <- 1
+janab <- read.csv("../output/bio/maxenttestjanab.csv", header = TRUE)
+janab$occ <- 0
+
+#subset2500 randomly
+janab25 <- sample_n(janab, 2500)
+
+prab <- rbind(janpres, janab25)
+prab$originalscientificname <- "cap" #because species name needs to be the same
+pa <- prab$occ
+prab <- subset(prab, select = -c(x, y, occ, originalscientificname)) #ok so for maxent in r just need the variables
+
+mod13 <- maxent(x = prab, p = pa, file = .asc, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "addsamplestobackground=TRUE")) 
+
+#THIS IS THE GOOD CODE!
+unlayer <- read.csv("../data/env/asc_layerlist1998.csv", header = TRUE)
+unlayer <- subset(unlayer, ascmonths == 1)
+unlayer <- unlayer[-c(1), ]
+unlayer[] <- lapply(unlayer, as.character) #from https://stackoverflow.com/questions/2851015/convert-data-frame-columns-from-factors-to-characters
+aea <- raster("../output/env/aea.tif") 
+
+for (td in 1:nrow(unlayer)){
+  temp_depth <- raster(unlayer$temp_depth[td])
+  crs(temp_depth) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0" 
+  names(temp_depth) <- "temp_depth"
+  temp_depth <- projectRaster(temp_depth, aea)
+  chl_surface <- raster(unlayer$chl_surface[td])
+  crs(chl_surface) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0" 
+  names(chl_surface) <- "chl_surface"
+  chl_surface <- projectRaster(chl_surface, aea)
+  o2_depth <- raster(unlayer$o2_depth[td])
+  crs(o2_depth) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0" 
+  names(o2_depth) <- "o2_depth"
+  o2_depth <- projectRaster(o2_depth, aea)
+  salinity_depth <- raster(unlayer$salinity_depth[td])
+  crs(salinity_depth) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0" 
+  names(salinity_depth) <- "salinity_depth"
+  salinity_depth <- projectRaster(salinity_depth, aea)
+  nao_sample <- raster(unlayer$nao_sample[td])
+  crs(nao_sample) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0" 
+  names(nao_sample) <- "nao_sample"
+  nao_sample <- projectRaster(nao_sample, aea)
+  nao_winter <- raster(unlayer$nao_winter[td])
+  crs(nao_winter) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"
+  names(nao_winter) <- "nao_winter"
+  nao_winter <- projectRaster(nao_winter, aea)
+  stackn <- unlayer$stackname[td]
+  test <- stack(temp_depth, chl_surface, o2_depth, salinity_depth, nao_sample, nao_winter)
+  #stackSave(test,unlayer$stackname[td])
+  pred <- predict(mod13, test, file = paste0("../output/maxentpredict/", stackn, ".asc"), overwrite=FALSE) 
+  paste("maxplot_", stackn, ".png", sep = "") # to automatically save the plot to a png AND show it inline
+  #preplot <- plot(pred, png(paste0("../output/maxentpredict/", stackn, ".png"))) #keep these out if using xvalidation
+  #dev.off() # stops automatic saving of the plot to a png #keep these out if using xvalidation
+}
+```
