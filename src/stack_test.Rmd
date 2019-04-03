@@ -590,7 +590,7 @@ modaic <- maxent(x = prab, p = pa, args=c("maximumiterations=5000", "responsecur
 
 #now based on glover-kapfer pdf with excel manual + https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/10-1171.1.... lets try automate some of this.. 
 
-#count number of non-zero coefficinets, excluding the final four rows
+#count number of non-zero coefficients, excluding the final four rows
 coefile <- read.csv("../output/maxent/output/mod9foraic/species.lambdas", header = FALSE)
 coefile <- head(coefile, -4)
 coefile2 <- subset(coefile, V2 > 0 | V2 < 0)
