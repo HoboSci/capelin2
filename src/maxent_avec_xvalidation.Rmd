@@ -98,7 +98,6 @@ sumsamplepred <- sum(samplepred$nat_log)
 
 for (i in 1:nrow(AIClist)){
   if(AIClist$regularization[i] == betamval){
-    AIClist$Test.AUC[i] <- testauc
     AIClist$Train.AUC[i] <- trainauc
     AIClist$n[i] <- notrainingpoints
     AIClist$coefficients[i] <- nocoeff
@@ -165,7 +164,6 @@ sumsamplepred <- sum(samplepred$nat_log)
 
 for (i in 1:nrow(AIClist)){
   if(AIClist$regularization[i] == betamval){
-    AIClist$Test.AUC[i] <- testauc
     AIClist$Train.AUC[i] <- trainauc
     AIClist$n[i] <- notrainingpoints
     AIClist$coefficients[i] <- nocoeff
@@ -198,7 +196,6 @@ sumsamplepred <- sum(samplepred$nat_log)
 
 for (i in 1:nrow(AIClist)){
   if(AIClist$regularization[i] == betamval){
-    AIClist$Test.AUC[i] <- testauc
     AIClist$Train.AUC[i] <- trainauc
     AIClist$n[i] <- notrainingpoints
     AIClist$coefficients[i] <- nocoeff
@@ -231,7 +228,6 @@ sumsamplepred <- sum(samplepred$nat_log)
 
 for (i in 1:nrow(AIClist)){
   if(AIClist$regularization[i] == betamval){
-    AIClist$Test.AUC[i] <- testauc
     AIClist$Train.AUC[i] <- trainauc
     AIClist$n[i] <- notrainingpoints
     AIClist$coefficients[i] <- nocoeff
@@ -264,7 +260,6 @@ sumsamplepred <- sum(samplepred$nat_log)
 
 for (i in 1:nrow(AIClist)){
   if(AIClist$regularization[i] == betamval){
-    AIClist$Test.AUC[i] <- testauc
     AIClist$Train.AUC[i] <- trainauc
     AIClist$n[i] <- notrainingpoints
     AIClist$coefficients[i] <- nocoeff
@@ -297,7 +292,6 @@ sumsamplepred <- sum(samplepred$nat_log)
 
 for (i in 1:nrow(AIClist)){
   if(AIClist$regularization[i] == betamval){
-    AIClist$Test.AUC[i] <- testauc
     AIClist$Train.AUC[i] <- trainauc
     AIClist$n[i] <- notrainingpoints
     AIClist$coefficients[i] <- nocoeff
@@ -330,7 +324,6 @@ sumsamplepred <- sum(samplepred$nat_log)
 
 for (i in 1:nrow(AIClist)){
   if(AIClist$regularization[i] == betamval){
-    AIClist$Test.AUC[i] <- testauc
     AIClist$Train.AUC[i] <- trainauc
     AIClist$n[i] <- notrainingpoints
     AIClist$coefficients[i] <- nocoeff
@@ -363,7 +356,6 @@ sumsamplepred <- sum(samplepred$nat_log)
 
 for (i in 1:nrow(AIClist)){
   if(AIClist$regularization[i] == betamval){
-    AIClist$Test.AUC[i] <- testauc
     AIClist$Train.AUC[i] <- trainauc
     AIClist$n[i] <- notrainingpoints
     AIClist$coefficients[i] <- nocoeff
@@ -396,7 +388,6 @@ sumsamplepred <- sum(samplepred$nat_log)
 
 for (i in 1:nrow(AIClist)){
   if(AIClist$regularization[i] == betamval){
-    AIClist$Test.AUC[i] <- testauc
     AIClist$Train.AUC[i] <- trainauc
     AIClist$n[i] <- notrainingpoints
     AIClist$coefficients[i] <- nocoeff
@@ -429,7 +420,6 @@ sumsamplepred <- sum(samplepred$nat_log)
 
 for (i in 1:nrow(AIClist)){
   if(AIClist$regularization[i] == betamval){
-    AIClist$Test.AUC[i] <- testauc
     AIClist$Train.AUC[i] <- trainauc
     AIClist$n[i] <- notrainingpoints
     AIClist$coefficients[i] <- nocoeff
@@ -462,7 +452,6 @@ sumsamplepred <- sum(samplepred$nat_log)
 
 for (i in 1:nrow(AIClist)){
   if(AIClist$regularization[i] == betamval){
-    AIClist$Test.AUC[i] <- testauc
     AIClist$Train.AUC[i] <- trainauc
     AIClist$n[i] <- notrainingpoints
     AIClist$coefficients[i] <- nocoeff
@@ -495,7 +484,6 @@ sumsamplepred <- sum(samplepred$nat_log)
 
 for (i in 1:nrow(AIClist)){
   if(AIClist$regularization[i] == betamval){
-    AIClist$Test.AUC[i] <- testauc
     AIClist$Train.AUC[i] <- trainauc
     AIClist$n[i] <- notrainingpoints
     AIClist$coefficients[i] <- nocoeff
@@ -528,7 +516,6 @@ sumsamplepred <- sum(samplepred$nat_log)
 
 for (i in 1:nrow(AIClist)){
   if(AIClist$regularization[i] == betamval){
-    AIClist$Test.AUC[i] <- testauc
     AIClist$Train.AUC[i] <- trainauc
     AIClist$n[i] <- notrainingpoints
     AIClist$coefficients[i] <- nocoeff
@@ -561,7 +548,6 @@ sumsamplepred <- sum(samplepred$nat_log)
 
 for (i in 1:nrow(AIClist)){
   if(AIClist$regularization[i] == betamval){
-    AIClist$Test.AUC[i] <- testauc
     AIClist$Train.AUC[i] <- trainauc
     AIClist$n[i] <- notrainingpoints
     AIClist$coefficients[i] <- nocoeff
@@ -594,7 +580,6 @@ sumsamplepred <- sum(samplepred$nat_log)
 
 for (i in 1:nrow(AIClist)){
   if(AIClist$regularization[i] == betamval){
-    AIClist$Test.AUC[i] <- testauc
     AIClist$Train.AUC[i] <- trainauc
     AIClist$n[i] <- notrainingpoints
     AIClist$coefficients[i] <- nocoeff
