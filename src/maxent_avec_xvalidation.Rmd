@@ -1,0 +1,98 @@
+---
+title: "maxent model avec xvalidation"
+author: "Samantha Andrews"
+output: html_notebook
+---
+
+# Overview
+A note to anyone who might happen to stumble across this... I am a beginner in R and have had no exposure to similar languages. I don't know what I'm doing. The code herein is unlikely to be elegant and there area probably more efficient ways of running the code.
+
+Built with 'r getRversion()'..
+
+# Package dependencies
+You can install and load them using the following code which uses a function called [ipak](https://gist.github.com/stevenworthington/3178163). Note this function checks to see if the packages are installed first before loading.
+
+
+```{r pre-install & load packages, include=FALSE}
+packages <- c("dismo")
+source("../src/ipak.R")
+ipak(packages)
+```
+
+
+#load the presence-background dataset 
+("../output/bio/presab_nafo_yr.csv")
+
+```{r load pres-background dataset}
+presback <- read.csv("./output/bio/presab_nafo_yr.csv", header = TRUE)
+colnames(presback)
+```
+
+this dataset contains a lot of columns you don't need for the maxent models. Remove them here
+
+```{r remove unnecessary columns}
+presback <- subset(presback, select = -c(cell_id, id, decimalLatitude, decimalLongitude, datecollected, institutioncode, individualcount, depth, resname, originalscientificname, collectioncode, day, nafo_zone, gear, longitude_meters, latitude_meters, total_cell_obs_xy, total_cell_obs_xyt, bottom_depth, XXtotal_cell_obs_xyzt, temp_celsius_depth, temp_celsius_surface, longitude_meters.1, latitude_meters.1, bottom_depth_glorys, longitude_meters.2, latitude_meters.2, cell_id_3d, total_cell_obs_xyzt))
+colnames(presback)
+```
+
+#monthly model data selection and prep
+For each monthly model, subset the data to the month you want, and the variables you want (Based on spearmans and VIF)
+
+jan variables to keep: temp_depth, salinty_depth, o2_depth, chl_surface, nao_sample, nao_winter 
+```{r january data}
+janprback <- subset(presback, month == "1")
+janprback <- subset(janprback, select = c(occurrence, year, temp_depth, salinity_depth, o2_depth, chl_surface, nao_sample, nao_winter))
+```
+
+now each month contains NAs - lets remove these (maxent principle doesnt allow for missing data - http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.15.5607&rep=rep1&type=pdf)
+
+```{r}
+janprback <- janprback[!is.na(janprback$temp_depth), ]
+janprback <- janprback[!is.na(janprback$salinity_depth), ]
+janprback <- janprback[!is.na(janprback$o2_depth), ]
+janprback <- janprback[!is.na(janprback$chl_surface), ]
+janprback <- janprback[!is.na(janprback$nao_sample), ]
+janprback <- janprback[!is.na(janprback$nao_winter), ]
+```
+
+
+#create temporally differentiated testing/training data
+as per elith and rad.....
+
+```{r} 
+#actually you will not use this
+noyears <- unique(janprback$year)
+train2003 <- subset(janprback, year = "2003")
+test2003 <-  subset(janprback, year == "2003")
+train2004 <- subset(janprback, year == "2004")
+train2005 <- subset(janprback, year == "2005")
+train2006 <- subset(janprback, year == "2006")
+```
+
+normal model..
+mod12 <- maxent(x = prab, p = pa, file = .asc, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "addsamplestobackground=TRUE")) 
+mod12
+
+```{r train and test on 2003 inc AIC for reg val}
+train2003 <- subset(janprback, year != "2003")
+test2003 <-  subset(janprback, year == "2003")
+train2003pa <- train2003$occurrence
+test2003p <- subset(test2003, occurrence == "1")
+test2003b <- subset(test2003, occurrence == "0")
+train2003  <- subset(train2003, select = -c(year, occurrence))
+
+
+mod <- maxent(x = train2003, p = train2003pa, file = .asc, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "addsamplestobackground=TRUE"))
+mod
+ev <- evaluate(p = test2003p, a= test2003b, model = mod)
+ev
+threshold(ev)
+```
+
+
+
+# beta value (regularization) selection
+
+mod12 <- maxent(x = prab, p = pa, file = .asc, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "addsamplestobackground=TRUE", "replicatetype=crossvalidate", "replicates=5")) #add to samples because field study with biased data - see https://esajournals.onlinelibrary.wiley.com/doi/10.1890/10-1171.1. note this should be the default but keep here as a note
+
+

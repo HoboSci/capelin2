@@ -1181,3 +1181,45 @@ for (td in 1:nrow(unlayer)){
   #dev.off() # stops automatic saving of the plot to a png #keep these out if using xvalidation
 }
 ```
+
+
+
+from dismo thing... but with my bad code... seems to need to have 
+```{r}
+# file with presence points
+fnames <- list.files(path=paste(system.file(package="dismo"), '/ex', sep=''),
+pattern='grd', full.names=TRUE )
+predictors <- stack(fnames)
+occurence <- paste(system.file(package="dismo"), '/ex/bradypus.csv', sep='')
+occ <- read.table(occurence, header=TRUE, sep=',')[,-1]
+
+fold <- kfold(occ, k=5)
+occtest <- occ[fold == 1, ]
+occtrain <- occ[fold != 1, ]
+
+occtrain <- train2003
+occtrainpa <- occtrain$occurrence
+occtrain <- subset(occtrain, select = -c(year, occurrence))
+
+me2 <- maxent(x = occtrain, p = occtrainpa, file = .asc, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "addsamplestobackground=TRUE"))
+me2
+
+occtest <- test2003
+occtrain <- train2003
+e1 <- evaluate(p= occtrain, a= occtest, me2) #@models[[2]]
+e1
+
+pvtest <- data.frame(extract(predictors, occtest))
+avtest <- data.frame(extract(predictors, bg))
+e2 <- evaluate(me2, p=pvtest, a=avtest)
+e2
+
+testp <- predict(me2, pvtest)
+testa <- predict(me2, avtest)
+e3 <- evaluate(p=testp, a=testa)
+e3
+threshold(e3)
+plot(e3, 'ROC')
+
+```
+
