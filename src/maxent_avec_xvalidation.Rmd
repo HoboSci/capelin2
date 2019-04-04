@@ -60,562 +60,187 @@ normal model..
 mod12 <- maxent(x = prab, p = pa, file = .asc, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "addsamplestobackground=TRUE")) 
 mod12
 
-```{r train and test on 2003 inc AIC for reg val}
-timeslice <- "jan2003"
-yr <- str_sub(timeslice, -4)
-train <- subset(janprback, year != yr)
-trainpa <- train$occurrence
-test <-  subset(janprback, year == yr)
-testp <- subset(test, occurrence == "1")
-testp <- subset(testp, select = -c(year, occurrence))
-testb <- subset(test, occurrence == "0")
-testb <- subset(testb, select = -c(year, occurrence))
-train  <- subset(train, select = -c(year, occurrence))
+```{r train and test on jan inc AIC for reg val}
+modelmonth <- cbind(paste0("jan",unique(janprback$year)))
+AIClist <- read.csv("../data/env/AICcCalculations.csv", header = TRUE) #pre-created csv file
+betavallist <- cbind(AIClist$regularization)
 
-AIClist <- read.csv("../data/env/AICcCalculations.csv", header = TRUE)
+for (year in 1:nrow(modelmonth)){
+  timeslice <- modelmonth[year] #testing timeslice
+  yr <- str_sub(timeslice, -4) #the year being used for testing
+  train <- subset(janprback, year != yr) #training data is all years but testing
+  trainpa <- train$occurrence #creates a vector of presence/background ID (1/0)
+  test <-  subset(janprback, year == yr) #creates the testing dataset
+  testp <- subset(test, occurrence == "1") #splits the testing dataset into presences
+  testp <- subset(testp, select = -c(year, occurrence)) #don't need year and occurrence for modelling
+  testb <- subset(test, occurrence == "0") #splits the testing dataset into background
+  testb <- subset(testb, select = -c(year, occurrence)) #don't need year and occurrence for modelling
+  train  <- subset(train, select = -c(year, occurrence)) #don't need year and occurrence for modelling
+  
+  for (h in 1:nrow(betavallist)){
+    betamval <-  betavallist[h]
+    mod <- maxent(x = train, p = trainpa, path = paste0("../output/maxent/models/", timeslice), args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "addsamplestobackground=TRUE", paste0("betamultiplier=", betavallist[h])))
 
-#netam = 0.25
-mod <- maxent(x = train, p = trainpa, path = paste0("../output/maxent/models/", timeslice), args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "addsamplestobackground=TRUE", "betamultiplier=0.25"))
+    #now based on glover-kapfer pdf with excel manual + https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/10-1171.1... + adaptation for        getting testAUC.. horrible code
 
-#now based on glover-kapfer pdf with excel manual + https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/10-1171.1.... lets try automate some of this.. 
-
-#count number of non-zero coefficients, excluding the final four rows
-coefile <- read.csv(paste0("../output/maxent/models/", timeslice, "/species.lambdas"), header = FALSE)
-coefile <- head(coefile, -4)
-coefile2 <- subset(coefile, V2 > 0 | V2 < 0)
-nocoeff <- nrow(coefile2)
-
-#no presences used in model (less those used for testing)
-maxresults <- read.csv(paste0("../output/maxent/models/", timeslice, "/maxentResults.csv"), header = TRUE)
-notrainingpoints <- maxresults$X.Training.samples
-testauc <- maxresults$Test.AUC
-trainauc <- maxresults$Training.AUC
-
-#natural log
-samplepred <- read.csv(paste0("../output/maxent/models/", timeslice, "/species_samplePredictions.csv"), header = TRUE)
-samplepred$nat_log <- log(samplepred$Raw.prediction)
-sumsamplepred <- sum(samplepred$nat_log)
-
-for (i in 1:nrow(AIClist)){
-  if(AIClist$regularization[i] == betamval){
-    AIClist$Train.AUC[i] <- trainauc
-    AIClist$n[i] <- notrainingpoints
-    AIClist$coefficients[i] <- nocoeff
-    AIClist$sum.of.logs[i] <- sumsamplepred
+    #count number of non-zero coefficients, excluding the final four rows
+    coefile <- read.csv(paste0("../output/maxent/models/", timeslice, "/species.lambdas"), header = FALSE, stringsAsFactors=FALSE)
+    coefile <- head(coefile, -4)
+    coefile2 <- subset(coefile, V2 > 0 | V2 < 0)
+    nocoeff <- nrow(coefile2)
+    bick <- sum(as.numeric(coefile2[, 2]))
+    bic <- (bick*log(sum(trainpa == 1)) - 2*11)
     
-  }
-}
-
-#betamval <- 0.50
-mod <- maxent(x = train, p = trainpa, path = paste0("../output/maxent/models/", timeslice), args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "addsamplestobackground=TRUE", "betamultiplier=0.50"))
-
-
-
-#count number of non-zero coefficinets, excluding the final four rows
-coefile <- read.csv(paste0("../output/maxent/models/", timeslice, "/species.lambdas"), header = FALSE)
-coefile <- head(coefile, -4)
-coefile2 <- subset(coefile, V2 > 0 | V2 < 0)
-nocoeff <- nrow(coefile2)
-
-#no presences used in model (less those used for testing)
-maxresults <- read.csv(paste0("../output/maxent/models/", timeslice, "/maxentResults.csv"))
-notrainingpoints <- maxresults$X.Training.samples
-testauc <- maxresults$Test.AUC
-trainauc <- maxresults$Training.AUC
-
-#natural log
-samplepred <- read.csv(paste0("../output/maxent/models/", timeslice, "/species_samplePredictions.csv"), header = TRUE)
-samplepred$nat_log <- log(samplepred$Raw.prediction)
-sumsamplepred <- sum(samplepred$nat_log)
-
-
-for (i in 1:nrow(AIClist)){
-  if(AIClist$regularization[i] == betamval){
-    AIClist$Test.AUC[i] <- testauc
-    AIClist$Train.AUC[i] <- trainauc
-    AIClist$n[i] <- notrainingpoints
-    AIClist$coefficients[i] <- nocoeff
-    AIClist$sum.of.logs[i] <- sumsamplepred
+    #no presences used in model (less those used for testing)
+    maxresults <- read.csv(paste0("../output/maxent/models/", timeslice, "/maxentResults.csv"), header = TRUE)
+    notrainingpoints <- maxresults$X.Training.samples
+    testauc <- maxresults$Test.AUC
+    trainauc <- maxresults$Training.AUC
     
-  }
-}
-
-betamval <- 0.75
-mod <- maxent(x = train, p = trainpa, path = paste0("../output/maxent/models/", timeslice), args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "addsamplestobackground=TRUE", "betamultiplier=0.75"))
-
-
-
-#count number of non-zero coefficinets, excluding the final four rows
-coefile <- read.csv(paste0("../output/maxent/models/", timeslice, "/species.lambdas"), header = FALSE)
-coefile <- head(coefile, -4)
-coefile2 <- subset(coefile, V2 > 0 | V2 < 0)
-nocoeff <- nrow(coefile2)
-
-#no presences used in model (less those used for testing)
-maxresults <- read.csv(paste0("../output/maxent/models/", timeslice, "/maxentResults.csv"))
-notrainingpoints <- maxresults$X.Training.samples
-testauc <- maxresults$Test.AUC
-trainauc <- maxresults$Training.AUC
-
-#natural log
-samplepred <- read.csv(paste0("../output/maxent/models/", timeslice, "/species_samplePredictions.csv"), header = TRUE)
-samplepred$nat_log <- log(samplepred$Raw.prediction)
-sumsamplepred <- sum(samplepred$nat_log)
-
-for (i in 1:nrow(AIClist)){
-  if(AIClist$regularization[i] == betamval){
-    AIClist$Train.AUC[i] <- trainauc
-    AIClist$n[i] <- notrainingpoints
-    AIClist$coefficients[i] <- nocoeff
-    AIClist$sum.of.logs[i] <- sumsamplepred
+    #natural log
+    samplepred <- read.csv(paste0("../output/maxent/models/", timeslice, "/species_samplePredictions.csv"), header = TRUE)
+    samplepred$nat_log <- log(samplepred$Raw.prediction)
+    sumsamplepred <- sum(samplepred$nat_log)
+  
+  
+    #test auc scores and other lovely things you might want to include
+    ev <- evaluate(p = testp, a= testb, model = mod)
+    evauc <- ev@auc
+    evcor <- ev@cor
+    evpcor <- ev@pcor
+    evnp <- ev@np
+    evna <- ev@na
+    evmaxtprtnr <- threshold(ev, 'spec_sens')
+    evmaxkap <- threshold(ev, 'kappa')
+    evno_omission <- threshold(ev, 'no_omission')
+    evprevalence <- threshold(ev, 'prevalence')
+    evequal_sens_spec <- threshold(ev, 'equal_sens_spec')
     
+  
+    for (i in 1:nrow(AIClist)){
+      if(AIClist$regularization[i] == betamval){
+      AIClist$Train.AUC[i] <- trainauc
+      AIClist$n[i] <- notrainingpoints
+      AIClist$coefficients[i] <- nocoeff
+      AIClist$sum.of.logs[i] <- sumsamplepred
+      AIClist$Test.AUC[i] <- evauc
+      AIClist$evcor[i] <- evcor
+      AIClist$evpcor[i] <- evpcor
+      AIClist$nopresence[i] <- evnp
+      AIClist$nobackground[i] <- evna
+      AIClist$maxsumsenspec[i] <- evmaxtprtnr
+      AIClist$maxsumsenspec[i] <- evmaxkap
+      AIClist$no_omission[i] <- evno_omission
+      AIClist$equal_sens_spec[i] <- evequal_sens_spec
+      AIClist$bic[i] <- bic #not sure this is correct...
+      }
+    }
   }
-}
-
-betamval <- 1
-mod <- maxent(x = train, p = trainpa, path = paste0("../output/maxent/models/", timeslice), args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "addsamplestobackground=TRUE", "betamultiplier=1"))
-
-
-
-#count number of non-zero coefficinets, excluding the final four rows
-coefile <- read.csv(paste0("../output/maxent/models/", timeslice, "/species.lambdas"), header = FALSE)
-coefile <- head(coefile, -4)
-coefile2 <- subset(coefile, V2 > 0 | V2 < 0)
-nocoeff <- nrow(coefile2)
-
-#no presences used in model (less those used for testing)
-maxresults <- read.csv(paste0("../output/maxent/models/", timeslice, "/maxentResults.csv"))
-notrainingpoints <- maxresults$X.Training.samples
-testauc <- maxresults$Test.AUC
-trainauc <- maxresults$Training.AUC
-
-#natural log
-samplepred <- read.csv(paste0("../output/maxent/models/", timeslice, "/species_samplePredictions.csv"), header = TRUE)
-samplepred$nat_log <- log(samplepred$Raw.prediction)
-sumsamplepred <- sum(samplepred$nat_log)
-
-for (i in 1:nrow(AIClist)){
-  if(AIClist$regularization[i] == betamval){
-    AIClist$Train.AUC[i] <- trainauc
-    AIClist$n[i] <- notrainingpoints
-    AIClist$coefficients[i] <- nocoeff
-    AIClist$sum.of.logs[i] <- sumsamplepred
-    
-  }
-}
-
-betamval <- 1.25
-mod <- maxent(x = train, p = trainpa, path = paste0("../output/maxent/models/", timeslice), args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "addsamplestobackground=TRUE", "betamultiplier=1.25"))
-
-
-
-#count number of non-zero coefficinets, excluding the final four rows
-coefile <- read.csv(paste0("../output/maxent/models/", timeslice, "/species.lambdas"), header = FALSE)
-coefile <- head(coefile, -4)
-coefile2 <- subset(coefile, V2 > 0 | V2 < 0)
-nocoeff <- nrow(coefile2)
-
-#no presences used in model (less those used for testing)
-maxresults <- read.csv(paste0("../output/maxent/models/", timeslice, "/maxentResults.csv"))
-notrainingpoints <- maxresults$X.Training.samples
-testauc <- maxresults$Test.AUC
-trainauc <- maxresults$Training.AUC
-
-#natural log
-samplepred <- read.csv(paste0("../output/maxent/models/", timeslice, "/species_samplePredictions.csv"), header = TRUE)
-samplepred$nat_log <- log(samplepred$Raw.prediction)
-sumsamplepred <- sum(samplepred$nat_log)
-
-for (i in 1:nrow(AIClist)){
-  if(AIClist$regularization[i] == betamval){
-    AIClist$Train.AUC[i] <- trainauc
-    AIClist$n[i] <- notrainingpoints
-    AIClist$coefficients[i] <- nocoeff
-    AIClist$sum.of.logs[i] <- sumsamplepred
-    
-  }
-}
-
-betamval <- 1.50
-mod <- maxent(x = train, p = trainpa, path = paste0("../output/maxent/models/", timeslice), args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "addsamplestobackground=TRUE", "betamultiplier=1.5"))
-
-
-
-#count number of non-zero coefficinets, excluding the final four rows
-coefile <- read.csv(paste0("../output/maxent/models/", timeslice, "/species.lambdas"), header = FALSE)
-coefile <- head(coefile, -4)
-coefile2 <- subset(coefile, V2 > 0 | V2 < 0)
-nocoeff <- nrow(coefile2)
-
-#no presences used in model (less those used for testing)
-maxresults <- read.csv(paste0("../output/maxent/models/", timeslice, "/maxentResults.csv"))
-notrainingpoints <- maxresults$X.Training.samples
-testauc <- maxresults$Test.AUC
-trainauc <- maxresults$Training.AUC
-
-#natural log
-samplepred <- read.csv(paste0("../output/maxent/models/", timeslice, "/species_samplePredictions.csv"), header = TRUE)
-samplepred$nat_log <- log(samplepred$Raw.prediction)
-sumsamplepred <- sum(samplepred$nat_log)
-
-for (i in 1:nrow(AIClist)){
-  if(AIClist$regularization[i] == betamval){
-    AIClist$Train.AUC[i] <- trainauc
-    AIClist$n[i] <- notrainingpoints
-    AIClist$coefficients[i] <- nocoeff
-    AIClist$sum.of.logs[i] <- sumsamplepred
-    
-  }
-}
-
-betamval <- 1.75
-mod <- maxent(x = train, p = trainpa, path = paste0("../output/maxent/models/", timeslice), args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "addsamplestobackground=TRUE", "betamultiplier=1.75"))
-
-
-
-#count number of non-zero coefficinets, excluding the final four rows
-coefile <- read.csv(paste0("../output/maxent/models/", timeslice, "/species.lambdas"), header = FALSE)
-coefile <- head(coefile, -4)
-coefile2 <- subset(coefile, V2 > 0 | V2 < 0)
-nocoeff <- nrow(coefile2)
-
-#no presences used in model (less those used for testing)
-maxresults <- read.csv(paste0("../output/maxent/models/", timeslice, "/maxentResults.csv"))
-notrainingpoints <- maxresults$X.Training.samples
-testauc <- maxresults$Test.AUC
-trainauc <- maxresults$Training.AUC
-
-#natural log
-samplepred <- read.csv(paste0("../output/maxent/models/", timeslice, "/species_samplePredictions.csv"), header = TRUE)
-samplepred$nat_log <- log(samplepred$Raw.prediction)
-sumsamplepred <- sum(samplepred$nat_log)
-
-for (i in 1:nrow(AIClist)){
-  if(AIClist$regularization[i] == betamval){
-    AIClist$Train.AUC[i] <- trainauc
-    AIClist$n[i] <- notrainingpoints
-    AIClist$coefficients[i] <- nocoeff
-    AIClist$sum.of.logs[i] <- sumsamplepred
-    
-  }
-}
-
-betamval <- 2
-mod <- maxent(x = train, p = trainpa, path = paste0("../output/maxent/models/", timeslice), args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "addsamplestobackground=TRUE", "betamultiplier=2"))
-
-
-
-#count number of non-zero coefficinets, excluding the final four rows
-coefile <- read.csv(paste0("../output/maxent/models/", timeslice, "/species.lambdas"), header = FALSE)
-coefile <- head(coefile, -4)
-coefile2 <- subset(coefile, V2 > 0 | V2 < 0)
-nocoeff <- nrow(coefile2)
-
-#no presences used in model (less those used for testing)
-maxresults <- read.csv(paste0("../output/maxent/models/", timeslice, "/maxentResults.csv"))
-notrainingpoints <- maxresults$X.Training.samples
-testauc <- maxresults$Test.AUC
-trainauc <- maxresults$Training.AUC
-
-#natural log
-samplepred <- read.csv(paste0("../output/maxent/models/", timeslice, "/species_samplePredictions.csv"), header = TRUE)
-samplepred$nat_log <- log(samplepred$Raw.prediction)
-sumsamplepred <- sum(samplepred$nat_log)
-
-for (i in 1:nrow(AIClist)){
-  if(AIClist$regularization[i] == betamval){
-    AIClist$Train.AUC[i] <- trainauc
-    AIClist$n[i] <- notrainingpoints
-    AIClist$coefficients[i] <- nocoeff
-    AIClist$sum.of.logs[i] <- sumsamplepred
-    
-  }
-}
-
-betamval <- 2.25
-mod <- maxent(x = train, p = trainpa, path = paste0("../output/maxent/models/", timeslice), args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "addsamplestobackground=TRUE", "betamultiplier=2.25"))
-
-
-
-#count number of non-zero coefficinets, excluding the final four rows
-coefile <- read.csv(paste0("../output/maxent/models/", timeslice, "/species.lambdas"), header = FALSE)
-coefile <- head(coefile, -4)
-coefile2 <- subset(coefile, V2 > 0 | V2 < 0)
-nocoeff <- nrow(coefile2)
-
-#no presences used in model (less those used for testing)
-maxresults <- read.csv(paste0("../output/maxent/models/", timeslice, "/maxentResults.csv"))
-notrainingpoints <- maxresults$X.Training.samples
-testauc <- maxresults$Test.AUC
-trainauc <- maxresults$Training.AUC
-
-#natural log
-samplepred <- read.csv(paste0("../output/maxent/models/", timeslice, "/species_samplePredictions.csv"), header = TRUE)
-samplepred$nat_log <- log(samplepred$Raw.prediction)
-sumsamplepred <- sum(samplepred$nat_log)
-
-for (i in 1:nrow(AIClist)){
-  if(AIClist$regularization[i] == betamval){
-    AIClist$Train.AUC[i] <- trainauc
-    AIClist$n[i] <- notrainingpoints
-    AIClist$coefficients[i] <- nocoeff
-    AIClist$sum.of.logs[i] <- sumsamplepred
-    
-  }
-}
-
-betamval <- 2.50
-mod <- maxent(x = train, p = trainpa, path = paste0("../output/maxent/models/", timeslice), args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "addsamplestobackground=TRUE", "betamultiplier=2.5"))
-
-
-
-#count number of non-zero coefficinets, excluding the final four rows
-coefile <- read.csv(paste0("../output/maxent/models/", timeslice, "/species.lambdas"), header = FALSE)
-coefile <- head(coefile, -4)
-coefile2 <- subset(coefile, V2 > 0 | V2 < 0)
-nocoeff <- nrow(coefile2)
-
-#no presences used in model (less those used for testing)
-maxresults <- read.csv(paste0("../output/maxent/models/", timeslice, "/maxentResults.csv"))
-notrainingpoints <- maxresults$X.Training.samples
-testauc <- maxresults$Test.AUC
-trainauc <- maxresults$Training.AUC
-
-#natural log
-samplepred <- read.csv(paste0("../output/maxent/models/", timeslice, "/species_samplePredictions.csv"), header = TRUE)
-samplepred$nat_log <- log(samplepred$Raw.prediction)
-sumsamplepred <- sum(samplepred$nat_log)
-
-for (i in 1:nrow(AIClist)){
-  if(AIClist$regularization[i] == betamval){
-    AIClist$Train.AUC[i] <- trainauc
-    AIClist$n[i] <- notrainingpoints
-    AIClist$coefficients[i] <- nocoeff
-    AIClist$sum.of.logs[i] <- sumsamplepred
-    
-  }
-}
-
-betamval <- 2.75
-mod <- maxent(x = train, p = trainpa, path = paste0("../output/maxent/models/", timeslice), args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "addsamplestobackground=TRUE", "betamultiplier=2.75"))
-
-
-
-#count number of non-zero coefficinets, excluding the final four rows
-coefile <- read.csv(paste0("../output/maxent/models/", timeslice, "/species.lambdas"), header = FALSE)
-coefile <- head(coefile, -4)
-coefile2 <- subset(coefile, V2 > 0 | V2 < 0)
-nocoeff <- nrow(coefile2)
-
-#no presences used in model (less those used for testing)
-maxresults <- read.csv(paste0("../output/maxent/models/", timeslice, "/maxentResults.csv")
-notrainingpoints <- maxresults$X.Training.samples
-testauc <- maxresults$Test.AUC
-trainauc <- maxresults$Training.AUC
-
-#natural log
-samplepred <- read.csv(paste0("../output/maxent/models/", timeslice, "/species_samplePredictions.csv"), header = TRUE)
-samplepred$nat_log <- log(samplepred$Raw.prediction)
-sumsamplepred <- sum(samplepred$nat_log)
-
-for (i in 1:nrow(AIClist)){
-  if(AIClist$regularization[i] == betamval){
-    AIClist$Train.AUC[i] <- trainauc
-    AIClist$n[i] <- notrainingpoints
-    AIClist$coefficients[i] <- nocoeff
-    AIClist$sum.of.logs[i] <- sumsamplepred
-    
-  }
-}
-
-betamval <- 3
-mod <- maxent(x = train, p = trainpa, path = paste0("../output/maxent/models/", timeslice), args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "addsamplestobackground=TRUE", "betamultiplier=3"))
-
-
-
-#count number of non-zero coefficinets, excluding the final four rows
-coefile <- read.csv(paste0("../output/maxent/models/", timeslice, "/species.lambdas"), header = FALSE)
-coefile <- head(coefile, -4)
-coefile2 <- subset(coefile, V2 > 0 | V2 < 0)
-nocoeff <- nrow(coefile2)
-
-#no presences used in model (less those used for testing)
-maxresults <- read.csv(paste0("../output/maxent/models/", timeslice, "/maxentResults.csv")
-notrainingpoints <- maxresults$X.Training.samples
-testauc <- maxresults$Test.AUC
-trainauc <- maxresults$Training.AUC
-
-#natural log
-samplepred <- read.csv(paste0("../output/maxent/models/", timeslice, "/species_samplePredictions.csv"), header = TRUE)
-samplepred$nat_log <- log(samplepred$Raw.prediction)
-sumsamplepred <- sum(samplepred$nat_log)
-
-for (i in 1:nrow(AIClist)){
-  if(AIClist$regularization[i] == betamval){
-    AIClist$Train.AUC[i] <- trainauc
-    AIClist$n[i] <- notrainingpoints
-    AIClist$coefficients[i] <- nocoeff
-    AIClist$sum.of.logs[i] <- sumsamplepred
-    
-  }
-}
-
-betamval <- 3.25
-mod <- maxent(x = train, p = trainpa, path = paste0("../output/maxent/models/", timeslice), args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "addsamplestobackground=TRUE", "betamultiplier=3.25"))
-
-
-
-#count number of non-zero coefficinets, excluding the final four rows
-coefile <- read.csv(paste0("../output/maxent/models/", timeslice, "/species.lambdas"), header = FALSE)
-coefile <- head(coefile, -4)
-coefile2 <- subset(coefile, V2 > 0 | V2 < 0)
-nocoeff <- nrow(coefile2)
-
-#no presences used in model (less those used for testing)
-maxresults <- read.csv(paste0("../output/maxent/models/", timeslice, "/maxentResults.csv"))
-notrainingpoints <- maxresults$X.Training.samples
-testauc <- maxresults$Test.AUC
-trainauc <- maxresults$Training.AUC
-
-#natural log
-samplepred <- read.csv(paste0("../output/maxent/models/", timeslice, "/species_samplePredictions.csv"), header = TRUE)
-samplepred$nat_log <- log(samplepred$Raw.prediction)
-sumsamplepred <- sum(samplepred$nat_log)
-
-for (i in 1:nrow(AIClist)){
-  if(AIClist$regularization[i] == betamval){
-    AIClist$Train.AUC[i] <- trainauc
-    AIClist$n[i] <- notrainingpoints
-    AIClist$coefficients[i] <- nocoeff
-    AIClist$sum.of.logs[i] <- sumsamplepred
-    
-  }
-}
-
-betamval <- 3.50
-mod <- maxent(x = train, p = trainpa, path = paste0("../output/maxent/models/", timeslice), args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "addsamplestobackground=TRUE", "betamultiplier=3.5"))
-
-
-
-#count number of non-zero coefficinets, excluding the final four rows
-coefile <- read.csv(paste0("../output/maxent/models/", timeslice, "/species.lambdas"), header = FALSE)
-coefile <- head(coefile, -4)
-coefile2 <- subset(coefile, V2 > 0 | V2 < 0)
-nocoeff <- nrow(coefile2)
-
-#no presences used in model (less those used for testing)
-maxresults <- read.csv(paste0("../output/maxent/models/", timeslice, "/maxentResults.csv"))
-notrainingpoints <- maxresults$X.Training.samples
-testauc <- maxresults$Test.AUC
-trainauc <- maxresults$Training.AUC
-
-#natural log
-samplepred <- read.csv(paste0("../output/maxent/models/", timeslice, "/species_samplePredictions.csv"), header = TRUE)
-samplepred$nat_log <- log(samplepred$Raw.prediction)
-sumsamplepred <- sum(samplepred$nat_log)
-
-for (i in 1:nrow(AIClist)){
-  if(AIClist$regularization[i] == betamval){
-    AIClist$Train.AUC[i] <- trainauc
-    AIClist$n[i] <- notrainingpoints
-    AIClist$coefficients[i] <- nocoeff
-    AIClist$sum.of.logs[i] <- sumsamplepred
-    
-  }
-}
-
-betamval <- 3.75
-mod <- maxent(x = train, p = trainpa, path = paste0("../output/maxent/models/", timeslice), args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "addsamplestobackground=TRUE", "betamultiplier=3.75"))
-
-
-
-#count number of non-zero coefficinets, excluding the final four rows
-coefile <- read.csv(paste0("../output/maxent/models/", timeslice, "/species.lambdas"), header = FALSE)
-coefile <- head(coefile, -4)
-coefile2 <- subset(coefile, V2 > 0 | V2 < 0)
-nocoeff <- nrow(coefile2)
-
-#no presences used in model (less those used for testing)
-maxresults <- read.csv(paste0("../output/maxent/models/", timeslice, "/maxentResults.csv"))
-notrainingpoints <- maxresults$X.Training.samples
-testauc <- maxresults$Test.AUC
-trainauc <- maxresults$Training.AUC
-
-#natural log
-samplepred <- read.csv(paste0("../output/maxent/models/", timeslice, "/species_samplePredictions.csv"), header = TRUE)
-samplepred$nat_log <- log(samplepred$Raw.prediction)
-sumsamplepred <- sum(samplepred$nat_log)
-
-for (i in 1:nrow(AIClist)){
-  if(AIClist$regularization[i] == betamval){
-    AIClist$Train.AUC[i] <- trainauc
-    AIClist$n[i] <- notrainingpoints
-    AIClist$coefficients[i] <- nocoeff
-    AIClist$sum.of.logs[i] <- sumsamplepred
-    
-  }
-}
-
-betamval <- 4
-mod <- maxent(x = train, p = trainpa, path = paste0("../output/maxent/models/", timeslice), args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "addsamplestobackground=TRUE", "betamultiplier=4"))
-
-
-
-#count number of non-zero coefficinets, excluding the final four rows
-coefile <- read.csv(paste0("../output/maxent/models/", timeslice, "/species.lambdas"), header = FALSE)
-coefile <- head(coefile, -4)
-coefile2 <- subset(coefile, V2 > 0 | V2 < 0)
-nocoeff <- nrow(coefile2)
-
-#no presences used in model (less those used for testing)
-maxresults <- read.csv(paste0("../output/maxent/models/", timeslice, "/maxentResults.csv"))
-notrainingpoints <- maxresults$X.Training.samples
-testauc <- maxresults$Test.AUC
-trainauc <- maxresults$Training.AUC
-
-#natural log
-samplepred <- read.csv(paste0("../output/maxent/models/", timeslice, "/species_samplePredictions.csv"), header = TRUE)
-samplepred$nat_log <- log(samplepred$Raw.prediction)
-sumsamplepred <- sum(samplepred$nat_log)
-
-for (i in 1:nrow(AIClist)){
-  if(AIClist$regularization[i] == betamval){
-    AIClist$Train.AUC[i] <- trainauc
-    AIClist$n[i] <- notrainingpoints
-    AIClist$coefficients[i] <- nocoeff
-    AIClist$sum.of.logs[i] <- sumsamplepred
-    
-  }
-}
 
 AIClist$AIC <- ((2*AIClist$coefficients)-(2*AIClist$sum.of.logs))
 AIClist$AICc <- (-2*(AIClist$sum.of.logs)+((2*AIClist$coefficients)*(AIClist$n/(AIClist$n - AIClist$coefficients-1))))
 
 write.csv(AIClist, paste0("../output/maxent/models/", timeslice, "/AICforMaxentReg.csv"), row.names = FALSE)
 
+}
+
 ```
 
-``
+next step... select the models you want for each year and run those models again (primarily based on lowest AICc but check test AUC and other things too)
+
+jan2003: b = 1
+jan2004: b = 1
+jan2005: b = 1.5
+jan2006: b = 2.25
+
+
+for (year in 1:nrow(modelmonth)){
+  timeslice <- modelmonth[year] #testing timeslice
+  yr <- str_sub(timeslice, -4) #the year being used for testing
+  train <- subset(janprback, year != yr) #training data is all years but testing
+  trainpa <- train$occurrence #creates a vector of presence/background ID (1/0)
+  test <-  subset(janprback, year == yr) #creates the testing dataset
+  testp <- subset(test, occurrence == "1") #splits the testing dataset into presences
+  testp <- subset(testp, select = -c(year, occurrence)) #don't need year and occurrence for modelling
+  testb <- subset(test, occurrence == "0") #splits the testing dataset into background
+  testb <- subset(testb, select = -c(year, occurrence)) #don't need year and occurrence for modelling
+  train  <- subset(train, select = -c(year, occurrence)) #don't need year and occurrence for modelling
+  
+  for (h in 1:nrow(betavallist)){
+    betamval <-  betavallist[h]
+    mod <- maxent(x = train, p = trainpa, path = paste0("../output/maxent/models/", timeslice), args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "addsamplestobackground=TRUE", paste0("betamultiplier=", betavallist[h])))
+
+    #now based on glover-kapfer pdf with excel manual + https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/10-1171.1... + adaptation for        getting testAUC.. horrible code
+
+    #count number of non-zero coefficients, excluding the final four rows
+    coefile <- read.csv(paste0("../output/maxent/models/", timeslice, "/species.lambdas"), header = FALSE, stringsAsFactors=FALSE)
+    coefile <- head(coefile, -4)
+    coefile2 <- subset(coefile, V2 > 0 | V2 < 0)
+    nocoeff <- nrow(coefile2)
+    bick <- sum(as.numeric(coefile2[, 2]))
+    bic <- (bick*log(sum(trainpa == 1)) - 2*11)
+    
+    #no presences used in model (less those used for testing)
+    maxresults <- read.csv(paste0("../output/maxent/models/", timeslice, "/maxentResults.csv"), header = TRUE)
+    notrainingpoints <- maxresults$X.Training.samples
+    testauc <- maxresults$Test.AUC
+    trainauc <- maxresults$Training.AUC
+    
+    #natural log
+    samplepred <- read.csv(paste0("../output/maxent/models/", timeslice, "/species_samplePredictions.csv"), header = TRUE)
+    samplepred$nat_log <- log(samplepred$Raw.prediction)
+    sumsamplepred <- sum(samplepred$nat_log)
+  
+  
+    #test auc scores and other lovely things you might want to include
+    ev <- evaluate(p = testp, a= testb, model = mod)
+    evauc <- ev@auc
+    evcor <- ev@cor
+    evpcor <- ev@pcor
+    evnp <- ev@np
+    evna <- ev@na
+    evmaxtprtnr <- threshold(ev, 'spec_sens')
+    evmaxkap <- threshold(ev, 'kappa')
+    evno_omission <- threshold(ev, 'no_omission')
+    evprevalence <- threshold(ev, 'prevalence')
+    evequal_sens_spec <- threshold(ev, 'equal_sens_spec')
+    
+  
+    for (i in 1:nrow(AIClist)){
+      if(AIClist$regularization[i] == betamval){
+      AIClist$Train.AUC[i] <- trainauc
+      AIClist$n[i] <- notrainingpoints
+      AIClist$coefficients[i] <- nocoeff
+      AIClist$sum.of.logs[i] <- sumsamplepred
+      AIClist$Test.AUC[i] <- evauc
+      AIClist$evcor[i] <- evcor
+      AIClist$evpcor[i] <- evpcor
+      AIClist$nopresence[i] <- evnp
+      AIClist$nobackground[i] <- evna
+      AIClist$maxsumsenspec[i] <- evmaxtprtnr
+      AIClist$maxsumsenspec[i] <- evmaxkap
+      AIClist$no_omission[i] <- evno_omission
+      AIClist$equal_sens_spec[i] <- evequal_sens_spec
+      AIClist$bic[i] <- bic #not sure this is correct...
+      }
+    }
+  }
+
+AIClist$AIC <- ((2*AIClist$coefficients)-(2*AIClist$sum.of.logs))
+AIClist$AICc <- (-2*(AIClist$sum.of.logs)+((2*AIClist$coefficients)*(AIClist$n/(AIClist$n - AIClist$coefficients-1))))
+
+write.csv(AIClist, paste0("../output/maxent/models/", timeslice, "/AICforMaxentReg.csv"), row.names = FALSE)
+
+}
 
 
 
 
 
-mod <- maxent(x = train, p = trainpa, path = paste0("../output/maxent/models/", timeslice), args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "addsamplestobackground=TRUE"))
-mod
 
 
 
-# this is after beta has been selected for
-ev <- evaluate(p = testp, a= testb, model = mod)
-str(ev)
-auc <- ev@auc
-cor <- ev@cor
-evaluation <- cbind(auc, cor)
-write.csv(evaluation, paste0("../output/maxent/models/", timeslice, "/eval.csv"), row.names = FALSE) 
-thres <- threshold(ev)
-write.csv(thres, paste0("../output/maxent/models/", timeslice, "/threshold.csv"), row.names = FALSE)
-```
+
 
 
 

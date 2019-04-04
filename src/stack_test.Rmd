@@ -551,7 +551,7 @@ VariableSelection(maxent="C:/Users/bunny/Downloads/maxent/maxent.jar", outdir=("
 
 so this is all lovely... the two runs suggest b-multipliers of <1 (0.75 and 0.25 respectively). In my test runs above, 0.25 gives a 'tighter fit' thatn 1 (the default). Apparently changin the b-multiplier helps reduce over and underfitting... "the default setting in Maxent is 1. Smaller values will constrain the model more, whereas larger numbers will relax the model, making it “smoother”...... 
 
-try changing some of the settings here - paerticularly you want aic
+try changing some of the settings here - particularly you want aic
 ```{r}
 VariableSelection(maxent="C:/Users/bunny/Downloads/maxent/maxent.jar", outdir=("C:/Users/bunny/Documents/GitHub/Chapter_1/output/maxentvariableselection/output"), gridfolder=("C:/Users/bunny/Documents/GitHub/Chapter_1/output/maxentvariableselection/testgrid"), occurrencelocations= ("C:/Users/bunny/Documents/GitHub/Chapter_1/output/maxentvariableselection/presence_red.csv"), backgroundlocations= ("C:/Users/bunny/Documents/GitHub/Chapter_1/output/maxentvariableselection/background_red.csv"), additionalargs="nohinge", contributionthreshold=5, correlationthreshold=0.9, betamultiplier=seq(0.25, 2, 0.25))
 ```
