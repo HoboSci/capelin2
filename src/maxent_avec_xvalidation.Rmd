@@ -154,9 +154,12 @@ jan2005: b = 1.5
 jan2006: b = 2.25
 
 
-```{r}
-modelmonth <- cbind(paste0("jan",unique(janprback$year)))
+```{r final models plus predict}
+mth <- "jan"
+modelmonth <- cbind(paste0(mth, unique(janprback$year)))
 aicetc <- read.csv("../data/env/AICcFinalmod.csv", header = TRUE) #pre-created csv file
+unlayer_yr <- read.csv("../data/env/asc_layerlistjan.csv", header = TRUE)
+
 for (year in 1:nrow(modelmonth)){
   timeslice <- modelmonth[year] #testing timeslice
   yr <- str_sub(timeslice, -4) #the year being used for testing
@@ -168,6 +171,7 @@ for (year in 1:nrow(modelmonth)){
   testb <- subset(test, occurrence == "0") #splits the testing dataset into background
   testb <- subset(testb, select = -c(year, occurrence)) #don't need year and occurrence for modelling
   train  <- subset(train, select = -c(year, occurrence)) #don't need year and occurrence for modelling
+
   
   if (timeslice == "jan2003"){
     betaval <- 1
@@ -233,16 +237,56 @@ for (year in 1:nrow(modelmonth)){
       aicetc$bic <- bic #not sure this is correct...
       aicetc$beta <- betaval
       
-aicetc$AIC <- ((2*aicetc$coefficients)-(2*aicetc$sum.of.logs))
-aicetc$AICc <- (-2*(aicetc$sum.of.logs)+((2*aicetc$coefficients)*(aicetc$n/(aicetc$n - aicetc$coefficients-1))))
+    aicetc$AIC <- ((2*aicetc$coefficients)-(2*aicetc$sum.of.logs))
+    aicetc$AICc <- (-2*(aicetc$sum.of.logs)+((2*aicetc$coefficients)*(aicetc$n/(aicetc$n - aicetc$coefficients-1))))
 
-write.csv(aicetc, paste0("../output/maxent/models/", timeslice, "/AICforMaxentReg.csv"), row.names = FALSE)
+    write.csv(aicetc, paste0("../output/maxent/models/", timeslice, "/AICforMaxentReg.csv"), row.names = FALSE)
 
+
+    unlayer_yr <- subset(unlayer, ascyears == yr)
+    unlayer_yr <- unlayer_yr[-c(1), ]
+    unlayer_yr[] <- lapply(unlayer_yr, as.character) #from https://stackoverflow.com/questions/2851015/convert-data-frame-columns-from-factors-to-characters
+    aea <- raster("../output/env/aea.tif") 
+
+    for (td in 1:nrow(unlayer_yr)){
+      temp_depth <- raster(unlayer_yr$temp_depth[td])
+      crs(temp_depth) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0" 
+      names(temp_depth) <- "temp_depth"
+      temp_depth <- projectRaster(temp_depth, aea)
+      chl_surface <- raster(unlayer_yr$chl_surface[td])
+      crs(chl_surface) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0" 
+      names(chl_surface) <- "chl_surface"
+      chl_surface <- projectRaster(chl_surface, aea)
+      o2_depth <- raster(unlayer_yr$o2_depth[td])
+      crs(o2_depth) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0" 
+      names(o2_depth) <- "o2_depth"
+      o2_depth <- projectRaster(o2_depth, aea)
+      salinity_depth <- raster(unlayer_yr$salinity_depth[td])
+      crs(salinity_depth) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0" 
+      names(salinity_depth) <- "salinity_depth"
+      salinity_depth <- projectRaster(salinity_depth, aea)
+      nao_sample <- raster(unlayer_yr$nao_sample[td])
+      crs(nao_sample) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0" 
+      names(nao_sample) <- "nao_sample"
+      nao_sample <- projectRaster(nao_sample, aea)
+      nao_winter <- raster(unlayer_yr$nao_winter[td])
+      crs(nao_winter) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"
+      names(nao_winter) <- "nao_winter"
+      nao_winter <- projectRaster(nao_winter, aea)
+      stackn <- unlayer_yr$stackname[td]
+      stack <- stack(temp_depth, chl_surface, o2_depth, salinity_depth, nao_sample, nao_winter)
+      #stackSave(test,unlayer_yr$stackname[td])
+      pred <- predict(mod, stack, file = paste0("../output/maxent/predictions/", mth, "/", stackn, ".asc"), overwrite=TRUE) 
+      prplot <- plot(pred, png(paste0("../output/maxent/predictions/", mth, "/", stackn, ".png"))) 
+      dev.off() # stops automatic saving of the plot to a png
+    }
 }
+
+
 
 ```
 
-
+ok! now to average results
 
 
 
