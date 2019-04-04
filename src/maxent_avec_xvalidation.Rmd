@@ -147,6 +147,7 @@ write.csv(aicetc, paste0("../output/maxent/models/", timeslice, "/AICforMaxentRe
 
 ```
 
+#model selection
 next step... select the models you want for each year and run those models again (primarily based on lowest AICc but check test AUC and other things too)
 
 jan2003: b = 1
@@ -284,13 +285,66 @@ for (year in 1:nrow(modelmonth)){
 }
 ```
 
+#model averageing
+
 ok! now to average results:
-- the asc files per depth layer
+
 - the AICforMaxentReg.csv 
 - the maxentResults.csv
+- the asc files per depth layer
 
+open all maxentReg files
 
+```{r avg maxentReg}
+#mth <- "jan"
+#modelmonth <- cbind(paste0(mth, unique(janprback$year)))
+for (i in 1:length(modelmonth)){
+  timeslice <- modelmonth[i]
+  yr <- str_sub(timeslice, -4) #the year being used for testing
+  if(yr == 2003){
+    aic2003 <- read.csv(paste0("../output/maxent/models/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
+    } else if (yr == 2004){
+    aic2004 <- read.csv(paste0("../output/maxent/models/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
+    } else if (yr == 2005){
+    aic2005 <- read.csv(paste0("../output/maxent/models/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
+    } else if (yr == 2006){
+    aic2006 <- read.csv(paste0("../output/maxent/models/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
+  }
+}
 
+aic <- rbind(aic2003, aic2004, aic2005, aic2006)
+aicm <- colMeans(aic)
+aicm$mod <- "avg"
+avgAIC <- rbind(aic, aicm)
+
+write.csv(avgAIC, paste0("../output/maxent/models/", mth, "avgAIC.csv"), row.names = FALSE)
+```
+
+```{r avg maxres}
+#mth <- "jan"
+#modelmonth <- cbind(paste0(mth, unique(janprback$year)))
+for (i in 1:length(modelmonth)){
+  timeslice <- modelmonth[i]
+  yr <- str_sub(timeslice, -4) #the year being used for testing
+  if(yr == 2003){
+    maxr2003 <- read.csv(paste0("../output/maxent/models/", timeslice, "/maxentResults.csv"), header = TRUE)
+    } else if (yr == 2004){
+    maxr2004 <- read.csv(paste0("../output/maxent/models/", timeslice, "/maxentResults.csv"), header = TRUE)
+    } else if (yr == 2005){
+    maxr2005 <- read.csv(paste0("../output/maxent/models/", timeslice, "/maxentResults.csv"), header = TRUE)
+    } else if (yr == 2006){
+    maxr2006 <- read.csv(paste0("../output/maxent/models/", timeslice, "/maxentResults.csv"), header = TRUE)
+  }
+}
+
+maxr <- rbind(maxr2003, maxr2004, maxr2005, maxr2006)
+maxr$Species <- 1
+maxrm <- colMeans(maxr)
+maxrm$Species <- "avg"
+maxrm <- rbind(maxr, maxrm)
+
+write.csv(maxrm, paste0("../output/maxent/models/", mth, "avgmaxentresults.csv"), row.names = FALSE)
+```
 
 
 
