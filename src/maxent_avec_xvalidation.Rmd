@@ -346,6 +346,15 @@ maxrm <- rbind(maxr, maxrm)
 write.csv(maxrm, paste0("../output/maxent/models/", mth, "avgmaxentresults.csv"), row.names = FALSE)
 ```
 
+for this bit may need to stack rasters by depth... this will need some working with the name
+get unique filenames into a list
+ignore the first X characters in the filename (yr_mth_) and stack based on the last bit of the filename
+then do something probably with raster package
+
+```{r avg asc layers}
+asc_list <- list.files("../output/maxent/predictions/jan", pattern = '*.asc', full.names = TRUE) #true means the full path is included
+
+```
 
 
 
