@@ -1403,3 +1403,45 @@ for (i in 1:nrow(asclayer)){
   write.csv(asclayer, "../data/env/asc_layerlist2015.csv", row.names = TRUE)
 }
 ```
+
+
+
+it may be better to have ascii lists per month (since models are per month)
+
+```{r}
+a1998 <- read.csv("../data/env/asc_layerlist1998.csv", header = TRUE)
+a1999 <- read.csv("../data/env/asc_layerlist1999.csv", header = TRUE)
+a2000 <- read.csv("../data/env/asc_layerlist2000.csv", header = TRUE)
+a2001 <- read.csv("../data/env/asc_layerlist2001.csv", header = TRUE)
+a2002 <- read.csv("../data/env/asc_layerlist2002.csv", header = TRUE)
+a2003 <- read.csv("../data/env/asc_layerlist2003.csv", header = TRUE)
+a2004 <- read.csv("../data/env/asc_layerlist2004.csv", header = TRUE)
+a2005 <- read.csv("../data/env/asc_layerlist2005.csv", header = TRUE)
+a2006 <- read.csv("../data/env/asc_layerlist2006.csv", header = TRUE)
+a2007 <- read.csv("../data/env/asc_layerlist2007.csv", header = TRUE)
+a2008 <- read.csv("../data/env/asc_layerlist2008.csv", header = TRUE)
+a2009 <- read.csv("../data/env/asc_layerlist2009.csv", header = TRUE)
+a2010 <- read.csv("../data/env/asc_layerlist2010.csv", header = TRUE)
+a2011 <- read.csv("../data/env/asc_layerlist2011.csv", header = TRUE)
+a2012 <- read.csv("../data/env/asc_layerlist2012.csv", header = TRUE)
+a2013 <- read.csv("../data/env/asc_layerlist2013.csv", header = TRUE)
+a2014 <- read.csv("../data/env/asc_layerlist2014.csv", header = TRUE)
+a2015 <- read.csv("../data/env/asc_layerlist2015.csv", header = TRUE)
+
+as <- rbind(a1998, a1999, a2000, a2001, a2002, a2003, a2004, a2005, a2006, a2007, a2008, a2009, a2010, a2011, a2012, a2013, a2014, a2015)
+
+asm <- split(as, as$ascmonths)
+write.csv(asm$`1`, "../data/env/asc_layerlistjan.csv", row.names = TRUE)
+write.csv(asm$`2`, "../data/env/asc_layerlistfeb.csv", row.names = TRUE)
+write.csv(asm$`3`, "../data/env/asc_layerlistmar.csv", row.names = TRUE)
+write.csv(asm$`4`, "../data/env/asc_layerlistapr.csv", row.names = TRUE)
+write.csv(asm$`5`, "../data/env/asc_layerlistmay.csv", row.names = TRUE)
+write.csv(asm$`6`, "../data/env/asc_layerlistjun.csv", row.names = TRUE)
+write.csv(asm$`7`, "../data/env/asc_layerlistjul.csv", row.names = TRUE)
+write.csv(asm$`8`, "../data/env/asc_layerlistaug.csv", row.names = TRUE)
+write.csv(asm$`9`, "../data/env/asc_layerlistsep.csv", row.names = TRUE)
+write.csv(asm$`10`, "../data/env/asc_layerlistoct.csv", row.names = TRUE)
+write.csv(asm$`11`, "../data/env/asc_layerlistnov.csv", row.names = TRUE)
+write.csv(asm$`12`, "../data/env/asc_layerlistdec.csv", row.names = TRUE)
+```
+
