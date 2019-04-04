@@ -62,8 +62,8 @@ mod12
 
 ```{r train and test on jan inc AIC for reg val}
 modelmonth <- cbind(paste0("jan",unique(janprback$year)))
-AIClist <- read.csv("../data/env/AICcCalculations.csv", header = TRUE) #pre-created csv file
-betavallist <- cbind(AIClist$regularization)
+aicetc <- read.csv("../data/env/AICcCalculations.csv", header = TRUE) #pre-created csv file
+betavallist <- cbind(aicetc$regularization)
 
 for (year in 1:nrow(modelmonth)){
   timeslice <- modelmonth[year] #testing timeslice
@@ -117,30 +117,30 @@ for (year in 1:nrow(modelmonth)){
     evequal_sens_spec <- threshold(ev, 'equal_sens_spec')
     
   
-    for (i in 1:nrow(AIClist)){
-      if(AIClist$regularization[i] == betamval){
-      AIClist$Train.AUC[i] <- trainauc
-      AIClist$n[i] <- notrainingpoints
-      AIClist$coefficients[i] <- nocoeff
-      AIClist$sum.of.logs[i] <- sumsamplepred
-      AIClist$Test.AUC[i] <- evauc
-      AIClist$evcor[i] <- evcor
-      AIClist$evpcor[i] <- evpcor
-      AIClist$nopresence[i] <- evnp
-      AIClist$nobackground[i] <- evna
-      AIClist$maxsumsenspec[i] <- evmaxtprtnr
-      AIClist$maxsumsenspec[i] <- evmaxkap
-      AIClist$no_omission[i] <- evno_omission
-      AIClist$equal_sens_spec[i] <- evequal_sens_spec
-      AIClist$bic[i] <- bic #not sure this is correct...
+    for (i in 1:nrow(aicetc)){
+      if(aicetc$regularization[i] == betamval){
+      aicetc$Train.AUC[i] <- trainauc
+      aicetc$n[i] <- notrainingpoints
+      aicetc$coefficients[i] <- nocoeff
+      aicetc$sum.of.logs[i] <- sumsamplepred
+      aicetc$Test.AUC[i] <- evauc
+      aicetc$evcor[i] <- evcor
+      aicetc$evpcor[i] <- evpcor
+      aicetc$nopresence[i] <- evnp
+      aicetc$nobackground[i] <- evna
+      aicetc$maxsumsenspec[i] <- evmaxtprtnr
+      aicetc$maxsumsenspec[i] <- evmaxkap
+      aicetc$no_omission[i] <- evno_omission
+      aicetc$equal_sens_spec[i] <- evequal_sens_spec
+      aicetc$bic[i] <- bic #not sure this is correct...
       }
     }
   }
 
-AIClist$AIC <- ((2*AIClist$coefficients)-(2*AIClist$sum.of.logs))
-AIClist$AICc <- (-2*(AIClist$sum.of.logs)+((2*AIClist$coefficients)*(AIClist$n/(AIClist$n - AIClist$coefficients-1))))
+aicetc$AIC <- ((2*aicetc$coefficients)-(2*aicetc$sum.of.logs))
+aicetc$AICc <- (-2*(aicetc$sum.of.logs)+((2*aicetc$coefficients)*(aicetc$n/(aicetc$n - aicetc$coefficients-1))))
 
-write.csv(AIClist, paste0("../output/maxent/models/", timeslice, "/AICforMaxentReg.csv"), row.names = FALSE)
+write.csv(aicetc, paste0("../output/maxent/models/", timeslice, "/AICforMaxentReg.csv"), row.names = FALSE)
 
 }
 
@@ -154,6 +154,9 @@ jan2005: b = 1.5
 jan2006: b = 2.25
 
 
+```{r}
+modelmonth <- cbind(paste0("jan",unique(janprback$year)))
+aicetc <- read.csv("../data/env/AICcFinalmod.csv", header = TRUE) #pre-created csv file
 for (year in 1:nrow(modelmonth)){
   timeslice <- modelmonth[year] #testing timeslice
   yr <- str_sub(timeslice, -4) #the year being used for testing
@@ -166,9 +169,17 @@ for (year in 1:nrow(modelmonth)){
   testb <- subset(testb, select = -c(year, occurrence)) #don't need year and occurrence for modelling
   train  <- subset(train, select = -c(year, occurrence)) #don't need year and occurrence for modelling
   
-  for (h in 1:nrow(betavallist)){
-    betamval <-  betavallist[h]
-    mod <- maxent(x = train, p = trainpa, path = paste0("../output/maxent/models/", timeslice), args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "addsamplestobackground=TRUE", paste0("betamultiplier=", betavallist[h])))
+  if (timeslice == "jan2003"){
+    betaval <- 1
+  } else if (timeslice == "jan2004"){
+    betaval <- 1
+  } else if (timeslice == "jan2005"){
+    betaval <- 1.5
+  } else if (timeslice == "jan2006"){
+    betaval <- 2.25
+  }
+  
+    mod <- maxent(x = train, p = trainpa, path = paste0("../output/maxent/models/", timeslice), args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "addsamplestobackground=TRUE", paste0("betamultiplier=", betaval)))
 
     #now based on glover-kapfer pdf with excel manual + https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/10-1171.1... + adaptation for        getting testAUC.. horrible code
 
@@ -206,32 +217,30 @@ for (year in 1:nrow(modelmonth)){
     evequal_sens_spec <- threshold(ev, 'equal_sens_spec')
     
   
-    for (i in 1:nrow(AIClist)){
-      if(AIClist$regularization[i] == betamval){
-      AIClist$Train.AUC[i] <- trainauc
-      AIClist$n[i] <- notrainingpoints
-      AIClist$coefficients[i] <- nocoeff
-      AIClist$sum.of.logs[i] <- sumsamplepred
-      AIClist$Test.AUC[i] <- evauc
-      AIClist$evcor[i] <- evcor
-      AIClist$evpcor[i] <- evpcor
-      AIClist$nopresence[i] <- evnp
-      AIClist$nobackground[i] <- evna
-      AIClist$maxsumsenspec[i] <- evmaxtprtnr
-      AIClist$maxsumsenspec[i] <- evmaxkap
-      AIClist$no_omission[i] <- evno_omission
-      AIClist$equal_sens_spec[i] <- evequal_sens_spec
-      AIClist$bic[i] <- bic #not sure this is correct...
-      }
-    }
-  }
+      aicetc$Train.AUC <- trainauc
+      aicetc$n[i] <- notrainingpoints
+      aicetc$coefficients <- nocoeff
+      aicetc$sum.of.logs <- sumsamplepred
+      aicetc$Test.AUC <- evauc
+      aicetc$evcor <- evcor
+      aicetc$evpcor <- evpcor
+      aicetc$nopresence <- evnp
+      aicetc$nobackground <- evna
+      aicetc$maxsumsenspec <- evmaxtprtnr
+      aicetc$maxsumsenspec <- evmaxkap
+      aicetc$no_omission <- evno_omission
+      aicetc$equal_sens_spec <- evequal_sens_spec
+      aicetc$bic <- bic #not sure this is correct...
+      aicetc$beta <- betaval
+      
+aicetc$AIC <- ((2*aicetc$coefficients)-(2*aicetc$sum.of.logs))
+aicetc$AICc <- (-2*(aicetc$sum.of.logs)+((2*aicetc$coefficients)*(aicetc$n/(aicetc$n - aicetc$coefficients-1))))
 
-AIClist$AIC <- ((2*AIClist$coefficients)-(2*AIClist$sum.of.logs))
-AIClist$AICc <- (-2*(AIClist$sum.of.logs)+((2*AIClist$coefficients)*(AIClist$n/(AIClist$n - AIClist$coefficients-1))))
-
-write.csv(AIClist, paste0("../output/maxent/models/", timeslice, "/AICforMaxentReg.csv"), row.names = FALSE)
+write.csv(aicetc, paste0("../output/maxent/models/", timeslice, "/AICforMaxentReg.csv"), row.names = FALSE)
 
 }
+
+```
 
 
 
