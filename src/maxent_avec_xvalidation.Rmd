@@ -61,7 +61,8 @@ mod12 <- maxent(x = prab, p = pa, file = .asc, args=c("maximumiterations=5000", 
 mod12
 
 ```{r train and test on jan inc AIC for reg val}
-modelmonth <- cbind(paste0("jan",unique(janprback$year)))
+mth <- "jan"
+modelmonth <- cbind(paste0(mth ,unique(janprback$year)))
 aicetc <- read.csv("../data/env/AICcCalculations.csv", header = TRUE) #pre-created csv file
 betavallist <- cbind(aicetc$regularization)
 
@@ -155,10 +156,10 @@ jan2006: b = 2.25
 
 
 ```{r final models plus predict}
-mth <- "jan"
+mth <- "feb"
 modelmonth <- cbind(paste0(mth, unique(janprback$year)))
 aicetc <- read.csv("../data/env/AICcFinalmod.csv", header = TRUE) #pre-created csv file
-unlayer_yr <- read.csv("../data/env/asc_layerlistjan.csv", header = TRUE)
+unlayer <- read.csv(paste0("../data/env/asc_layerlist", mth, ".csv"), header = TRUE) #if code doesnt work put back to unlayer_yr
 
 for (year in 1:nrow(modelmonth)){
   timeslice <- modelmonth[year] #testing timeslice
@@ -281,12 +282,14 @@ for (year in 1:nrow(modelmonth)){
       dev.off() # stops automatic saving of the plot to a png
     }
 }
-
-
-
 ```
 
-ok! now to average results
+ok! now to average results:
+- the asc files per depth layer
+- the AICforMaxentReg.csv 
+- the maxentResults.csv
+
+
 
 
 
