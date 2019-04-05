@@ -89,8 +89,8 @@ for (year in 1:nrow(modelmonth)){
     coefile <- head(coefile, -4)
     coefile2 <- subset(coefile, V2 > 0 | V2 < 0)
     nocoeff <- nrow(coefile2)
-    bick <- sum(as.numeric(coefile2[, 2]))
-    bic <- (bick*log(sum(trainpa == 1)) - 2*11)
+    bick <- sum(as.numeric(coefile2[, 2])) #dodgy 
+    bic <- (bick*log(sum(trainpa == 1)) - 2*11) #dodgy
     
     #no presences used in model (less those used for testing)
     maxresults <- read.csv(paste0("../output/maxent/models/", timeslice, "/maxentResults.csv"), header = TRUE)
@@ -157,7 +157,7 @@ jan2006: b = 2.25
 
 
 ```{r final models plus predict}
-mth <- "feb"
+mth <- "jan"
 modelmonth <- cbind(paste0(mth, unique(janprback$year)))
 aicetc <- read.csv("../data/env/AICcFinalmod.csv", header = TRUE) #pre-created csv file
 unlayer <- read.csv(paste0("../data/env/asc_layerlist", mth, ".csv"), header = TRUE) #if code doesnt work put back to unlayer_yr
@@ -224,7 +224,7 @@ for (year in 1:nrow(modelmonth)){
     
   
       aicetc$Train.AUC <- trainauc
-      aicetc$n[i] <- notrainingpoints
+      aicetc$n <- notrainingpoints
       aicetc$coefficients <- nocoeff
       aicetc$sum.of.logs <- sumsamplepred
       aicetc$Test.AUC <- evauc
@@ -248,6 +248,9 @@ for (year in 1:nrow(modelmonth)){
     unlayer_yr <- subset(unlayer, ascyears == yr)
     unlayer_yr <- unlayer_yr[-c(1), ]
     unlayer_yr[] <- lapply(unlayer_yr, as.character) #from https://stackoverflow.com/questions/2851015/convert-data-frame-columns-from-factors-to-characters
+    stackdep <- subset(unlayer_yr, select = c(stackname, ascdepths))
+    stackdeplst[[year]] <- stackdep
+    #write.csv(stackdep, paste0("../output/maxent/predictions/stackdepthlist_", yr, ".csv"), row.names = FALSE)
     aea <- raster("../output/env/aea.tif") 
 
     for (td in 1:nrow(unlayer_yr)){
@@ -283,6 +286,9 @@ for (year in 1:nrow(modelmonth)){
       dev.off() # stops automatic saving of the plot to a png
     }
 }
+
+stdep <- do.call(rbind, stackdeplst)
+write.csv(stdep, paste0("../output/maxent/predictions/", mth, "/stack_depth.csv"), row.names = FALSE)
 ```
 
 #model averageing
@@ -352,7 +358,54 @@ ignore the first X characters in the filename (yr_mth_) and stack based on the l
 then do something probably with raster package
 
 ```{r avg asc layers}
-asc_list <- list.files("../output/maxent/predictions/jan", pattern = '*.asc', full.names = TRUE) #true means the full path is included
+asc_list <- list.files(paste0("../output/maxent/predictions/", mth), pattern = "*.asc", full.names = TRUE)
+depthlayers <- data.frame(cbind(unique(stdep$ascdepths)))
+names(depthlayers)[names(depthlayers) == "cbind.unique.stdep.ascdepths.."] <- "depth"
+depthlayers$depth <- as.character(depthlayers$depth)
+
+colno <- 1
+
+for (d in 1:nrow(depthlayers)){
+  dep <- depthlayers$depth[d]
+  for (a in 1:length(asc_list)){
+    asc <- asc_list[a]
+    if (grepl(dep, asc)){
+      depthlayers[d , paste0("a", colno)] <- asc
+        colno <- colno+1
+    }
+  }
+}
+write.csv(depthlayers, (paste0("../output/maxent/predictions/", mth, "/asclayerbydepth.csv")), row.names = TRUE)
+
+
+for (x in 1:nrow(depthlayers)){
+  asclay <- depthlayers[1, ]
+  asclay <- asclay[!is.na(asclay)]
+  asclay <- as.data.frame(rbind(asclay))
+  asclay$V1 <- as.character(asclay$V1)
+  asclay$V2 <- as.character(asclay$V2)
+  asclay$V3 <- as.character(asclay$V3)
+  asclay$V4 <- as.character(asclay$V4)
+  asclay$V5 <- as.character(asclay$V5)
+  asclaydep <- asclay$V1
+  
+  asc2003 <- raster(asclay$V2)
+  asc2004 <- raster(asclay$V3)
+  asc2005 <- raster(asclay$V4)
+  asc2006 <- raster(asclay$V5)
+
+  stkasc <- stack(asc2003, asc2004, asc2005, asc2006)
+  avg <- calc(stkasc, fun = mean)
+  
+  writeRaster(avg, (paste0("../output/maxent/predictions/", mth, "/avg_", asclaydep, ".asc")), overwrite=TRUE)
+  avgplot <- plot(avg, png(paste0("../output/maxent/predictions/", mth, "/avg_", asclaydep, ".png"))) 
+  dev.off()
+}
+
+
+
+
+
 
 ```
 
