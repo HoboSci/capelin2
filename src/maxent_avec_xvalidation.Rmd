@@ -281,7 +281,7 @@ for (year in 1:nrow(modelmonth)){
       stackn <- unlayer_yr$stackname[td]
       stack <- stack(temp_depth, chl_surface, o2_depth, salinity_depth, nao_sample, nao_winter)
       #stackSave(test,unlayer_yr$stackname[td])
-      pred <- predict(mod, stack, file = paste0("../output/maxent/predictions/", mth, "/", stackn, ".asc"), overwrite=TRUE) 
+      pred <- predict(mod, stack, file = paste0("../output/maxent/predictions/", mth, "/", stackn, ".asc"), overwrite=TRUE, args='outputformat=cloglog') 
       prplot <- plot(pred, png(paste0("../output/maxent/predictions/", mth, "/", stackn, ".png"))) 
       dev.off() # stops automatic saving of the plot to a png
     }
@@ -397,7 +397,7 @@ for (x in 1:nrow(depthlayers)){
   stkasc <- stack(asc2003, asc2004, asc2005, asc2006)
   avg <- calc(stkasc, fun = mean)
   
-  writeRaster(avg, (paste0("../output/maxent/predictions/", mth, "/avg_", asclaydep, ".asc")), overwrite=TRUE)
+  writeRaster(avg, (paste0("../output/maxent/predictions/", mth, "/avg_", asclaydep, ".asc")), overwrite=TRUE, args='outputformat=cloglog')
   avgplot <- plot(avg, png(paste0("../output/maxent/predictions/", mth, "/avg_", asclaydep, ".png"))) 
   dev.off()
 }
