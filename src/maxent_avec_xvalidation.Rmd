@@ -167,10 +167,15 @@ write.csv(aicetc, paste0("../output/maxent/models/", timeslice, "/AICforMaxentRe
 #model selection
 next step... select the models you want for each year and run those models again (primarily based on lowest AICc but check test AUC and other things too)
 
-jan2003: b = 1
-jan2004: b = 1
-jan2005: b = 1.5
-jan2006: b = 2.25
+KEEP A NOTE OF THESE IN ONENOTE
+
+mar2000 b = 1.75
+mar2006 b = 1.5
+mar2002 b = 1.25
+mar2010 b = 3.5
+
+
+
 
 
 ```{r final models plus predict}
