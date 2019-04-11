@@ -1,5 +1,5 @@
 ---
-title: "maxent model avec xvalidation"
+title: "maxent model avec xvalidation (year-based test training)"
 author: "Samantha Andrews"
 output: html_notebook
 ---
@@ -14,7 +14,7 @@ You can install and load them using the following code which uses a function cal
 
 
 ```{r pre-install & load packages, include=FALSE}
-packages <- c("dismo", "stringr")
+packages <- c("dismo", "stringr", "rJava")
 source("../src/ipak.R")
 ipak(packages)
 ```
@@ -38,21 +38,39 @@ colnames(presback)
 #monthly model data selection and prep
 For each monthly model, subset the data to the month you want, and the variables you want (Based on spearmans and VIF)
 
-jan variables to keep: temp_depth, salinty_depth, o2_depth, chl_surface, nao_sample, nao_winter 
-```{r january data}
-janprback <- subset(presback, month == "1")
-janprback <- subset(janprback, select = c(occurrence, year, temp_depth, salinity_depth, o2_depth, chl_surface, nao_sample, nao_winter))
+```{r}
+janvar <- c("occurrence", "year", "temp_depth", "salinity_depth", "o2_depth", "chl_surface", "nao_sample", "nao_winter")
+marvar <- c("occurrence", "year", "temp_depth", "salinity_depth", "o2_depth", "chl_surface", "nao_sample", "nao_prev", "nao_winter", "amo_sample", "amo_winter")
+aprvar <- c("occurrence", "year", "temp_depth", "salinity_depth", "o2_depth", "chl_surface", "nao_sample", "nao_prev", "nao_winter", "amo_sample", "amo_winter")
+mayvar <- c("occurrence", "year", "temp_depth", "salinity_depth", "o2_depth", "chl_surface", "nao_sample", "nao_prev", "nao_winter", "amo_sample", "amo_winter")
+junvar <- c("occurrence", "year", "temp_depth", "salinity_depth", "o2_depth", "nao_sample", "nao_prev", "nao_winter", "amo_sample", "amo_winter")
+julvar <- c("occurrence", "year", "temp_depth", "salinity_depth", "o2_depth", "chl_surface", "nao_sample", "nao_prev", "nao_winter", "amo_sample", "amo_winter")
+augvar <- c("occurrence", "year", "temp_depth", "salinity_depth", "o2_depth", "chl_surface", "nao_sample", "nao_prev", "nao_winter", "amo_sample", "amo_winter")
+sepvar <- c("occurrence", "year", "temp_depth", "salinity_depth", "o2_depth", "chl_surface", "nao_sample", "nao_prev", "nao_winter", "amo_sample", "amo_winter")
+octvar <- c("occurrence", "year", "temp_depth", "salinity_depth", "o2_depth", "nao_sample", "nao_prev", "nao_winter", "amo_sample", "amo_winter")
+novvar <- c("occurrence", "year", "temp_depth", "salinity_depth", "o2_depth", "chl_surface", "nao_sample", "nao_prev", "nao_winter", "amo_sample", "amo_winter")
+decvar <- c("occurrence", "year", "temp_depth", "salinity_depth", "o2_depth", "chl_surface", "nao_sample", "nao_prev", "nao_winter", "amo_sample", "amo_winter")
+
+mthnavar_lst <- list(jan = janvar, mar = marvar, apr = aprvar, may = mayvar, jun = junvar, jul = julvar, aug = augvar, sep = sepvar, oct = octvar, nov = novvar, dec = decvar)
+```
+
+select mont
+```{r month of interest -change}
+mthna <- "mar"
+mthno <- "3"
+```
+
+
+
+```{r subsest data by month}
+prback <- subset(presback, month == mthno)
+prback <- subset(prback, select = mthnavar_lst[[mthna]])
 ```
 
 now each month contains NAs - lets remove these (maxent principle doesnt allow for missing data - http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.15.5607&rep=rep1&type=pdf)
 
-```{r jan remove na vals}
-janprback <- janprback[!is.na(janprback$temp_depth), ]
-janprback <- janprback[!is.na(janprback$salinity_depth), ]
-janprback <- janprback[!is.na(janprback$o2_depth), ]
-janprback <- janprback[!is.na(janprback$chl_surface), ]
-janprback <- janprback[!is.na(janprback$nao_sample), ]
-janprback <- janprback[!is.na(janprback$nao_winter), ]
+```{r remove na vals}
+prback <- na.omit(prback)
 ```
 
 
@@ -61,17 +79,16 @@ mod12 <- maxent(x = prab, p = pa, file = .asc, args=c("maximumiterations=5000", 
 mod12
 
 ```{r train and test on jan inc AIC for reg val}
-mth <- "jan"
-modelmonth <- cbind(paste0(mth ,unique(janprback$year)))
+modelmonth <- cbind(paste0(mthna ,unique(prback$year)))
 aicetc <- read.csv("../data/env/AICcCalculations.csv", header = TRUE) #pre-created csv file
 betavallist <- cbind(aicetc$regularization)
 
 for (year in 1:nrow(modelmonth)){
   timeslice <- modelmonth[year] #testing timeslice
   yr <- str_sub(timeslice, -4) #the year being used for testing
-  train <- subset(janprback, year != yr) #training data is all years but testing
+  train <- subset(prback, year != yr) #training data is all years but testing
   trainpa <- train$occurrence #creates a vector of presence/background ID (1/0)
-  test <-  subset(janprback, year == yr) #creates the testing dataset
+  test <-  subset(prback, year == yr) #creates the testing dataset
   testp <- subset(test, occurrence == "1") #splits the testing dataset into presences
   testp <- subset(testp, select = -c(year, occurrence)) #don't need year and occurrence for modelling
   testb <- subset(test, occurrence == "0") #splits the testing dataset into background
@@ -157,17 +174,16 @@ jan2006: b = 2.25
 
 
 ```{r final models plus predict}
-mth <- "jan"
-modelmonth <- cbind(paste0(mth, unique(janprback$year)))
+modelmonth <- cbind(paste0(mthna, unique(prback$year)))
 aicetc <- read.csv("../data/env/AICcFinalmod.csv", header = TRUE) #pre-created csv file
-unlayer <- read.csv(paste0("../data/env/asc_layerlist", mth, ".csv"), header = TRUE) #if code doesnt work put back to unlayer_yr
+unlayer <- read.csv(paste0("../data/env/asc_layerlist", mthna, ".csv"), header = TRUE) #if code doesnt work put back to unlayer_yr
 
 for (year in 1:nrow(modelmonth)){
   timeslice <- modelmonth[year] #testing timeslice
   yr <- str_sub(timeslice, -4) #the year being used for testing
-  train <- subset(janprback, year != yr) #training data is all years but testing
+  train <- subset(prback, year != yr) #training data is all years but testing
   trainpa <- train$occurrence #creates a vector of presence/background ID (1/0)
-  test <-  subset(janprback, year == yr) #creates the testing dataset
+  test <-  subset(prback, year == yr) #creates the testing dataset
   testp <- subset(test, occurrence == "1") #splits the testing dataset into presences
   testp <- subset(testp, select = -c(year, occurrence)) #don't need year and occurrence for modelling
   testb <- subset(test, occurrence == "0") #splits the testing dataset into background
@@ -281,14 +297,14 @@ for (year in 1:nrow(modelmonth)){
       stackn <- unlayer_yr$stackname[td]
       stack <- stack(temp_depth, chl_surface, o2_depth, salinity_depth, nao_sample, nao_winter)
       #stackSave(test,unlayer_yr$stackname[td])
-      pred <- predict(mod, stack, file = paste0("../output/maxent/predictions/", mth, "/", stackn, ".asc"), overwrite=TRUE, args='outputformat=cloglog') 
-      prplot <- plot(pred, png(paste0("../output/maxent/predictions/", mth, "/", stackn, ".png"))) 
+      pred <- predict(mod, stack, file = paste0("../output/maxent/predictions/", mthna, "/", stackn, ".asc"), overwrite=TRUE, args='outputformat=cloglog') 
+      prplot <- plot(pred, png(paste0("../output/maxent/predictions/", mthna, "/", stackn, ".png"))) 
       dev.off() # stops automatic saving of the plot to a png
     }
 }
 
 stdep <- do.call(rbind, stackdeplst)
-write.csv(stdep, paste0("../output/maxent/predictions/", mth, "/stack_depth.csv"), row.names = FALSE)
+write.csv(stdep, paste0("../output/maxent/predictions/", mthna, "/stack_depth.csv"), row.names = FALSE)
 ```
 
 #model averageing
@@ -302,8 +318,7 @@ ok! now to average results:
 open all maxentReg files
 
 ```{r avg maxentReg}
-#mth <- "jan"
-#modelmonth <- cbind(paste0(mth, unique(janprback$year)))
+
 for (i in 1:length(modelmonth)){
   timeslice <- modelmonth[i]
   yr <- str_sub(timeslice, -4) #the year being used for testing
@@ -323,12 +338,11 @@ aicm <- colMeans(aic)
 aicm$mod <- "avg"
 avgAIC <- rbind(aic, aicm)
 
-write.csv(avgAIC, paste0("../output/maxent/models/", mth, "avgAIC.csv"), row.names = FALSE)
+write.csv(avgAIC, paste0("../output/maxent/models/", mthna, "avgAIC.csv"), row.names = FALSE)
 ```
 
 ```{r avg maxres}
-#mth <- "jan"
-#modelmonth <- cbind(paste0(mth, unique(janprback$year)))
+
 for (i in 1:length(modelmonth)){
   timeslice <- modelmonth[i]
   yr <- str_sub(timeslice, -4) #the year being used for testing
@@ -349,16 +363,16 @@ maxrm <- colMeans(maxr)
 maxrm$Species <- "avg"
 maxrm <- rbind(maxr, maxrm)
 
-write.csv(maxrm, paste0("../output/maxent/models/", mth, "avgmaxentresults.csv"), row.names = FALSE)
+write.csv(maxrm, paste0("../output/maxent/models/", mthna, "avgmaxentresults.csv"), row.names = FALSE)
 ```
 
 for this bit may need to stack rasters by depth... this will need some working with the name
 get unique filenames into a list
-ignore the first X characters in the filename (yr_mth_) and stack based on the last bit of the filename
+ignore the first X characters in the filename (yr_mthna_) and stack based on the last bit of the filename
 then do something probably with raster package
 
 ```{r avg asc layers}
-asc_list <- list.files(paste0("../output/maxent/predictions/", mth), pattern = "*.asc", full.names = TRUE)
+asc_list <- list.files(paste0("../output/maxent/predictions/", mthna), pattern = "*.asc", full.names = TRUE)
 depthlayers <- data.frame(cbind(unique(stdep$ascdepths)))
 names(depthlayers)[names(depthlayers) == "cbind.unique.stdep.ascdepths.."] <- "depth"
 depthlayers$depth <- as.character(depthlayers$depth)
@@ -375,7 +389,7 @@ for (d in 1:nrow(depthlayers)){
     }
   }
 }
-write.csv(depthlayers, (paste0("../output/maxent/predictions/", mth, "/asclayerbydepth.csv")), row.names = TRUE)
+write.csv(depthlayers, (paste0("../output/maxent/predictions/", mthna, "/asclayerbydepth.csv")), row.names = TRUE)
 
 
 for (x in 1:nrow(depthlayers)){
@@ -397,71 +411,71 @@ for (x in 1:nrow(depthlayers)){
   stkasc <- stack(asc2003, asc2004, asc2005, asc2006)
   avg <- calc(stkasc, fun = mean)
   
-  writeRaster(avg, (paste0("../output/maxent/predictions/", mth, "/avg_", asclaydep, ".asc")), overwrite=TRUE, args='outputformat=cloglog')
-  avgplot <- plot(avg, png(paste0("../output/maxent/predictions/", mth, "/avg_", asclaydep, ".png"))) 
+  writeRaster(avg, (paste0("../output/maxent/predictions/", mthna, "/avg_", asclaydep, ".asc")), overwrite=TRUE, args='outputformat=cloglog')
+  avgplot <- plot(avg, png(paste0("../output/maxent/predictions/", mthna, "/avg_", asclaydep, ".png"))) 
   dev.off()
 }
 
 
-ascdepth_list <- list.files(paste0("../output/maxent/predictions/", mth), glob2rx(pattern = "avg_*.asc"), full.names = TRUE)
+ascdepth_list <- list.files(paste0("../output/maxent/predictions/", mthna), glob2rx(pattern = "avg_*.asc"), full.names = TRUE)
 
 
-asc120  <- raster(paste0("../output/maxent/predictions/", mth, "/avg_120.asc"))
-asc41.18 <- raster(paste0("../output/maxent/predictions/", mth, "/avg_41.18.asc"))
-asc1.55586 <- raster(paste0("../output/maxent/predictions/", mth, "/avg_1.55586.asc"))
-asc1045.85 <- raster(paste0("../output/maxent/predictions/", mth, "/avg_1045.85.asc"))
-asc108.03 <- raster(paste0("../output/maxent/predictions/", mth, "/avg_108.03.asc"))
-asc11.7737 <- raster(paste0("../output/maxent/predictions/", mth, "/avg_11.7737.asc"))
-asc1151.99 <- raster(paste0("../output/maxent/predictions/", mth, "/avg_1151.99.asc"))
-asc1265.86 <- raster(paste0("../output/maxent/predictions/", mth, "/avg_1265.86.asc"))
-asc13.991 <- raster(paste0("../output/maxent/predictions/", mth, "/avg_13.991.asc"))
-asc133.076 <- raster(paste0("../output/maxent/predictions/", mth, "/avg_133.076.asc"))
-asc1387.38 <- raster(paste0("../output/maxent/predictions/", mth, "/avg_1387.38.asc"))
-asc147.406 <- raster(paste0("../output/maxent/predictions/", mth, "/avg_147.406.asc"))
-asc16.5253 <- raster(paste0("../output/maxent/predictions/", mth, "/avg_16.5253.asc"))
-asc163.165 <- raster(paste0("../output/maxent/predictions/", mth, "/avg_163.165.asc"))
-asc180.55 <- raster(paste0("../output/maxent/predictions/", mth, "/avg_180.55.asc"))
-asc19.4298 <- raster(paste0("../output/maxent/predictions/", mth, "/avg_19.4298.asc"))
-asc199.79 <- raster(paste0("../output/maxent/predictions/", mth, "/avg_199.79.asc"))
-asc2.66768 <- raster(paste0("../output/maxent/predictions/", mth, "/avg_2.66768.asc"))
-asc22.7576 <- raster(paste0("../output/maxent/predictions/", mth, "/avg_22.7576.asc"))
-asc221.141 <- raster(paste0("../output/maxent/predictions/", mth, "/avg_221.141.asc"))
-asc244.891 <- raster(paste0("../output/maxent/predictions/", mth, "/avg_244.891.asc"))
-asc26.5583 <- raster(paste0("../output/maxent/predictions/", mth, "/avg_26.5583.asc"))
-asc271.356 <- raster(paste0("../output/maxent/predictions/", mth, "/avg_271.356.asc"))
-asc3.85628 <- raster(paste0("../output/maxent/predictions/", mth, "/avg_3.85628.asc"))
-asc30.8746 <- raster(paste0("../output/maxent/predictions/", mth, "/avg_30.8746.asc"))
-asc300.888 <- raster(paste0("../output/maxent/predictions/", mth, "/avg_300.888.asc"))
-asc333.863 <- raster(paste0("../output/maxent/predictions/", mth, "/avg_333.863.asc"))
-asc35.7402 <- raster(paste0("../output/maxent/predictions/", mth, "/avg_35.7402.asc"))
-asc370.689 <- raster(paste0("../output/maxent/predictions/", mth, "/avg_370.689.asc"))
-asc411.794 <- raster(paste0("../output/maxent/predictions/", mth, "/avg_411.794.asc"))
-asc457.626 <- raster(paste0("../output/maxent/predictions/", mth, "/avg_457.626.asc"))
-asc47.2119 <- raster(paste0("../output/maxent/predictions/", mth, "/avg_47.2119.asc"))
-asc5.14036 <- raster(paste0("../output/maxent/predictions/", mth, "/avg_5.14036.asc"))
-asc508.64 <- raster(paste0("../output/maxent/predictions/", mth, "/avg_508.64.asc"))
-asc53.8506 <- raster(paste0("../output/maxent/predictions/", mth, "/avg_53.8506.asc"))
-asc565.292 <- raster(paste0("../output/maxent/predictions/", mth, "/avg_565.292.asc"))
-asc6.54303 <- raster(paste0("../output/maxent/predictions/", mth, "/avg_6.54303.asc"))
-asc61.1128 <- raster(paste0("../output/maxent/predictions/", mth, "/avg_61.1128.asc"))
-asc628.026 <- raster(paste0("../output/maxent/predictions/", mth, "/avg_628.026.asc"))
-asc69.0217 <- raster(paste0("../output/maxent/predictions/", mth, "/avg_69.0217.asc"))
-asc697.259 <- raster(paste0("../output/maxent/predictions/", mth, "/avg_697.259.asc"))
-asc77.6112 <- raster(paste0("../output/maxent/predictions/", mth, "/avg_77.6112.asc"))
-asc773.368 <- raster(paste0("../output/maxent/predictions/", mth, "/avg_773.368.asc"))
-asc8.09252 <- raster(paste0("../output/maxent/predictions/", mth, "/avg_8.09252.asc"))
-asc856.679 <- raster(paste0("../output/maxent/predictions/", mth, "/avg_856.679.asc"))
-asc86.9294 <- raster(paste0("../output/maxent/predictions/", mth, "/avg_86.9294.asc"))
-asc9.82275 <- raster(paste0("../output/maxent/predictions/", mth, "/avg_9.82275.asc"))
-asc947.448 <- raster(paste0("../output/maxent/predictions/", mth, "/avg_947.448.asc"))
-asc97.0413 <- raster(paste0("../output/maxent/predictions/", mth, "/avg_97.0413.asc"))
+asc120  <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_120.asc"))
+asc41.18 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_41.18.asc"))
+asc1.55586 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_1.55586.asc"))
+asc1045.85 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_1045.85.asc"))
+asc108.03 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_108.03.asc"))
+asc11.7737 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_11.7737.asc"))
+asc1151.99 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_1151.99.asc"))
+asc1265.86 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_1265.86.asc"))
+asc13.991 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_13.991.asc"))
+asc133.076 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_133.076.asc"))
+asc1387.38 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_1387.38.asc"))
+asc147.406 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_147.406.asc"))
+asc16.5253 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_16.5253.asc"))
+asc163.165 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_163.165.asc"))
+asc180.55 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_180.55.asc"))
+asc19.4298 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_19.4298.asc"))
+asc199.79 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_199.79.asc"))
+asc2.66768 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_2.66768.asc"))
+asc22.7576 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_22.7576.asc"))
+asc221.141 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_221.141.asc"))
+asc244.891 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_244.891.asc"))
+asc26.5583 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_26.5583.asc"))
+asc271.356 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_271.356.asc"))
+asc3.85628 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_3.85628.asc"))
+asc30.8746 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_30.8746.asc"))
+asc300.888 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_300.888.asc"))
+asc333.863 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_333.863.asc"))
+asc35.7402 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_35.7402.asc"))
+asc370.689 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_370.689.asc"))
+asc411.794 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_411.794.asc"))
+asc457.626 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_457.626.asc"))
+asc47.2119 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_47.2119.asc"))
+asc5.14036 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_5.14036.asc"))
+asc508.64 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_508.64.asc"))
+asc53.8506 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_53.8506.asc"))
+asc565.292 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_565.292.asc"))
+asc6.54303 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_6.54303.asc"))
+asc61.1128 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_61.1128.asc"))
+asc628.026 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_628.026.asc"))
+asc69.0217 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_69.0217.asc"))
+asc697.259 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_697.259.asc"))
+asc77.6112 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_77.6112.asc"))
+asc773.368 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_773.368.asc"))
+asc8.09252 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_8.09252.asc"))
+asc856.679 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_856.679.asc"))
+asc86.9294 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_86.9294.asc"))
+asc9.82275 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_9.82275.asc"))
+asc947.448 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_947.448.asc"))
+asc97.0413 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_97.0413.asc"))
 
 stackavg <- stack(asc120, asc41.18, asc1.55586, asc1045.85, asc108.03, asc11.7737, asc1151.99, asc1265.86, asc13.991, asc133.076, asc1387.38, asc147.406, asc16.5253, asc163.165, asc180.55, asc19.4298, asc199.79, asc2.66768, asc22.7576, asc221.141, asc244.891, asc26.5583, asc271.356, asc3.85628, asc30.8746, asc300.888, asc333.863, asc35.7402, asc370.689, asc411.794, asc457.626, asc47.2119, asc5.14036, asc508.64, asc53.8506, asc565.292, asc6.54303, asc61.1128, asc628.026, asc69.0217, asc697.259, asc77.6112, asc773.368, asc8.09252, asc856.679, asc86.9294, asc9.82275, asc947.448, asc97.0413)
 
 sum <- calc(stkasc, fun = sum)
 avg <- calc(stkasc, fun = mean)
-  writeRaster(avg, (paste0("../output/maxent/predictions/", mth, "/avg_", mth, ".asc")), overwrite=TRUE)
-  avgplot <- plot(avg, png(paste0("../output/maxent/predictions/", mth, "/avg_", mth, ".png"))) 
+  writeRaster(avg, (paste0("../output/maxent/predictions/", mthna, "/avg_", mthna, ".asc")), overwrite=TRUE)
+  avgplot <- plot(avg, png(paste0("../output/maxent/predictions/", mthna, "/avg_", mthna, ".png"))) 
   dev.off()
 
 ```
