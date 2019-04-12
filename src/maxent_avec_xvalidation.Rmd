@@ -14,6 +14,7 @@ You can install and load them using the following code which uses a function cal
 
 
 ```{r pre-install & load packages, include=FALSE}
+options(java.parameters = "-Xmx1g" )#needs to run before dismo loaded - boosts memory for java to 1g
 packages <- c("dismo", "stringr", "rJava")
 source("../src/ipak.R")
 ipak(packages)
@@ -169,12 +170,22 @@ next step... select the models you want for each year and run those models again
 
 KEEP A NOTE OF THESE IN ONENOTE
 
-mar2000 b = 1.75
-mar2006 b = 1.5
+mar2003 b = 1
+
+mar1999 b = 1.25
 mar2002 b = 1.25
+mar2008 b = 1.25
+mar2009 b = 1.25
+
+mar2005 b = 1.5
+mar2006 b = 1.5
+
+mar2000 b = 1.75
+
+mar2001 b= 2.25
+mar2007 b = 2.25
+
 mar2010 b = 3.5
-
-
 
 
 
@@ -196,14 +207,18 @@ for (year in 1:nrow(modelmonth)){
   train  <- subset(train, select = -c(year, occurrence)) #don't need year and occurrence for modelling
 
   
-  if (timeslice == "jan2003"){
+  if (timeslice == "mar2003"){
     betaval <- 1
-  } else if (timeslice == "jan2004"){
-    betaval <- 1
-  } else if (timeslice == "jan2005"){
+  } else if (timeslice == "mar1999"| timeslice == "mar2002" | timeslice == "mar2008" | timeslice == "mar2009"){
+    betaval <- 1.25
+  } else if (timeslice == "mar2005" | timeslice == "mar2006"){
     betaval <- 1.5
-  } else if (timeslice == "jan2006"){
+  } else if (timeslice == "mar2000"){
+    betaval <- 1.75
+  } else if (timeslice == "mar2001" | timeslice == "mar2007"){
     betaval <- 2.25
+  } else if (timeslice == "mar2010"){
+    betaval <- 3.5
   }
   
     mod <- maxent(x = train, p = trainpa, path = paste0("../output/maxent/models/", timeslice), args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "addsamplestobackground=TRUE", paste0("betamultiplier=", betaval)))
@@ -269,6 +284,7 @@ for (year in 1:nrow(modelmonth)){
     unlayer_yr <- subset(unlayer, ascyears == yr)
     unlayer_yr <- unlayer_yr[-c(1), ]
     unlayer_yr[] <- lapply(unlayer_yr, as.character) #from https://stackoverflow.com/questions/2851015/convert-data-frame-columns-from-factors-to-characters
+    stackdeplst <- list()
     stackdep <- subset(unlayer_yr, select = c(stackname, ascdepths))
     stackdeplst[[year]] <- stackdep
     #write.csv(stackdep, paste0("../output/maxent/predictions/stackdepthlist_", yr, ".csv"), row.names = FALSE)
@@ -295,12 +311,24 @@ for (year in 1:nrow(modelmonth)){
       crs(nao_sample) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0" 
       names(nao_sample) <- "nao_sample"
       nao_sample <- projectRaster(nao_sample, aea)
+      nao_prev <- raster(unlayer_yr$nao_prev[td])
+      crs(nao_prev) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0" 
+      names(nao_prev) <- "nao_prev"
+      nao_prev <- projectRaster(nao_prev, aea)
       nao_winter <- raster(unlayer_yr$nao_winter[td])
       crs(nao_winter) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"
       names(nao_winter) <- "nao_winter"
       nao_winter <- projectRaster(nao_winter, aea)
+      amo_sample <- raster(unlayer_yr$amo_sample[td])
+      crs(amo_sample) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0" 
+      names(amo_sample) <- "amo_sample"
+      amo_sample <- projectRaster(amo_sample, aea)
+      amo_winter <- raster(unlayer_yr$amo_winter[td])
+      crs(amo_winter) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"
+      names(amo_winter) <- "amo_winter"
+      amo_winter <- projectRaster(amo_winter, aea)
       stackn <- unlayer_yr$stackname[td]
-      stack <- stack(temp_depth, chl_surface, o2_depth, salinity_depth, nao_sample, nao_winter)
+      stack <- stack(temp_depth, salinity_depth, o2_depth, chl_surface, nao_sample, nao_prev, nao_winter, amo_sample, amo_winter)
       #stackSave(test,unlayer_yr$stackname[td])
       pred <- predict(mod, stack, file = paste0("../output/maxent/predictions/", mthna, "/", stackn, ".asc"), overwrite=TRUE, args='outputformat=cloglog') 
       prplot <- plot(pred, png(paste0("../output/maxent/predictions/", mthna, "/", stackn, ".png"))) 
