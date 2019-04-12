@@ -15,7 +15,7 @@ You can install and load them using the following code which uses a function cal
 
 ```{r pre-install & load packages, include=FALSE}
 options(java.parameters = "-Xmx1g" )#needs to run before dismo loaded - boosts memory for java to 1g
-packages <- c("dismo", "stringr", "rJava")
+packages <- c("dismo", "stringr", "rJava", "raster")
 source("../src/ipak.R")
 ipak(packages)
 ```
@@ -57,8 +57,8 @@ mthnavar_lst <- list(jan = janvar, mar = marvar, apr = aprvar, may = mayvar, jun
 
 select mont
 ```{r month of interest -change}
-mthna <- "mar"
-mthno <- "3"
+mthna <- "apr"
+mthno <- "4"
 ```
 
 
@@ -170,23 +170,20 @@ next step... select the models you want for each year and run those models again
 
 KEEP A NOTE OF THESE IN ONENOTE
 
-mar2003 b = 1
-
-mar1999 b = 1.25
-mar2002 b = 1.25
-mar2008 b = 1.25
-mar2009 b = 1.25
-
-mar2005 b = 1.5
-mar2006 b = 1.5
-
-mar2000 b = 1.75
-
-mar2001 b= 2.25
-mar2007 b = 2.25
-
-mar2010 b = 3.5
-
+y1998 = 2.75
+y1999 = 2.25
+y2000 = 2
+y2001 = 1.75
+y2002 = 2
+y2003 = 2
+y2004 = 2
+y2005 = 2.25
+y2006 = 1.75
+y2007 = 1.75
+y2008 = 2.25
+y2009 = 2.25
+y2010 = 2.5
+y2011 =  2.5
 
 
 ```{r final models plus predict}
@@ -207,18 +204,16 @@ for (year in 1:nrow(modelmonth)){
   train  <- subset(train, select = -c(year, occurrence)) #don't need year and occurrence for modelling
 
   
-  if (timeslice == "mar2003"){
-    betaval <- 1
-  } else if (timeslice == "mar1999"| timeslice == "mar2002" | timeslice == "mar2008" | timeslice == "mar2009"){
-    betaval <- 1.25
-  } else if (timeslice == "mar2005" | timeslice == "mar2006"){
-    betaval <- 1.5
-  } else if (timeslice == "mar2000"){
+  if (timeslice == "y2001" | timeslice == "y2006" | timeslice == "y2007"){
     betaval <- 1.75
-  } else if (timeslice == "mar2001" | timeslice == "mar2007"){
+  } else if (timeslice == "y2000"| timeslice == "y2002" | timeslice == "y2003" | timeslice == "y2004"){
+    betaval <- 2
+  } else if (timeslice == "y1999" | timeslice == "y2005" | timeslice == "y2008" | timeslice == "y2009"){
     betaval <- 2.25
-  } else if (timeslice == "mar2010"){
-    betaval <- 3.5
+  } else if (timeslice == "y2010" | timeslice == "y2011"){
+    betaval <- 2.5
+  } else if (timeslice == "y1998"){
+    betaval <- 2.75
   }
   
     mod <- maxent(x = train, p = trainpa, path = paste0("../output/maxent/models/", timeslice), args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "addsamplestobackground=TRUE", paste0("betamultiplier=", betaval)))
@@ -355,49 +350,79 @@ open all maxentReg files
 for (i in 1:length(modelmonth)){
   timeslice <- modelmonth[i]
   yr <- str_sub(timeslice, -4) #the year being used for testing
-  if(yr == 2003){
+  if(yr == 1998){
+    aic1998 <- read.csv(paste0("../output/maxent/models/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
+    maxr1998 <- read.csv(paste0("../output/maxent/models/", timeslice, "/maxentResults.csv"), header = TRUE)
+    } else if (yr == 1999){
+    aic1999 <- read.csv(paste0("../output/maxent/models/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
+    maxr1999 <- read.csv(paste0("../output/maxent/models/", timeslice, "/maxentResults.csv"), header = TRUE)
+    } else if (yr == 2000){
+    aic2000 <- read.csv(paste0("../output/maxent/models/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
+    maxr2000 <- read.csv(paste0("../output/maxent/models/", timeslice, "/maxentResults.csv"), header = TRUE)
+    } else if (yr == 2001){
+    aic2001 <- read.csv(paste0("../output/maxent/models/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
+    maxr2001 <- read.csv(paste0("../output/maxent/models/", timeslice, "/maxentResults.csv"), header = TRUE)
+    } else if (yr == 2002){
+    aic2002 <- read.csv(paste0("../output/maxent/models/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
+    maxr2002 <- read.csv(paste0("../output/maxent/models/", timeslice, "/maxentResults.csv"), header = TRUE)
+    } else if (yr == 2003){
     aic2003 <- read.csv(paste0("../output/maxent/models/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
+    maxr2003 <- read.csv(paste0("../output/maxent/models/", timeslice, "/maxentResults.csv"), header = TRUE)
     } else if (yr == 2004){
     aic2004 <- read.csv(paste0("../output/maxent/models/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
+    maxr2004 <- read.csv(paste0("../output/maxent/models/", timeslice, "/maxentResults.csv"), header = TRUE)
     } else if (yr == 2005){
     aic2005 <- read.csv(paste0("../output/maxent/models/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
+    maxr2005 <- read.csv(paste0("../output/maxent/models/", timeslice, "/maxentResults.csv"), header = TRUE)
     } else if (yr == 2006){
     aic2006 <- read.csv(paste0("../output/maxent/models/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
+    maxr2006 <- read.csv(paste0("../output/maxent/models/", timeslice, "/maxentResults.csv"), header = TRUE)
+    } else if (yr == 2007){
+    aic2007 <- read.csv(paste0("../output/maxent/models/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
+    maxr2007 <- read.csv(paste0("../output/maxent/models/", timeslice, "/maxentResults.csv"), header = TRUE)
+    } else if (yr == 2008){
+    aic2008 <- read.csv(paste0("../output/maxent/models/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
+    maxr2008 <- read.csv(paste0("../output/maxent/models/", timeslice, "/maxentResults.csv"), header = TRUE)
+    } else if (yr == 2009){
+    aic2009 <- read.csv(paste0("../output/maxent/models/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
+    maxr2009 <- read.csv(paste0("../output/maxent/models/", timeslice, "/maxentResults.csv"), header = TRUE)
+    } else if (yr == 2010){
+    aic2010 <- read.csv(paste0("../output/maxent/models/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
+    maxr2010 <- read.csv(paste0("../output/maxent/models/", timeslice, "/maxentResults.csv"), header = TRUE)
+    } else if (yr == 2011){
+    aic2011 <- read.csv(paste0("../output/maxent/models/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
+    maxr2011 <- read.csv(paste0("../output/maxent/models/", timeslice, "/maxentResults.csv"), header = TRUE)
+    } else if (yr == 2012){
+    aic2012 <- read.csv(paste0("../output/maxent/models/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
+    maxr2012 <- read.csv(paste0("../output/maxent/models/", timeslice, "/maxentResults.csv"), header = TRUE)
+    } else if (yr == 2013){
+    aic2013 <- read.csv(paste0("../output/maxent/models/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
+    maxr2013 <- read.csv(paste0("../output/maxent/models/", timeslice, "/maxentResults.csv"), header = TRUE)
+    } else if (yr == 2014){
+    aic2014 <- read.csv(paste0("../output/maxent/models/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
+    maxr2014 <- read.csv(paste0("../output/maxent/models/", timeslice, "/maxentResults.csv"), header = TRUE)
+    } else if (yr == 2015){
+    aic2015 <- read.csv(paste0("../output/maxent/models/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
+    maxr2015 <- read.csv(paste0("../output/maxent/models/", timeslice, "/maxentResults.csv"), header = TRUE)
   }
 }
 
-aic <- rbind(aic2003, aic2004, aic2005, aic2006)
+aic <- rbind(aic1998, aic1999, aic2000, aic2001, aic2002, aic2003, aic2004, aic2005, aic2006, aic2007, aic2008, aic2009, aic2010, aic2011)
+maxr <- rbind(maxr1998, maxr1999, maxr2000, maxr2001, maxr2002, maxr2003, maxr2004, maxr2005, maxr2006, maxr2007, maxr2008, maxr2009, maxr2010, maxr2011)
+
 aicm <- colMeans(aic)
 aicm$mod <- "avg"
 avgAIC <- rbind(aic, aicm)
 
-write.csv(avgAIC, paste0("../output/maxent/models/", mthna, "avgAIC.csv"), row.names = FALSE)
-```
-
-```{r avg maxres}
-
-for (i in 1:length(modelmonth)){
-  timeslice <- modelmonth[i]
-  yr <- str_sub(timeslice, -4) #the year being used for testing
-  if(yr == 2003){
-    maxr2003 <- read.csv(paste0("../output/maxent/models/", timeslice, "/maxentResults.csv"), header = TRUE)
-    } else if (yr == 2004){
-    maxr2004 <- read.csv(paste0("../output/maxent/models/", timeslice, "/maxentResults.csv"), header = TRUE)
-    } else if (yr == 2005){
-    maxr2005 <- read.csv(paste0("../output/maxent/models/", timeslice, "/maxentResults.csv"), header = TRUE)
-    } else if (yr == 2006){
-    maxr2006 <- read.csv(paste0("../output/maxent/models/", timeslice, "/maxentResults.csv"), header = TRUE)
-  }
-}
-
-maxr <- rbind(maxr2003, maxr2004, maxr2005, maxr2006)
 maxr$Species <- 1
 maxrm <- colMeans(maxr)
 maxrm$Species <- "avg"
 maxrm <- rbind(maxr, maxrm)
 
+write.csv(avgAIC, paste0("../output/maxent/models/", mthna, "avgAIC.csv"), row.names = FALSE)
 write.csv(maxrm, paste0("../output/maxent/models/", mthna, "avgmaxentresults.csv"), row.names = FALSE)
 ```
+
 
 for this bit may need to stack rasters by depth... this will need some working with the name
 get unique filenames into a list
@@ -429,19 +454,40 @@ for (x in 1:nrow(depthlayers)){
   asclay <- depthlayers[x, ]
   asclay <- asclay[!is.na(asclay)]
   asclay <- as.data.frame(rbind(asclay))
-  asclay$V1 <- as.character(asclay$V1)
-  asclay$V2 <- as.character(asclay$V2)
+  asclay$V1 <- as.character(asclay$V1) #v1 corresponds to depth
+  asclay$V2 <- as.character(asclay$V2) #v2 to end corresponds to year
   asclay$V3 <- as.character(asclay$V3)
   asclay$V4 <- as.character(asclay$V4)
   asclay$V5 <- as.character(asclay$V5)
+  asclay$V6 <- as.character(asclay$V6)
+  asclay$V7 <- as.character(asclay$V7)
+  asclay$V8 <- as.character(asclay$V8)
+  asclay$V9 <- as.character(asclay$V9)
+  asclay$V10 <- as.character(asclay$V10)
+  asclay$V11 <- as.character(asclay$V11)
+  asclay$V12 <- as.character(asclay$V12)
+  asclay$V13 <- as.character(asclay$V13)
+  asclay$V14 <- as.character(asclay$V14)
+  asclay$V15 <- as.character(asclay$V15)  
+  
   asclaydep <- asclay$V1
   
-  asc2003 <- raster(asclay$V2)
-  asc2004 <- raster(asclay$V3)
-  asc2005 <- raster(asclay$V4)
-  asc2006 <- raster(asclay$V5)
+  asc1998 <- raster(asclay$V2)
+  asc1999 <- raster(asclay$V3)
+  asc2000 <- raster(asclay$V4)
+  asc2001 <- raster(asclay$V5)
+  asc2002 <- raster(asclay$V6)
+  asc2003 <- raster(asclay$V7)
+  asc2004 <- raster(asclay$V8)
+  asc2005 <- raster(asclay$V9)
+  asc2006 <- raster(asclay$V10)
+  asc2007 <- raster(asclay$V11)
+  asc2008 <- raster(asclay$V12)
+  asc2009 <- raster(asclay$V13)
+  asc2010 <- raster(asclay$V14)
+  asc2011 <- raster(asclay$V15)
 
-  stkasc <- stack(asc2003, asc2004, asc2005, asc2006)
+  stkasc <- stack(asc1998, asc1999, asc2000, asc2001, asc2002, asc2003, asc2004, asc2005, asc2006, asc2007, asc2008, asc2009, asc2010, asc2011)
   avg <- calc(stkasc, fun = mean)
   
   writeRaster(avg, (paste0("../output/maxent/predictions/", mthna, "/avg_", asclaydep, ".asc")), overwrite=TRUE, args='outputformat=cloglog')
@@ -505,10 +551,10 @@ asc97.0413 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_97.041
 
 stackavg <- stack(asc120, asc41.18, asc1.55586, asc1045.85, asc108.03, asc11.7737, asc1151.99, asc1265.86, asc13.991, asc133.076, asc1387.38, asc147.406, asc16.5253, asc163.165, asc180.55, asc19.4298, asc199.79, asc2.66768, asc22.7576, asc221.141, asc244.891, asc26.5583, asc271.356, asc3.85628, asc30.8746, asc300.888, asc333.863, asc35.7402, asc370.689, asc411.794, asc457.626, asc47.2119, asc5.14036, asc508.64, asc53.8506, asc565.292, asc6.54303, asc61.1128, asc628.026, asc69.0217, asc697.259, asc77.6112, asc773.368, asc8.09252, asc856.679, asc86.9294, asc9.82275, asc947.448, asc97.0413)
 
-sum <- calc(stkasc, fun = sum)
-avg <- calc(stkasc, fun = mean)
-  writeRaster(avg, (paste0("../output/maxent/predictions/", mthna, "/avg_", mthna, ".asc")), overwrite=TRUE)
-  avgplot <- plot(avg, png(paste0("../output/maxent/predictions/", mthna, "/avg_", mthna, ".png"))) 
+#stsum <- calc(stkasc, fun=sum)
+stavg <- calc(stkasc, fun = mean)
+  writeRaster(stavg, (paste0("../output/maxent/predictions/", mthna, "/avg_", mthna, ".asc")), overwrite=TRUE)
+  avgplot <- plot(stavg, png(paste0("../output/maxent/predictions/", mthna, "/avg_", mthna, ".png"))) 
   dev.off()
 
 ```
