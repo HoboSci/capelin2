@@ -552,7 +552,7 @@ asc97.0413 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_97.041
 stackavg <- stack(asc120, asc41.18, asc1.55586, asc1045.85, asc108.03, asc11.7737, asc1151.99, asc1265.86, asc13.991, asc133.076, asc1387.38, asc147.406, asc16.5253, asc163.165, asc180.55, asc19.4298, asc199.79, asc2.66768, asc22.7576, asc221.141, asc244.891, asc26.5583, asc271.356, asc3.85628, asc30.8746, asc300.888, asc333.863, asc35.7402, asc370.689, asc411.794, asc457.626, asc47.2119, asc5.14036, asc508.64, asc53.8506, asc565.292, asc6.54303, asc61.1128, asc628.026, asc69.0217, asc697.259, asc77.6112, asc773.368, asc8.09252, asc856.679, asc86.9294, asc9.82275, asc947.448, asc97.0413)
 
 #stsum <- calc(stkasc, fun=sum)
-stavg <- calc(stkasc, fun = mean)
+stavg <- calc(stackavg, fun = mean, na.rm = TRUE)
   writeRaster(stavg, (paste0("../output/maxent/predictions/", mthna, "/avg_", mthna, ".asc")), overwrite=TRUE)
   avgplot <- plot(stavg, png(paste0("../output/maxent/predictions/", mthna, "/avg_", mthna, ".png"))) 
   dev.off()
