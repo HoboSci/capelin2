@@ -15,7 +15,7 @@ You can install and load them using the following code which uses a function cal
 
 ```{r pre-install & load packages, include=FALSE}
 options(java.parameters = "-Xmx1g" )#needs to run before dismo loaded - boosts memory for java to 1g
-packages <- c("dismo", "stringr", "rJava", "raster")
+packages <- c("dismo", "stringr", "rJava", "raster", "ecospat")
 source("../src/ipak.R")
 ipak(packages)
 ```
@@ -79,7 +79,7 @@ normal model..
 mod12 <- maxent(x = prab, p = pa, file = .asc, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "addsamplestobackground=TRUE")) 
 mod12
 
-```{r train and test on jan inc AIC for reg val}
+```{r train and test inc AIC for reg val}
 modelmonth <- cbind(paste0(mthna ,unique(prback$year)))
 aicetc <- read.csv("../data/env/AICcCalculations.csv", header = TRUE) #pre-created csv file
 betavallist <- cbind(aicetc$regularization)
@@ -134,6 +134,9 @@ for (year in 1:nrow(modelmonth)){
     evno_omission <- threshold(ev, 'no_omission')
     evprevalence <- threshold(ev, 'prevalence')
     evequal_sens_spec <- threshold(ev, 'equal_sens_spec')
+    
+    #calculate minimal predicted area using ecospat
+    aicect$mpa <- ecospat.mpa(samplepred$Cumulative.prediction, perc = 0.9) #90%
     
   
     for (i in 1:nrow(aicetc)){
@@ -264,14 +267,18 @@ for (year in 1:nrow(modelmonth)){
       aicetc$nopresence <- evnp
       aicetc$nobackground <- evna
       aicetc$maxsumsenspec <- evmaxtprtnr
-      aicetc$maxsumsenspec <- evmaxkap
+      aicetc$maxkap <- evmaxkap
       aicetc$no_omission <- evno_omission
+      aicetc$prevalence <- evprevalence
       aicetc$equal_sens_spec <- evequal_sens_spec
       aicetc$bic <- bic #not sure this is correct...
       aicetc$beta <- betaval
       
     aicetc$AIC <- ((2*aicetc$coefficients)-(2*aicetc$sum.of.logs))
     aicetc$AICc <- (-2*(aicetc$sum.of.logs)+((2*aicetc$coefficients)*(aicetc$n/(aicetc$n - aicetc$coefficients-1))))
+    
+    #calculate minimal predicted area using ecospat
+    aicetc$mpa <- ecospat.mpa(samplepred$Cumulative.prediction, perc = 0.9) #90%
 
     write.csv(aicetc, paste0("../output/maxent/models/", timeslice, "/AICforMaxentReg.csv"), row.names = FALSE)
 
@@ -325,8 +332,10 @@ for (year in 1:nrow(modelmonth)){
       stackn <- unlayer_yr$stackname[td]
       stack <- stack(temp_depth, salinity_depth, o2_depth, chl_surface, nao_sample, nao_prev, nao_winter, amo_sample, amo_winter)
       #stackSave(test,unlayer_yr$stackname[td])
-      pred <- predict(mod, stack, file = paste0("../output/maxent/predictions/", mthna, "/", stackn, ".asc"), overwrite=TRUE, args='outputformat=cloglog') 
-      prplot <- plot(pred, png(paste0("../output/maxent/predictions/", mthna, "/", stackn, ".png"))) 
+     # pred <- predict(mod, stack, file = paste0("../output/maxent/predictions/", mthna, "/", stackn, ".asc"), overwrite=TRUE, args='outputformat=cloglog') 
+      predcum <- predict(mod, stack, file = paste0("../output/maxent/predictions/", mthna, "/", stackn, ".asc"), overwrite=TRUE, args='outputformat=cumulative') 
+     # prplot <- plot(pred, png(paste0("../output/maxent/predictions/", mthna, "/", stackn, ".png"))) 
+      prplotcum <- plot(predcum, png(paste0("../output/maxent/predictions/", mthna, "/", stackn, ".png"))) 
       dev.off() # stops automatic saving of the plot to a png
     }
 }
