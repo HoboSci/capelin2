@@ -187,116 +187,110 @@ next step... select the models you want for each year and run those models again
 
 KEEP A NOTE OF THESE IN ONENOTE
 
-y1998 = 2.75
-y1999 = 2.25
-y2000 = 2
-y2001 = 1.75
-y2002 = 2
-y2003 = 2
-y2004 = 2
-y2005 = 2.25
-y2006 = 1.75
-y2007 = 1.75
-y2008 = 2.25
-y2009 = 2.25
-y2010 = 2.5
-y2011 =  2.5
+2003: 0.25
+2004: 1.5
+2005: 0.75
+2006: 2.25
 
 
 ```{r final models plus predict}
 modelmonth <- cbind(paste0(mthna, unique(prback$year)))
-aicetc <- read.csv("../data/env/AICcFinalmod.csv", header = TRUE) #pre-created csv file
+aicetc <- read.csv("../data/env/AICcCalculations_p2.csv", header = TRUE) #pre-created csv file
 unlayer <- read.csv(paste0("../data/env/asc_layerlist", mthna, ".csv"), header = TRUE) #if code doesnt work put back to unlayer_yr
+nfolds <- cbind(c(1:5))
 
 for (year in 1:nrow(modelmonth)){
   timeslice <- modelmonth[year] #testing timeslice
   yr <- str_sub(timeslice, -4) #the year being used for testing
-  train <- subset(prback, year != yr) #training data is all years but testing
+  train <- subset(prback, year == yr) #training data is all years but testing
   trainpa <- train$occurrence #creates a vector of presence/background ID (1/0)
-  test <-  subset(prback, year == yr) #creates the testing dataset
-  testp <- subset(test, occurrence == "1") #splits the testing dataset into presences
-  testp <- subset(testp, select = -c(year, occurrence)) #don't need year and occurrence for modelling
-  testb <- subset(test, occurrence == "0") #splits the testing dataset into background
-  testb <- subset(testb, select = -c(year, occurrence)) #don't need year and occurrence for modelling
   train  <- subset(train, select = -c(year, occurrence)) #don't need year and occurrence for modelling
 
   
-  if (timeslice == "y2001" | timeslice == "y2006" | timeslice == "y2007"){
-    betaval <- 1.75
-  } else if (timeslice == "y2000"| timeslice == "y2002" | timeslice == "y2003" | timeslice == "y2004"){
-    betaval <- 2
-  } else if (timeslice == "y1999" | timeslice == "y2005" | timeslice == "y2008" | timeslice == "y2009"){
+  if (yr == "2003"){
+    betaval <- 0.25
+  } else if (yr == "2004"){
+    betaval <- 1.5
+  } else if (yr == "2005"){
+    betaval <- 0.75
+  } else if (yr == "2006"){
     betaval <- 2.25
-  } else if (timeslice == "y2010" | timeslice == "y2011"){
-    betaval <- 2.5
-  } else if (timeslice == "y1998"){
-    betaval <- 2.75
   }
   
-    mod <- maxent(x = train, p = trainpa, path = paste0("../output/maxent/p2/models/", timeslice), args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "addsamplestobackground=TRUE", paste0("betamultiplier=", betaval)))
+  mod <- maxent(x = train, p = trainpa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "addsamplestobackground=TRUE", paste0("replicates=", nrow(nfolds)), "replicatetype=crossvalidate", paste0("betamultiplier=", betaval)), path = paste0("C:/Users/bunny/Documents/GitHub/Chapter_1/output/maxent/p2/models/", timeslice)) #here the full path is needed
+    
 
     #now based on glover-kapfer pdf with excel manual + https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/10-1171.1... + adaptation for        getting testAUC.. horrible code
+   
+    maxresults <- read.csv(paste0("../output/maxent/p2/models/", timeslice, "/maxentResults.csv"), header = TRUE)
+
 
     #count number of non-zero coefficients, excluding the final four rows
-    coefile <- read.csv(paste0("../output/maxent/p2/models/", timeslice, "/species.lambdas"), header = FALSE, stringsAsFactors=FALSE)
-    coefile <- head(coefile, -4)
-    coefile2 <- subset(coefile, V2 > 0 | V2 < 0)
-    nocoeff <- nrow(coefile2)
-    bick <- sum(as.numeric(coefile2[, 2]))
-    bic <- (bick*log(sum(trainpa == 1)) - 2*11)
+    lambdas_list <- list.files(paste0("../output/maxent/p2/models/", timeslice), pattern = "*lambdas", full.names = TRUE)
+    samppred_list <- list.files(paste0("../output/maxent/p2/models/", timeslice), pattern = "*samplePredictions.csv", full.names = TRUE)
+   
+      for(f in 1:nrow(nfolds)){
+      
+      modn <- nfolds[f]-1
+      lamf <- lambdas_list[f]
+      sampf <- samppred_list[f]
+      coefile <- read.csv(paste0(lamf), header = FALSE, stringsAsFactors=FALSE)
+      coefile <- head(coefile, -4)
+      coefile2 <- subset(coefile, V2 != 0)
+      nocoeff <- nrow(coefile2)
+      bick <- sum(as.numeric(coefile2[, 2])) #dodgy 
+      bic <- (bick*log(sum(trainpa == 1)) - 2*11) #dodgy
+      #natural log
+      samplepred <- read.csv(paste0(sampf), header = TRUE)
+      samplepred$nat_log <- log(samplepred$Raw.prediction)
+      sumsamplepred <- sum(samplepred$nat_log)
+   
+      #no presences used in model (less those used for testing)
+
+      notrainingpoints <- maxresults$X.Training.samples[f]
+      testauc <- maxresults$Test.AUC[f]
+      trainauc <- maxresults$Training.AUC[f]
+      modno <- maxresults$Species[f]
     
-    #no presences used in model (less those used for testing)
-    maxresults <- read.csv(paste0("../output/maxent/p2/models/", timeslice, "/maxentResults.csv"), header = TRUE)
-    notrainingpoints <- maxresults$X.Training.samples
-    testauc <- maxresults$Test.AUC
-    trainauc <- maxresults$Training.AUC
-    
-    #natural log
-    samplepred <- read.csv(paste0("../output/maxent/p2/models/", timeslice, "/species_samplePredictions.csv"), header = TRUE)
-    samplepred$nat_log <- log(samplepred$Raw.prediction)
-    sumsamplepred <- sum(samplepred$nat_log)
-  
-  
-    #test auc scores and other lovely things you might want to include
-    ev <- evaluate(p = testp, a= testb, model = mod)
-    evauc <- ev@auc
-    evcor <- ev@cor
-    evpcor <- ev@pcor
-    evnp <- ev@np
-    evna <- ev@na
-    evmaxtprtnr <- threshold(ev, 'spec_sens')
-    evmaxkap <- threshold(ev, 'kappa')
-    evno_omission <- threshold(ev, 'no_omission')
-    evprevalence <- threshold(ev, 'prevalence')
-    evequal_sens_spec <- threshold(ev, 'equal_sens_spec')
-    evsensitivity <- threshold(ev, 'sensitivity')
-    
-  
+
       aicetc$train_AUC <- trainauc
-      aicetc$no_trainng_points <- notrainingpoints
-      aicetc$test_coefficients <- nocoeff
-      aicetc$test_sum.of.logs <- sumsamplepred
-      aicetc$test_AUC <- evauc
-      aicetc$test_evcor <- evcor
-      aicetc$test_evpcor <- evpcor
-      aicetc$test_nopresence <- evnp
-      aicetc$test_nobackground <- evna
-      aicetc$test_maxsumsenspec <- evmaxtprtnr
-      aicetc$test_maxkap <- evmaxkap
-      aicetc$test_no_omission <- evno_omission
-      aicetc$test_prevalence <- evprevalence
-      aicetc$test_equal_sens_spec <- evequal_sens_spec
-      aicetc$test_sensitivity <- evsensitivity
-      aicetc$test_bic <- bic #not sure this is correct...
+      aicetc$test_AUC <- testauc
+      aicetc$n <- notrainingpoints
+      aicetc$coefficients <- nocoeff
+      aicetc$sum.of.logs <- sumsamplepred
+  
+      aicetc$bic <- bic #not sure this is correct...
       aicetc$beta <- betaval
+      aicetc$foldno <- modn
       
     aicetc$AIC <- ((2*aicetc$coefficients)-(2*aicetc$sum.of.logs))
     aicetc$AICc <- (-2*(aicetc$sum.of.logs)+((2*aicetc$coefficients)*(aicetc$n/(aicetc$n - aicetc$coefficients-1))))
     
     #calculate minimal predicted area using ecospat
     aicetc$mpa_0.9_cum <- ecospat.mpa(samplepred$Cumulative.prediction, perc = 0.9) #90%
+    
+    aicetc$AIC <- ((2*aicetc$coefficients)-(2*aicetc$sum.of.logs))
+    aicetc$AICc <- (-2*(aicetc$sum.of.logs)+((2*aicetc$coefficients)*(aicetc$n/(aicetc$n - aicetc$coefficients-1))))
+    write.csv(aicetc, paste0("../output/maxent/p2/models/", timeslice, "/", betaval, "_", modn, "_", "AICforMaxentReg.csv"), row.names = FALSE)
+      }
+    
 
-    write.csv(aicetc, paste0("../output/maxent/p2/models/", timeslice, "/AICforMaxentReg.csv"), row.names = FALSE)
+    aicperbetalst <- list.files(paste0("../output/maxent/p2/models/", timeslice, "/"), pattern = paste0("^", betaval, ".*AICforMaxentReg.csv"), full.names = TRUE)
+    aicperbeta <- lapply(aicperbetalst, read.csv, header = TRUE)
+    aicperbeta <- do.call(rbind, aicperbeta)
+    aicbetamean <- colMeans(aicperbeta)
+    aicperbeta <- rbind(aicperbeta, aicbetamean)
+    aicperbeta$foldno[f+1] <- f+1
+    write.csv(aicperbeta, paste0("../output/maxent/p2/models/", timeslice, "/final_model_aicperbetasum_", betaval, ".csv"), row.names = FALSE)
+  
+    
+
+
+#aicperfoldlst <- list.files(paste0("../output/maxent/p2/models/", timeslice), pattern = "fold4.*AICforMaxentReg.csv", full.names = TRUE)
+#aicperfold <- lapply(aicperfoldlst, read.csv, header = TRUE)
+#aicperfold <- do.call(rbind, aicperfold)
+
+
 
 
     unlayer_yr <- subset(unlayer, ascyears == yr)
@@ -348,12 +342,14 @@ for (year in 1:nrow(modelmonth)){
       stackn <- unlayer_yr$stackname[td]
       stack <- stack(temp_depth, salinity_depth, o2_depth, chl_surface, nao_sample, nao_prev, nao_winter, amo_sample, amo_winter)
       #stackSave(test,unlayer_yr$stackname[td])
-      pred <- predict(mod, stack, file = paste0("../output/maxent/p2/predictions/", mthna, "/", "cloglog_", stackn, ".asc"), overwrite=TRUE, args='outputformat=cloglog') 
-      predcum <- predict(mod, stack, file = paste0("../output/maxent/p2/predictions/", mthna, "/", "cumu_", stackn, ".asc"), overwrite=TRUE, args=c('outputformat=Cumulative')) 
-      prplot <- plot(pred, png(paste0("../output/maxent/p2/predictions/", mthna, "/", "cloglog_", stackn, ".png")))
-      dev.off() # stops automatic saving of the plot to a png
-      prplotcum <- plot(predcum, png(paste0("../output/maxent/p2/predictions/", mthna, "/", "cumu_", stackn, ".png"))) 
-      dev.off() # stops automatic saving of the plot to a png
+      pred <- predict(mod, stack, file = paste0("../output/maxent/p2/predictions/", timeslice, "/", "cloglog_", stackn, ".asc"), overwrite=TRUE, args='outputformat=cloglog') 
+      predcum <- predict(mod, stack, file = paste0("../output/maxent/p2/predictions/", timeslice, "/", "cumu_", stackn, ".asc"), overwrite=TRUE, args=c('outputformat=Cumulative')) 
+      for (pf in 1:nrow(nfolds)){
+        plotn <- nfolds[pf]-1
+        lyr <- nfolds[pf]
+        prplot <- plot(pred[[pf]], png(paste0("../output/maxent/p2/predictions/", timeslice, "/", "cloglog_", stackn, "_", plotn, ".png")))
+        dev.off() # stops automatic saving of the plot to a png
+      }
     }
 }
 
@@ -365,95 +361,16 @@ write.csv(stdep, paste0("../output/maxent/p2/predictions/", mthna, "/stack_depth
 
 ok! now to average results:
 
-- the AICforMaxentReg.csv 
-- the maxentResults.csv
-- the asc files per depth layer
-
-open all maxentReg files
-
-```{r avg maxentReg}
-
-for (i in 1:length(modelmonth)){
-  timeslice <- modelmonth[i]
-  yr <- str_sub(timeslice, -4) #the year being used for testing
-  if(yr == 1998){
-    aic1998 <- read.csv(paste0("../output/maxent/p2/models/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
-    maxr1998 <- read.csv(paste0("../output/maxent/p2/models/", timeslice, "/maxentResults.csv"), header = TRUE)
-    } else if (yr == 1999){
-    aic1999 <- read.csv(paste0("../output/maxent/p2/models/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
-    maxr1999 <- read.csv(paste0("../output/maxent/p2/models/", timeslice, "/maxentResults.csv"), header = TRUE)
-    } else if (yr == 2000){
-    aic2000 <- read.csv(paste0("../output/maxent/p2/models/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
-    maxr2000 <- read.csv(paste0("../output/maxent/p2/models/", timeslice, "/maxentResults.csv"), header = TRUE)
-    } else if (yr == 2001){
-    aic2001 <- read.csv(paste0("../output/maxent/p2/models/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
-    maxr2001 <- read.csv(paste0("../output/maxent/p2/models/", timeslice, "/maxentResults.csv"), header = TRUE)
-    } else if (yr == 2002){
-    aic2002 <- read.csv(paste0("../output/maxent/p2/models/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
-    maxr2002 <- read.csv(paste0("../output/maxent/p2/models/", timeslice, "/maxentResults.csv"), header = TRUE)
-    } else if (yr == 2003){
-    aic2003 <- read.csv(paste0("../output/maxent/p2/models/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
-    maxr2003 <- read.csv(paste0("../output/maxent/p2/models/", timeslice, "/maxentResults.csv"), header = TRUE)
-    } else if (yr == 2004){
-    aic2004 <- read.csv(paste0("../output/maxent/p2/models/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
-    maxr2004 <- read.csv(paste0("../output/maxent/p2/models/", timeslice, "/maxentResults.csv"), header = TRUE)
-    } else if (yr == 2005){
-    aic2005 <- read.csv(paste0("../output/maxent/p2/models/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
-    maxr2005 <- read.csv(paste0("../output/maxent/p2/models/", timeslice, "/maxentResults.csv"), header = TRUE)
-    } else if (yr == 2006){
-    aic2006 <- read.csv(paste0("../output/maxent/p2/models/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
-    maxr2006 <- read.csv(paste0("../output/maxent/p2/models/", timeslice, "/maxentResults.csv"), header = TRUE)
-    } else if (yr == 2007){
-    aic2007 <- read.csv(paste0("../output/maxent/p2/models/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
-    maxr2007 <- read.csv(paste0("../output/maxent/p2/models/", timeslice, "/maxentResults.csv"), header = TRUE)
-    } else if (yr == 2008){
-    aic2008 <- read.csv(paste0("../output/maxent/p2/models/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
-    maxr2008 <- read.csv(paste0("../output/maxent/p2/models/", timeslice, "/maxentResults.csv"), header = TRUE)
-    } else if (yr == 2009){
-    aic2009 <- read.csv(paste0("../output/maxent/p2/models/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
-    maxr2009 <- read.csv(paste0("../output/maxent/p2/models/", timeslice, "/maxentResults.csv"), header = TRUE)
-    } else if (yr == 2010){
-    aic2010 <- read.csv(paste0("../output/maxent/p2/models/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
-    maxr2010 <- read.csv(paste0("../output/maxent/p2/models/", timeslice, "/maxentResults.csv"), header = TRUE)
-    } else if (yr == 2011){
-    aic2011 <- read.csv(paste0("../output/maxent/p2/models/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
-    maxr2011 <- read.csv(paste0("../output/maxent/p2/models/", timeslice, "/maxentResults.csv"), header = TRUE)
-    } else if (yr == 2012){
-    aic2012 <- read.csv(paste0("../output/maxent/p2/models/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
-    maxr2012 <- read.csv(paste0("../output/maxent/p2/models/", timeslice, "/maxentResults.csv"), header = TRUE)
-    } else if (yr == 2013){
-    aic2013 <- read.csv(paste0("../output/maxent/p2/models/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
-    maxr2013 <- read.csv(paste0("../output/maxent/p2/models/", timeslice, "/maxentResults.csv"), header = TRUE)
-    } else if (yr == 2014){
-    aic2014 <- read.csv(paste0("../output/maxent/p2/models/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
-    maxr2014 <- read.csv(paste0("../output/maxent/p2/models/", timeslice, "/maxentResults.csv"), header = TRUE)
-    } else if (yr == 2015){
-    aic2015 <- read.csv(paste0("../output/maxent/p2/models/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
-    maxr2015 <- read.csv(paste0("../output/maxent/p2/models/", timeslice, "/maxentResults.csv"), header = TRUE)
-  }
-}
-
-aic <- rbind(aic1998, aic1999, aic2000, aic2001, aic2002, aic2003, aic2004, aic2005, aic2006, aic2007, aic2008, aic2009, aic2010, aic2011)
-maxr <- rbind(maxr1998, maxr1999, maxr2000, maxr2001, maxr2002, maxr2003, maxr2004, maxr2005, maxr2006, maxr2007, maxr2008, maxr2009, maxr2010, maxr2011)
-
-aicm <- colMeans(aic)
-aicm$mod <- "avg"
-avgAIC <- rbind(aic, aicm)
-
-maxr$Species <- 1
-maxrm <- colMeans(maxr)
-maxrm$Species <- "avg"
-maxrm <- rbind(maxr, maxrm)
-
-write.csv(avgAIC, paste0("../output/maxent/p2/models/", mthna, "avgAIC.csv"), row.names = FALSE)
-write.csv(maxrm, paste0("../output/maxent/p2/models/", mthna, "avgmaxentresults.csv"), row.names = FALSE)
-```
+- the asc files per depth layer per year
 
 
 for this bit may need to stack rasters by depth... this will need some working with the name
 get unique filenames into a list
 ignore the first X characters in the filename (yr_mthna_) and stack based on the last bit of the filename
 then do something probably with raster package
+
+
+NEEDS TO BE DONE FROM HERE!!
 
 ```{r avg asc layers cloglog}
 asc_list <- list.files(paste0("../output/maxent/p2/predictions/", mthna), pattern = "cloglog*.asc", full.names = TRUE)
