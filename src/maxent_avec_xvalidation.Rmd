@@ -55,10 +55,10 @@ decvar <- c("occurrence", "year", "temp_depth", "salinity_depth", "o2_depth", "c
 mthnavar_lst <- list(jan = janvar, mar = marvar, apr = aprvar, may = mayvar, jun = junvar, jul = julvar, aug = augvar, sep = sepvar, oct = octvar, nov = novvar, dec = decvar)
 ```
 
-select mont
+select month
 ```{r month of interest -change}
-mthna <- "apr"
-mthno <- "4"
+mthna <- "jan"
+mthno <- "1"
 ```
 
 
@@ -212,16 +212,12 @@ for (year in 1:nrow(modelmonth)){
   train  <- subset(train, select = -c(year, occurrence)) #don't need year and occurrence for modelling
 
   
-  if (timeslice == "y2001" | timeslice == "y2006" | timeslice == "y2007"){
-    betaval <- 1.75
-  } else if (timeslice == "y2000"| timeslice == "y2002" | timeslice == "y2003" | timeslice == "y2004"){
-    betaval <- 2
-  } else if (timeslice == "y1999" | timeslice == "y2005" | timeslice == "y2008" | timeslice == "y2009"){
+  if (yr == "2003" | yr == "2004"){
+    betaval <- 1
+  } else if (yr == "2005"){
+    betaval <- 1.5
+  } else if (yr == "2006"){
     betaval <- 2.25
-  } else if (timeslice == "y2010" | timeslice == "y2011"){
-    betaval <- 2.5
-  } else if (timeslice == "y1998"){
-    betaval <- 2.75
   }
   
     mod <- maxent(x = train, p = trainpa, path = paste0("../output/maxent/models/", timeslice), args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "addsamplestobackground=TRUE", paste0("betamultiplier=", betaval)))
@@ -299,7 +295,7 @@ for (year in 1:nrow(modelmonth)){
     #write.csv(stackdep, paste0("../output/maxent/predictions/stackdepthlist_", yr, ".csv"), row.names = FALSE)
     aea <- raster("../output/env/aea.tif") 
 
-    for (td in 1:nrow(unlayer_yr)){
+   for (td in 1:nrow(unlayer_yr)){
       temp_depth <- raster(unlayer_yr$temp_depth[td])
       crs(temp_depth) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0" 
       names(temp_depth) <- "temp_depth"
@@ -320,22 +316,10 @@ for (year in 1:nrow(modelmonth)){
       crs(nao_sample) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0" 
       names(nao_sample) <- "nao_sample"
       nao_sample <- projectRaster(nao_sample, aea)
-      nao_prev <- raster(unlayer_yr$nao_prev[td])
-      crs(nao_prev) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0" 
-      names(nao_prev) <- "nao_prev"
-      nao_prev <- projectRaster(nao_prev, aea)
       nao_winter <- raster(unlayer_yr$nao_winter[td])
       crs(nao_winter) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"
       names(nao_winter) <- "nao_winter"
       nao_winter <- projectRaster(nao_winter, aea)
-      amo_sample <- raster(unlayer_yr$amo_sample[td])
-      crs(amo_sample) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0" 
-      names(amo_sample) <- "amo_sample"
-      amo_sample <- projectRaster(amo_sample, aea)
-      amo_winter <- raster(unlayer_yr$amo_winter[td])
-      crs(amo_winter) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"
-      names(amo_winter) <- "amo_winter"
-      amo_winter <- projectRaster(amo_winter, aea)
       stackn <- unlayer_yr$stackname[td]
       stack <- stack(temp_depth, salinity_depth, o2_depth, chl_surface, nao_sample, nao_prev, nao_winter, amo_sample, amo_winter)
       #stackSave(test,unlayer_yr$stackname[td])
@@ -343,8 +327,7 @@ for (year in 1:nrow(modelmonth)){
       predcum <- predict(mod, stack, file = paste0("../output/maxent/predictions/", mthna, "/", "cumu_", stackn, ".asc"), overwrite=TRUE, args=c('outputformat=Cumulative')) 
       prplot <- plot(pred, png(paste0("../output/maxent/predictions/", mthna, "/", "cloglog_", stackn, ".png")))
       dev.off() # stops automatic saving of the plot to a png
-      prplotcum <- plot(predcum, png(paste0("../output/maxent/predictions/", mthna, "/", "cumu_", stackn, ".png"))) 
-      dev.off() # stops automatic saving of the plot to a png
+     
     }
 }
 
@@ -424,8 +407,8 @@ for (i in 1:length(modelmonth)){
   }
 }
 
-aic <- rbind(aic1998, aic1999, aic2000, aic2001, aic2002, aic2003, aic2004, aic2005, aic2006, aic2007, aic2008, aic2009, aic2010, aic2011)
-maxr <- rbind(maxr1998, maxr1999, maxr2000, maxr2001, maxr2002, maxr2003, maxr2004, maxr2005, maxr2006, maxr2007, maxr2008, maxr2009, maxr2010, maxr2011)
+aic <- rbind(aic2003, aic2004, aic2005, aic2006)
+maxr <- rbind(maxr2003, maxr2004, maxr2005, maxr2006)
 
 aicm <- colMeans(aic)
 aicm$mod <- "avg"
@@ -581,60 +564,15 @@ stavg <- calc(stackavg, fun = mean, na.rm = TRUE)
 
 
 
+#binary maps
+
+there seem to be two primary ways to create binary maps. the most common for conservation purposes seems to be to use maxsumspensspec values, however MPA also comes recommended (but is def less common). probably best to use cumulative for both (merrow 2013)
+
+the thresholds are in the monthavgAIC.csv file in the model folder (not model/month)
+
+```{r binary map using maxsumsenspec}
+cumasc_list <- list.files(paste0("../output/maxent/predictions/", mthna), pattern = "^cumu_.*.asc", full.names = TRUE) 
 
 
-
-
-
-
-asc120
-asc41.18
-asc1.55586
-asc1045.85
-asc108.03
-asc11.7737
-asc1151.99
-asc1265.86
-asc13.991
-asc133.076
-asc1387.38
-asc147.406
-asc16.5253
-asc163.165
-asc180.55
-asc19.4298
-asc199.79
-asc2.66768
-asc22.7576
-asc221.141
-asc244.891
-asc26.5583
-asc271.356
-asc3.85628
-asc30.8746
-asc300.888
-asc333.863
-asc35.7402
-asc370.689
-asc411.794
-asc457.626
-asc47.2119
-asc5.14036
-asc508.64
-asc53.8506
-asc565.292
-asc6.54303
-asc61.1128
-asc628.026
-asc69.0217
-asc697.259
-asc77.6112
-asc773.368
-asc8.09252
-asc856.679
-asc86.9294
-asc9.82275
-asc947.448
-asc97.0413
-
+```
 
