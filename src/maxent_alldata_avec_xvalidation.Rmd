@@ -14,8 +14,8 @@ You can install and load them using the following code which uses a function cal
 
 
 ```{r pre-install & load packages, include=FALSE}
-options(java.parameters = "-Xmx1g" )#needs to run before dismo loaded - boosts memory for java to 1g
-packages <- c("dismo", "stringr", "rJava", "raster", "ecospat")
+options (java.parameters = "-Xmx2048m")
+packages <- c("rJava", "dismo", "stringr", "raster", "ecospat")
 source("../src/ipak.R")
 ipak(packages)
 ```
@@ -32,7 +32,7 @@ colnames(presback)
 this dataset contains a lot of columns you don't need for the maxent models. Remove them here
 
 ```{r remove unnecessary columns}
-presback <- subset(presback, select = -c(cell_id, id, decimalLatitude, decimalLongitude, datecollected, institutioncode, individualcount, depth, resname, originalscientificname, collectioncode, day, nafo_zone, gear, longitude_meters, latitude_meters, total_cell_obs_xy, total_cell_obs_xyt, bottom_depth, XXtotal_cell_obs_xyzt, temp_celsius_depth, temp_celsius_surface, longitude_meters.1, latitude_meters.1, bottom_depth_glorys, longitude_meters.2, latitude_meters.2, cell_id_3d, total_cell_obs_xyzt, cell_id_xyzt))
+presback <- subset(presback, select = -c(cell_id, id, decimalLatitude, decimalLongitude, datecollected, institutioncode, individualcount, depth, resname, originalscientificname, collectioncode, day, nafo_zone, gear, longitude_meters, latitude_meters, total_cell_obs_xy, total_cell_obs_xyt, bottom_depth, XXtotal_cell_obs_xyzt, temp_celsius_depth, temp_celsius_surface, longitude_meters.1, latitude_meters.1, bottom_depth_glorys, longitude_meters.2, latitude_meters.2, cell_id_3d, total_cell_obs_xyzt, cell_id_xyzt, month, depthlayerno, depth_layer))
 colnames(presback)
 ```
 
@@ -40,38 +40,25 @@ colnames(presback)
 For each monthly model, subset the data to the month you want, and the variables you want (Based on spearmans and VIF)
 
 ```{r}
-janvar <- c("occurrence", "year", "temp_depth", "salinity_depth", "o2_depth", "chl_surface", "nao_sample", "nao_winter")
-marvar <- c("occurrence", "year", "temp_depth", "salinity_depth", "o2_depth", "chl_surface", "nao_sample", "nao_prev", "nao_winter", "amo_sample", "amo_winter")
-aprvar <- c("occurrence", "year", "temp_depth", "salinity_depth", "o2_depth", "chl_surface", "nao_sample", "nao_prev", "nao_winter", "amo_sample", "amo_winter")
-mayvar <- c("occurrence", "year", "temp_depth", "salinity_depth", "o2_depth", "chl_surface", "nao_sample", "nao_prev", "nao_winter", "amo_sample", "amo_winter")
-junvar <- c("occurrence", "year", "temp_depth", "salinity_depth", "o2_depth", "nao_sample", "nao_prev", "nao_winter", "amo_sample", "amo_winter")
-julvar <- c("occurrence", "year", "temp_depth", "salinity_depth", "o2_depth", "chl_surface", "nao_sample", "nao_prev", "nao_winter", "amo_sample", "amo_winter")
-augvar <- c("occurrence", "year", "temp_depth", "salinity_depth", "o2_depth", "chl_surface", "nao_sample", "nao_prev", "nao_winter", "amo_sample", "amo_winter")
-sepvar <- c("occurrence", "year", "temp_depth", "salinity_depth", "o2_depth", "chl_surface", "nao_sample", "nao_prev", "nao_winter", "amo_sample", "amo_winter")
-octvar <- c("occurrence", "year", "temp_depth", "salinity_depth", "o2_depth", "nao_sample", "nao_prev", "nao_winter", "amo_sample", "amo_winter")
-novvar <- c("occurrence", "year", "temp_depth", "salinity_depth", "o2_depth", "chl_surface", "nao_sample", "nao_prev", "nao_winter", "amo_sample", "amo_winter")
-decvar <- c("occurrence", "year", "temp_depth", "salinity_depth", "o2_depth", "chl_surface", "nao_sample", "nao_prev", "nao_winter", "amo_sample", "amo_winter")
-
-mthnavar_lst <- list(jan = janvar, mar = marvar, apr = aprvar, may = mayvar, jun = junvar, jul = julvar, aug = augvar, sep = sepvar, oct = octvar, nov = novvar, dec = decvar)
-```
-
-select month
-```{r month of interest -change}
-mthna <- "jan"
-mthno <- "1"
+allvar <- c("occurrence", "year", "temp_surface", "temp_depth", "salinity_surface", "salinity_depth", "o2_depth", "chl_surface", "mlp_surface",  "nao_sample", "nao_prev", "nao_winter", "amo_sample", "amo_winter")
+presback <- subset(presback, select = c(allvar))
+colnames(presback)
 ```
 
 
 
-```{r subsest data by month}
-prback <- subset(presback, month == mthno)
-prback <- subset(prback, select = mthnavar_lst[[mthna]])
-```
 
 now each month contains NAs - lets remove these (maxent principle doesnt allow for missing data - http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.15.5607&rep=rep1&type=pdf)
 
 ```{r remove na vals}
-prback <- na.omit(prback)
+prback <- na.omit(presback)
+```
+
+```{r}
+train <- prback
+trainpa <- train$occurrence #creates a vector of presence/background ID (1/0)
+train  <- subset(train, select = -c(year, occurrence)) #don't need year and occurrence for modelling
+mod <- maxent(x = train, p = trainpa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "addsamplestobackground=TRUE", "betamultiplier=0.25"))
 ```
 
 
@@ -80,30 +67,22 @@ mod12 <- maxent(x = prab, p = pa, file = .asc, args=c("maximumiterations=5000", 
 mod12
 
 ```{r train and test inc AIC for reg val}
-modelmonth <- cbind(paste0(mthna ,unique(prback$year)))
 aicetc <- read.csv("../data/env/AICcCalculations.csv", header = TRUE) #pre-created csv file
-betavallist <- cbind(aicetc$regularization)
-
-for (year in 1:nrow(modelmonth)){
-  timeslice <- modelmonth[year] #testing timeslice
-  yr <- str_sub(timeslice, -4) #the year being used for testing
-  train <- subset(prback, year != yr) #training data is all years but testing
+#betavallist <- cbind(aicetc$regularization)
+betavallist <- 0.25
+  timeslice <- "all_data"
+  train <- prback
   trainpa <- train$occurrence #creates a vector of presence/background ID (1/0)
-  test <-  subset(prback, year == yr) #creates the testing dataset
-  testp <- subset(test, occurrence == "1") #splits the testing dataset into presences
-  testp <- subset(testp, select = -c(year, occurrence)) #don't need year and occurrence for modelling
-  testb <- subset(test, occurrence == "0") #splits the testing dataset into background
-  testb <- subset(testb, select = -c(year, occurrence)) #don't need year and occurrence for modelling
   train  <- subset(train, select = -c(year, occurrence)) #don't need year and occurrence for modelling
   
-  for (h in 1:nrow(betavallist)){
-    betamval <-  betavallist[h]
-    mod <- maxent(x = train, p = trainpa, path = paste0("../output/maxent/models/", timeslice), args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "addsamplestobackground=TRUE", paste0("betamultiplier=", betavallist[h])))
+  #for (h in 1:nrow(betavallist)){
+   # betamval <-  betavallist[h]
+    mod <- maxent(x = train, p = trainpa, path = paste0("../output/maxent/", timeslice, "/models"), args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "addsamplestobackground=TRUE", paste0("betamultiplier=", betavallist)))
 
     #now based on glover-kapfer pdf with excel manual + https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/10-1171.1... + adaptation for        getting testAUC.. horrible code
 
     #count number of non-zero coefficients, excluding the final four rows
-    coefile <- read.csv(paste0("../output/maxent/models/", timeslice, "/species.lambdas"), header = FALSE, stringsAsFactors=FALSE)
+    coefile <- read.csv(paste0("../output/maxent/", timeslice, "/models/species.lambdas"), header = FALSE, stringsAsFactors=FALSE)
     coefile <- head(coefile, -4)
     coefile2 <- subset(coefile, V2 > 0 | V2 < 0)
     nocoeff <- nrow(coefile2)
@@ -111,13 +90,13 @@ for (year in 1:nrow(modelmonth)){
     bic <- (bick*log(sum(trainpa == 1)) - 2*11) #dodgy
     
     #no presences used in model (less those used for testing)
-    maxresults <- read.csv(paste0("../output/maxent/models/", timeslice, "/maxentResults.csv"), header = TRUE)
+    maxresults <- read.csv(paste0("../output/maxent/", timeslice, "/models/maxentResults.csv"), header = TRUE)
     notrainingpoints <- maxresults$X.Training.samples
     testauc <- maxresults$Test.AUC
     trainauc <- maxresults$Training.AUC
     
     #natural log
-    samplepred <- read.csv(paste0("../output/maxent/models/", timeslice, "/species_samplePredictions.csv"), header = TRUE)
+    samplepred <- read.csv(paste0("../output/maxent/", timeslice, "/models/species_samplePredictions.csv"), header = TRUE)
     samplepred$nat_log <- log(samplepred$Raw.prediction)
     sumsamplepred <- sum(samplepred$nat_log)
   
@@ -160,16 +139,16 @@ for (year in 1:nrow(modelmonth)){
     
     #calculate minimal predicted area using ecospat
     aicetc$mpa_0.9_cum <- ecospat.mpa(samplepred$Cumulative.prediction, perc = 0.9) #90%
-      }
-    }
+      #}
+    
   
 
 aicetc$AIC <- ((2*aicetc$coefficients)-(2*aicetc$sum.of.logs))
 aicetc$AICc <- (-2*(aicetc$sum.of.logs)+((2*aicetc$coefficients)*(aicetc$n/(aicetc$n - aicetc$coefficients-1))))
 
-write.csv(aicetc, paste0("../output/maxent/models/", timeslice, "/AICforMaxentReg.csv"), row.names = FALSE)
+write.csv(aicetc, paste0("../output/maxent/", timeslice, "/models/", betaval, "_AICforMaxentReg.csv"), row.names = FALSE)
 
-}
+
 
 ```
 
