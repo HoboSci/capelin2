@@ -84,8 +84,8 @@ nfolds <- cbind(c(1:5))
     #now based on glover-kapfer pdf with excel manual + https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/10-1171.1... + adaptation for        getting testAUC.. horrible code
     
     #count number of non-zero coefficients, excluding the final four rows
-    lambdas_list <- list.files(paste0("../output/maxent/p2/models/", timeslice), pattern = "*lambdas", full.names = TRUE)
-    samppred_list <- list.files(paste0("../output/maxent/p2/models/", timeslice), pattern = "*samplePredictions.csv", full.names = TRUE)
+    lambdas_list <- list.files(paste0("../output/maxent/", timeslice, "/models/"), pattern = "*lambdas", full.names = TRUE)
+    samppred_list <- list.files(paste0("../output/maxent/", timeslice, "/models/"), pattern = "*samplePredictions.csv", full.names = TRUE)
     
 for(f in 1:nrow(nfolds)){
   modn <- nfolds[f]-1
