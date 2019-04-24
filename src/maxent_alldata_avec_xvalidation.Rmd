@@ -55,10 +55,12 @@ prback <- na.omit(presback)
 ```
 
 ```{r}
-train <- prback
-trainpa <- train$occurrence #creates a vector of presence/background ID (1/0)
-train  <- subset(train, select = -c(year, occurrence)) #don't need year and occurrence for modelling
-mod <- maxent(x = train, p = trainpa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "addsamplestobackground=TRUE", "betamultiplier=0.25"))
+# train <- prback
+# trainpa <- train$occurrence #creates a vector of presence/background ID (1/0)
+# train  <- subset(train, select = -c(year, occurrence)) #don't need year and occurrence for modelling
+# timeslice <- "all_data"
+# betavallist <- 0.25
+# mod <- maxent(x = train, p = trainpa, path = paste0("../output/maxent/", timeslice, "/models"), args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "addsamplestobackground=TRUE", "betamultiplier=0.25"))
 ```
 
 
@@ -68,87 +70,82 @@ mod12
 
 ```{r train and test inc AIC for reg val}
 aicetc <- read.csv("../data/env/AICcCalculations.csv", header = TRUE) #pre-created csv file
-#betavallist <- cbind(aicetc$regularization)
-betavallist <- 0.25
-  timeslice <- "all_data"
-  train <- prback
-  trainpa <- train$occurrence #creates a vector of presence/background ID (1/0)
-  train  <- subset(train, select = -c(year, occurrence)) #don't need year and occurrence for modelling
+betavallist <- cbind(aicetc$regularization)
+timeslice <- "all_data"
+train <- prback
+trainpa <- train$occurrence #creates a vector of presence/background ID (1/0)
+train  <- subset(train, select = -c(year, occurrence)) #don't need year and occurrence for modelling
+nfolds <- cbind(c(1:5))
   
-  #for (h in 1:nrow(betavallist)){
-   # betamval <-  betavallist[h]
-    mod <- maxent(x = train, p = trainpa, path = paste0("../output/maxent/", timeslice, "/models"), args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "addsamplestobackground=TRUE", paste0("betamultiplier=", betavallist)))
+  for (h in 1:nrow(betavallist)){
+    betamval <-  betavallist[h]
+    mod <- maxent(x = train, p = trainpa, path = paste0("../output/maxent/", timeslice, "/models"), args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "addsamplestobackground=TRUE", paste0("replicates=", nrow(nfolds)), "replicatetype=crossvalidate", paste0("betamultiplier=", betamval))) 
 
     #now based on glover-kapfer pdf with excel manual + https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/10-1171.1... + adaptation for        getting testAUC.. horrible code
-
+    
     #count number of non-zero coefficients, excluding the final four rows
-    coefile <- read.csv(paste0("../output/maxent/", timeslice, "/models/species.lambdas"), header = FALSE, stringsAsFactors=FALSE)
-    coefile <- head(coefile, -4)
-    coefile2 <- subset(coefile, V2 > 0 | V2 < 0)
-    nocoeff <- nrow(coefile2)
-    bick <- sum(as.numeric(coefile2[, 2])) #dodgy 
-    bic <- (bick*log(sum(trainpa == 1)) - 2*11) #dodgy
+    lambdas_list <- list.files(paste0("../output/maxent/p2/models/", timeslice), pattern = "*lambdas", full.names = TRUE)
+    samppred_list <- list.files(paste0("../output/maxent/p2/models/", timeslice), pattern = "*samplePredictions.csv", full.names = TRUE)
     
-    #no presences used in model (less those used for testing)
-    maxresults <- read.csv(paste0("../output/maxent/", timeslice, "/models/maxentResults.csv"), header = TRUE)
-    notrainingpoints <- maxresults$X.Training.samples
-    testauc <- maxresults$Test.AUC
-    trainauc <- maxresults$Training.AUC
+for(f in 1:nrow(nfolds)){
+  modn <- nfolds[f]-1
+      lamf <- lambdas_list[f]
+      sampf <- samppred_list[f]
+      coefile <- read.csv(paste0(lamf), header = FALSE, stringsAsFactors=FALSE)
+      coefile <- head(coefile, -4)
+      coefile2 <- subset(coefile, V2 != 0)
+      nocoeff <- nrow(coefile2)
+      bick <- sum(as.numeric(coefile2[, 2])) #dodgy 
+      bic <- (bick*log(sum(trainpa == 1)) - 2*11) #dodgy
+      #natural log
+      samplepred <- read.csv(paste0(sampf), header = TRUE)
+      samplepred$nat_log <- log(samplepred$Raw.prediction)
+      sumsamplepred <- sum(samplepred$nat_log)
+   
+      #no presences used in model (less those used for testing)
+
+      notrainingpoints <- maxresults$X.Training.samples[f]
+      testauc <- maxresults$Test.AUC[f]
+      trainauc <- maxresults$Training.AUC[f]
+      modno <- maxresults$Species[f]
     
-    #natural log
-    samplepred <- read.csv(paste0("../output/maxent/", timeslice, "/models/species_samplePredictions.csv"), header = TRUE)
-    samplepred$nat_log <- log(samplepred$Raw.prediction)
-    sumsamplepred <- sum(samplepred$nat_log)
-  
-  
-   #test auc scores and other lovely things you might want to include
-    ev <- evaluate(p = testp, a= testb, model = mod)
-    evauc <- ev@auc
-    evcor <- ev@cor
-    evpcor <- ev@pcor
-    evnp <- ev@np
-    evna <- ev@na
-    evmaxtprtnr <- threshold(ev, 'spec_sens')
-    evmaxkap <- threshold(ev, 'kappa')
-    evno_omission <- threshold(ev, 'no_omission')
-    evprevalence <- threshold(ev, 'prevalence')
-    evequal_sens_spec <- threshold(ev, 'equal_sens_spec')
-    evsensitivity <- threshold(ev, 'sensitivity')
-    
-  
+
       aicetc$train_AUC <- trainauc
-      aicetc$no_trainng_points <- notrainingpoints
-      aicetc$test_coefficients <- nocoeff
-      aicetc$test_sum.of.logs <- sumsamplepred
-      aicetc$test_AUC <- evauc
-      aicetc$test_evcor <- evcor
-      aicetc$test_evpcor <- evpcor
-      aicetc$test_nopresence <- evnp
-      aicetc$test_nobackground <- evna
-      aicetc$test_maxsumsenspec <- evmaxtprtnr
-      aicetc$test_maxkap <- evmaxkap
-      aicetc$test_no_omission <- evno_omission
-      aicetc$test_prevalence <- evprevalence
-      aicetc$test_equal_sens_spec <- evequal_sens_spec
-      aicetc$test_sensitivity <- evsensitivity
-      aicetc$test_bic <- bic #not sure this is correct...
-      aicetc$beta <- betaval
+      aicetc$test_AUC <- testauc
+      aicetc$n <- notrainingpoints
+      aicetc$coefficients <- nocoeff
+      aicetc$sum.of.logs <- sumsamplepred
+  
+      aicetc$bic <- bic #not sure this is correct...
+      aicetc$beta <- betamval
+      aicetc$foldno <- modn
       
     aicetc$AIC <- ((2*aicetc$coefficients)-(2*aicetc$sum.of.logs))
     aicetc$AICc <- (-2*(aicetc$sum.of.logs)+((2*aicetc$coefficients)*(aicetc$n/(aicetc$n - aicetc$coefficients-1))))
     
     #calculate minimal predicted area using ecospat
     aicetc$mpa_0.9_cum <- ecospat.mpa(samplepred$Cumulative.prediction, perc = 0.9) #90%
-      #}
     
-  
-
-aicetc$AIC <- ((2*aicetc$coefficients)-(2*aicetc$sum.of.logs))
-aicetc$AICc <- (-2*(aicetc$sum.of.logs)+((2*aicetc$coefficients)*(aicetc$n/(aicetc$n - aicetc$coefficients-1))))
-
-write.csv(aicetc, paste0("../output/maxent/", timeslice, "/models/", betaval, "_AICforMaxentReg.csv"), row.names = FALSE)
-
-
+    aicetc$AIC <- ((2*aicetc$coefficients)-(2*aicetc$sum.of.logs))
+    aicetc$AICc <- (-2*(aicetc$sum.of.logs)+((2*aicetc$coefficients)*(aicetc$n/(aicetc$n - aicetc$coefficients-1))))
+    write.csv(aicetc, paste0("../output/maxent/", timeslice, "/models/", betamval, "_", modn, "_", "AICforMaxentReg.csv"), row.names = FALSE)
+      }
+    
+  # aa <- paste0("fold", modn, "_", betamval, "_", "AICforMaxentReg.csv")
+    aicperbetalst <- list.files(paste0("../output/maxent/", timeslice, "/models/"), pattern = paste0("^", betamval, ".*AICforMaxentReg.csv"), full.names = TRUE)
+    aicperbeta <- lapply(aicperbetalst, read.csv, header = TRUE)
+    aicperbeta <- do.call(rbind, aicperbeta)
+    aicbetamean <- colMeans(aicperbeta)
+    aicperbeta <- rbind(aicperbeta, aicbetamean)
+    aicperbeta$foldno[f+1] <- f+1
+    write.csv(aicperbeta, paste0("../output/maxent/", timeslice, "/models/aicperbetasum_", betamval, ".csv"), row.names = FALSE)
+    
+    betaavglst <- list.files(paste0("../output/maxent/", timeslice, "/models/"), pattern = "aicperbetasum_.*csv", full.names = TRUE)
+    bavg <- lapply(betaavglst, read.csv, header = TRUE)
+    bavg <- do.call(rbind, bavg)
+    bavg <- subset(bavg, foldno == f+1)
+    write.csv(bavg, paste0("../output/maxent/", timeslice, "/models/avgbetalst.csv"), row.names = FALSE)
+  }
 
 ```
 
