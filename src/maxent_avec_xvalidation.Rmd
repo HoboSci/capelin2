@@ -623,8 +623,14 @@ stavg <- calc(binaryavgstack, fun = mean, na.rm = TRUE)
   writeRaster(stavg, (paste0("../output/maxent/predictions/", mthna, "/binary_avg_", mthna, ".asc")), overwrite=TRUE)
   avgplot <- plot(stavg, png(paste0("../output/maxent/predictions/", mthna, "/binary_avg_", mthna, ".png"))) 
   dev.off()
-
-
 ```
 
+#plots by depth
+
+first need some statistcs... for each layer how many cells have a value of 1...
+
+```{r}
+test <- cellStats(binaryavgstack[[30]], sum)
+test
+```
 
