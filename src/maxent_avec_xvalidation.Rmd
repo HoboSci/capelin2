@@ -15,7 +15,7 @@ You can install and load them using the following code which uses a function cal
 
 ```{r pre-install & load packages, include=FALSE}
 options(java.parameters = "-Xmx1g" )#needs to run before dismo loaded - boosts memory for java to 1g
-packages <- c("dismo", "stringr", "rJava", "raster", "ecospat", "bossMaps")
+packages <- c("dismo", "stringr", "rJava", "raster", "ecospat", "bossMaps", "lattice")
 source("../src/ipak.R")
 ipak(packages)
 ```
@@ -606,31 +606,76 @@ for (avgcum in 1:length(avgcumasc_list)){
 
 ```
 
-now to stack average binary maps at depth into one 2D representation...
 
-```{r}
 
-#this below is to get an average score for all layers per year. probably not what you want
-ascdepth_list <- list.files(paste0("../output/maxent/predictions/", mthna), pattern = "^binary_mpa_avg_cum_.*asc", full.names = TRUE)
-
-binaryavgstack <- stack(ascdepth_list)
-
-stsum <- sum(binaryavgstack, na.rm = TRUE)
-  writeRaster(stsum, (paste0("../output/maxent/predictions/", mthna, "/binary_sum_", mthna, ".asc")), overwrite=TRUE)
-  sumplot <- plot(stsum, png(paste0("../output/maxent/predictions/", mthna, "/binary_sum_", mthna, ".png"))) 
-  dev.off()
-stavg <- calc(binaryavgstack, fun = mean, na.rm = TRUE)
-  writeRaster(stavg, (paste0("../output/maxent/predictions/", mthna, "/binary_avg_", mthna, ".asc")), overwrite=TRUE)
-  avgplot <- plot(stavg, png(paste0("../output/maxent/predictions/", mthna, "/binary_avg_", mthna, ".png"))) 
-  dev.off()
-```
 
 #plots by depth
 
 first need some statistcs... for each layer how many cells have a value of 1...
 
-```{r}
-test <- cellStats(binaryavgstack[[30]], sum)
-test
+```{r calc no presence cells per layer (avg)} 
+ascdepth_list <- list.files(paste0("../output/maxent/predictions/", mthna), pattern = "^binary_mpa_avg_cum_.*asc", full.names = TRUE)
+binaryavgstack <- stack(ascdepth_list)
+stackstat <- data.frame(matrix(ncol = 2, nrow = nlayers(binaryavgstack)))
+stackstat[ ,1] <- c(1:49)
+colnames(stackstat) <- c("layer", "cell_sum")
+
+for (lyr in 1:nlayers(binaryavgstack)){
+  lyrsum <- cellStats(binaryavgstack[[lyr]], sum)
+  stackstat$cell_sum[lyr] <- lyrsum
+}
+
+write.csv(stackstat, paste0("../output/maxent/predictions/", mthna, "/cellcount_bydepth_avg.csv"), row.names = FALSE)
+```
+
+
+a crude plot but ok to show slr
+
+```{r graph by depth (avg)}
+bydepth <- barchart(layer ~ cell_sum, data = stackstat, ylim = c(49, 1), xlim = c(1, 1600))
+trellis.device(device="png",filename = paste0("../output/maxent/predictions/", mthna, "/", mthna, "_depthplot.png"))
+print(bydepth)
+dev.off()
+```
+
+what about the variation from one year to the next
+
+e.g. binary_mpa_st200401041.18.asc
+
+```{r no presence cells per layer per year}
+binaryyr_list <- list.files(paste0("../output/maxent/predictions/", mthna), pattern = "^binary_mpa_st.*asc", full.names = TRUE)
+yrlayer <- data.frame(matrix(ncol = 2, nrow = length(binaryyr_list)))
+colnames(yrlayer) <- c("layer", "year")
+
+
+
+for (yrlyr in 1:length(binaryyr_list)){
+  yearoflyr <- str_sub(binaryyr_list[yrlyr], start = 47, end = 50) #selects the year from the file name
+  yrlayer$year[yrlyr] <- yearoflyr
+  yrlayer$layer[yrlyr] <- binaryyr_list[yrlyr]
+}
+
+y_list <- split(yrlayer, yrlayer$year)
+noyrs <- unique(yrlayer$year)
+
+
+stackstat_yr <- data.frame(matrix(ncol = length(noyrs) + 1, nrow = nlayers(binaryavgstack)))
+stackstat_yr[ ,1] <- c(1:49)
+colnames(stackstat_yr) <- c("layer", paste0("y_", noyrs))
+
+for (binyr in (1:length(y_list))){
+  lsta <- stack(y_list[[binyr]]$layer)
+  yr <- y_list[[binyr]]$year[1]
+  for (l in 1:nlayers(lsta)){
+    lyrsum <- cellStats(lsta[[l]], sum)
+    stcol <- paste0("y_", yr) 
+    stackstat_yr[[l, stcol]] <- lyrsum
+  }
+}
+
+#2005 coming up empty...
+
+
+
 ```
 
