@@ -220,7 +220,7 @@ for (year in 1:nrow(modelmonth)){
     betaval <- 2.25
   }
   
-    mod <- maxent(x = train, p = trainpa, path = paste0("../output/maxent/models/", timeslice), args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "addsamplestobackground=TRUE", paste0("betamultiplier=", betaval)))
+    mod <- maxent(x = train, p = trainpa, path = paste0("../output/maxent/models/", timeslice), args=c("writebackgroundpredictions=TRUE",  "maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "addsamplestobackground=TRUE", paste0("betamultiplier=", betaval)))
 
     #now based on glover-kapfer pdf with excel manual + https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/10-1171.1... + adaptation for        getting testAUC.. horrible code
 
@@ -615,4 +615,30 @@ dev.off()
 ```
 
 
+#cbi
+use enmSdm package? see exercise 10...
+positive values are good!
+
+should move this up to evaluation....
+
+```{r}
+
+for (a in 1:length(modelmonth)){
+  timeslice <- modelmonth[a]
+  yr <- str_sub(timeslice, -4) #the year being used for testing
+  predPres <- read.csv(paste0("../output/maxent/models/", a, "/species_samplePredictions.csv"), header = TRUE)
+  predBg <- read.csv(paste0("../output/maxent/models/", a, "/species_backgroundPredictions.csv"), header = TRUE)
+  predPres <- predPres$Cloglog.prediction
+  predBg <- predBg$Cloglog
+  cbi <- contBoyce(pres = predPres, bg = predBg)
+}
+
+
+predPres <- read.csv("../output/maxent/models/jan2003/species_samplePredictions.csv", header = TRUE)
+predBg <- read.csv("../output/maxent/models/jan2003/species_backgroundPredictions.csv", header = TRUE)
+predPres <- predPres$Cloglog.prediction
+predBg <- predBg$Cloglog
+cbi <- contBoyce(pres = predPres, bg = predBg)
+cbi
+```
 
