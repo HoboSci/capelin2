@@ -15,7 +15,7 @@ You can install and load them using the following code which uses a function cal
 
 ```{r pre-install & load packages, include=FALSE}
 options(java.parameters = "-Xmx1g" )#needs to run before dismo loaded - boosts memory for java to 1g
-packages <- c("dismo", "stringr", "rJava", "raster", "ecospat", "bossMaps", "lattice", "tidyr")
+packages <- c("dismo", "stringr", "rJava", "raster", "ecospat", "bossMaps", "lattice", "tidyr", "enmSdm")
 source("../src/ipak.R")
 ipak(packages)
 ```
@@ -44,11 +44,11 @@ janvar <- c("occurrence", "year", "temp_depth", "salinity_depth", "o2_depth", "c
 marvar <- c("occurrence", "year", "temp_depth", "salinity_depth", "o2_depth", "chl_surface", "nao_sample", "nao_prev", "nao_winter", "amo_sample", "amo_winter")
 aprvar <- c("occurrence", "year", "temp_depth", "salinity_depth", "o2_depth", "chl_surface", "nao_sample", "nao_prev", "nao_winter", "amo_sample", "amo_winter")
 mayvar <- c("occurrence", "year", "temp_depth", "salinity_depth", "o2_depth", "chl_surface", "nao_sample", "nao_prev", "nao_winter", "amo_sample", "amo_winter")
-junvar <- c("occurrence", "year", "temp_depth", "salinity_depth", "o2_depth", "nao_sample", "nao_prev", "nao_winter", "amo_sample", "amo_winter")
+junvar <- c("occurrence", "year", "temp_depth", "salinity_depth", "o2_depth", "chll_surface", "nao_sample", "nao_prev", "nao_winter", "amo_sample", "amo_winter")
 julvar <- c("occurrence", "year", "temp_depth", "salinity_depth", "o2_depth", "chl_surface", "nao_sample", "nao_prev", "nao_winter", "amo_sample", "amo_winter")
 augvar <- c("occurrence", "year", "temp_depth", "salinity_depth", "o2_depth", "chl_surface", "nao_sample", "nao_prev", "nao_winter", "amo_sample", "amo_winter")
 sepvar <- c("occurrence", "year", "temp_depth", "salinity_depth", "o2_depth", "chl_surface", "nao_sample", "nao_prev", "nao_winter", "amo_sample", "amo_winter")
-octvar <- c("occurrence", "year", "temp_depth", "salinity_depth", "o2_depth", "nao_sample", "nao_prev", "nao_winter", "amo_sample", "amo_winter")
+octvar <- c("occurrence", "year", "temp_depth", "salinity_depth", "o2_depth", "chl_surface", "nao_sample", "nao_prev", "nao_winter", "amo_sample", "amo_winter")
 novvar <- c("occurrence", "year", "temp_depth", "salinity_depth", "o2_depth", "chl_surface", "nao_sample", "nao_prev", "nao_winter", "amo_sample", "amo_winter")
 decvar <- c("occurrence", "year", "temp_depth", "salinity_depth", "o2_depth", "chl_surface", "nao_sample", "nao_prev", "nao_winter", "amo_sample", "amo_winter")
 
@@ -57,8 +57,8 @@ mthnavar_lst <- list(jan = janvar, mar = marvar, apr = aprvar, may = mayvar, jun
 
 select month
 ```{r month of interest -change}
-mthna <- "jan"
-mthno <- "1"
+mthna <- "mar"
+mthno <- "3"
 ```
 
 
@@ -178,21 +178,6 @@ next step... select the models you want for each year and run those models again
 
 KEEP A NOTE OF THESE IN ONENOTE
 
-y1998 = 2.75
-y1999 = 2.25
-y2000 = 2
-y2001 = 1.75
-y2002 = 2
-y2003 = 2
-y2004 = 2
-y2005 = 2.25
-y2006 = 1.75
-y2007 = 1.75
-y2008 = 2.25
-y2009 = 2.25
-y2010 = 2.5
-y2011 =  2.5
-
 
 ```{r final models plus predict}
 modelmonth <- cbind(paste0(mthna, unique(prback$year)))
@@ -209,15 +194,23 @@ for (year in 1:nrow(modelmonth)){
   testp <- subset(testp, select = -c(year, occurrence)) #don't need year and occurrence for modelling
   testb <- subset(test, occurrence == "0") #splits the testing dataset into background
   testb <- subset(testb, select = -c(year, occurrence)) #don't need year and occurrence for modelling
+  #mess_pr <- subset(train, occurrence == 1)
+  #mess_pr  <- subset(train, select = -c(year, occurrence)) #don't need year and occurrence for modelling
   train  <- subset(train, select = -c(year, occurrence)) #don't need year and occurrence for modelling
 
   
-  if (yr == "2003" | yr == "2004"){
+  if (yr == "2003"){
     betaval <- 1
-  } else if (yr == "2005"){
+  } else if (yr == "1999" | yr == "2002" | yr == "2008" | yr == "2009") {
+    betaval <- 1.25
+  } else if (yr == "2005" | yr == "2006"){
     betaval <- 1.5
-  } else if (yr == "2006"){
+  } else if (yr == "2000"){
+    betaval <- 1.75
+  } else if (yr == "2001" | yr == "2007"){
     betaval <- 2.25
+  } else if (yr == "2010"){
+    betaval <- 3.5
   }
   
     mod <- maxent(x = train, p = trainpa, path = paste0("../output/maxent/models/", timeslice), args=c("writebackgroundpredictions=TRUE",  "maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "addsamplestobackground=TRUE", paste0("betamultiplier=", betaval)))
@@ -258,6 +251,13 @@ for (year in 1:nrow(modelmonth)){
     evequal_sens_spec <- threshold(ev, 'equal_sens_spec')
     evsensitivity <- threshold(ev, 'sensitivity')
     
+    #continuous boyce index
+    predPres <- read.csv(paste0("../output/maxent/models/", timeslice, "/species_samplePredictions.csv"), header = TRUE)
+    predBg <- read.csv(paste0("../output/maxent/models/", timeslice, "/species_backgroundPredictions.csv"), header = TRUE)
+    predPres <- predPres$Cloglog.prediction
+    predBg <- predBg$Cloglog
+    cbi <- contBoyce(pres = predPres, bg = predBg)
+    
   
       aicetc$train_AUC <- trainauc #training only AUC - not tested
       aicetc$no_trainng_points <- notrainingpoints #numberof points used for training
@@ -274,8 +274,10 @@ for (year in 1:nrow(modelmonth)){
       aicetc$test_prevalence <- evprevalence
       aicetc$test_equal_sens_spec <- evequal_sens_spec
       aicetc$test_sensitivity <- evsensitivity
+      aicetc$tss <- max(ev@TPR + ev@TNR) - 1
       aicetc$test_bic <- bic #not sure this is correct...
       aicetc$beta <- betaval
+      aicetc$cbi <- cbi
       
     aicetc$AIC <- ((2*aicetc$coefficients)-(2*aicetc$sum.of.logs))
     aicetc$AICc <- (-2*(aicetc$sum.of.logs)+((2*aicetc$coefficients)*(aicetc$n/(aicetc$n - aicetc$coefficients-1))))
@@ -295,10 +297,10 @@ for (year in 1:nrow(modelmonth)){
     stackdeplst <- list()
     stackdep <- subset(unlayer_yr, select = c(stackname, ascdepths))
     stackdeplst[[year]] <- stackdep
-    write.csv(stackdep, paste0("../output/maxent/predictions/stackdepthlist_", yr, ".csv"), row.names = FALSE)
+    write.csv(stackdep, paste0("../output/maxent/models/", timeslice, "/stackdepthlist_", yr, ".csv"), row.names = FALSE)
     aea <- raster("../output/env/aea.tif") 
 
-   for (td in 1:nrow(unlayer_yr)){
+    for (td in 1:nrow(unlayer_yr)){
       temp_depth <- raster(unlayer_yr$temp_depth[td])
       crs(temp_depth) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0" 
       names(temp_depth) <- "temp_depth"
@@ -319,23 +321,42 @@ for (year in 1:nrow(modelmonth)){
       crs(nao_sample) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0" 
       names(nao_sample) <- "nao_sample"
       nao_sample <- projectRaster(nao_sample, aea)
+      nao_prev <- raster(unlayer_yr$nao_prev[td])
+      crs(nao_prev) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0" 
+      names(nao_prev) <- "nao_prev"
+      nao_prev <- projectRaster(nao_prev, aea)
       nao_winter <- raster(unlayer_yr$nao_winter[td])
       crs(nao_winter) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"
       names(nao_winter) <- "nao_winter"
       nao_winter <- projectRaster(nao_winter, aea)
+      amo_sample <- raster(unlayer_yr$amo_sample[td])
+      crs(amo_sample) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0" 
+      names(amo_sample) <- "amo_sample"
+      amo_sample <- projectRaster(amo_sample, aea)
+      amo_winter <- raster(unlayer_yr$amo_winter[td])
+      crs(amo_winter) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"
+      names(amo_winter) <- "amo_winter"
+      amo_winter <- projectRaster(amo_winter, aea)
       stackn <- unlayer_yr$stackname[td]
-      stack <- stack(temp_depth, salinity_depth, o2_depth, chl_surface, nao_sample, nao_winter)
+      stack <- stack(temp_depth, salinity_depth, o2_depth, chl_surface, nao_sample, nao_prev, nao_winter, amo_sample, amo_winter)
+
       #stackSave(test,unlayer_yr$stackname[td])
-      pred <- predict(mod, stack, file = paste0("../output/maxent/predictions/", mthna, "/", "cloglog_", stackn, ".asc"), overwrite=TRUE, args='outputformat=cloglog') 
+      pred <- predict(mod, stack, file = paste0("../output/maxent/predictions/", mthna, "/", "cloglog_", stackn, ".asc"), overwrite=TRUE, args=c('outputformat=cloglog')) 
       predraw <- predict(mod, stack, file = paste0("../output/maxent/predictions/", mthna, "/", "raw_", stackn, ".asc"), overwrite=TRUE, args=c('outputformat=raw')) 
       prplot <- plot(pred, png(paste0("../output/maxent/predictions/", mthna, "/", "cloglog_", stackn, ".png")))
       dev.off() # stops automatic saving of the plot to a png
      
+      #mess
+      
+      #messev <- dismo::mess(x = stack, v = mess_pr, full = FALSE)
+      #messplot <- plot(messev, png(paste0("../output/maxent/predictions/", mthna, "/", "mess_", stackn, ".png")))
+      #dev.off()
+      # not working how i'd like....
     }
 }
 
 stdep <- do.call(rbind, stackdeplst)
-write.csv(stdep, paste0("../output/maxent/predictions/", mthna, "/stack_depth.csv"), row.names = FALSE)
+write.csv(stdep, paste0("../output/maxent/models/", timeslice, "/stack_depth.csv"), row.names = FALSE)
 ```
 
 
@@ -347,8 +368,8 @@ the thresholds are in the monthavgAIC.csv file in the model folder (not model/mo
 
 ```{r set up threshold binary function}
 binmpa <- function(x) {
-  ifelse(x <=  mpa_thr, 0,
-  ifelse(x >  mpa_thr, 1, NA))
+  ifelse(x <  mpa_thr, 0,
+  ifelse(x >=  mpa_thr, 1, NA))
   }
 ```
 
@@ -360,16 +381,13 @@ for (modtime in 1:nrow(modelmonth)){
   timeslice <- modelmonth[modtime]
   print(timeslice)
   yr <- str_sub(timeslice, -4)
-  print(yr)
   thresholds <- read.csv(paste0("../output/maxent/models/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
   mpa_thr <- thresholds$mpa_0.9_clog
-  print(mpa_thr)
   for (cum in 1:length(clogasc_list)){
     cumascyr <- str_sub(clogasc_list[cum], start = 44, end = 47) #selects the year from the file name
     if(yr == cumascyr){
       cumasc <- raster(clogasc_list[cum])
       ascname <- names(cumasc)
-      print(ascname)
       cum_mpathr <- calc(cumasc, fun = binmpa)
       writeRaster(cum_mpathr, paste0("../output/maxent/predictions/", mthna,  "/binary_", ascname, ".asc"), overwrite = TRUE)
       plot(cum_mpathr, png(paste0("../output/maxent/predictions/", mthna, "/binary_", ascname, ".png")), overwrite = TRUE)
@@ -590,7 +608,7 @@ dev.off()
 first need some statistcs... for each layer how many cells have a value of 1...
 
 ```{r calc no presence cells per layer (avg)} 
-ascdepth_list <- list.files(paste0("../output/maxent/predictions/", mthna), pattern = "^binary_avg.*asc", full.names = TRUE)
+ascdepth_list <- list.files(paste0("../output/maxent/predictions/", mthna), pattern = "^binary_avg_cloglog.*asc", full.names = TRUE)
 binaryavgstack <- stack(ascdepth_list)
 stackstat <- data.frame(matrix(ncol = 2, nrow = nlayers(binaryavgstack)))
 stackstat[ ,1] <- c(1:49)
@@ -615,30 +633,4 @@ dev.off()
 ```
 
 
-#cbi
-use enmSdm package? see exercise 10...
-positive values are good!
-
-should move this up to evaluation....
-
-```{r}
-
-for (a in 1:length(modelmonth)){
-  timeslice <- modelmonth[a]
-  yr <- str_sub(timeslice, -4) #the year being used for testing
-  predPres <- read.csv(paste0("../output/maxent/models/", a, "/species_samplePredictions.csv"), header = TRUE)
-  predBg <- read.csv(paste0("../output/maxent/models/", a, "/species_backgroundPredictions.csv"), header = TRUE)
-  predPres <- predPres$Cloglog.prediction
-  predBg <- predBg$Cloglog
-  cbi <- contBoyce(pres = predPres, bg = predBg)
-}
-
-
-predPres <- read.csv("../output/maxent/models/jan2003/species_samplePredictions.csv", header = TRUE)
-predBg <- read.csv("../output/maxent/models/jan2003/species_backgroundPredictions.csv", header = TRUE)
-predPres <- predPres$Cloglog.prediction
-predBg <- predBg$Cloglog
-cbi <- contBoyce(pres = predPres, bg = predBg)
-cbi
-```
 

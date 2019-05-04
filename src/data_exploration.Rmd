@@ -2021,6 +2021,19 @@ write.csv(vif_nogear_cor_dec, "../output/bio/vif/monthly_vifs/vif_nogear_cor_dec
 vif_nogear_cor_dec
 ```
 
+```{r}
+#jun and oct without gear and with chl_surface in 
+vif_nogear_cor_jun <- vif(lm(occurrence ~ temp_depth + salinity_depth + o2_depth + chl_surface + nao_sample + nao_prev + nao_winter + amo_sample + amo_winter, data = junpresab))
+write.csv(vif_nogear_cor_jun, "../output/bio/vif/monthly_vifs/vif_nogear_cor_jun_chl.csv", row.names = TRUE)
+vif_nogear_cor_jun
+
+vif_nogear_cor_oct <- vif(lm(occurrence ~ temp_depth + salinity_depth + o2_depth + chl_surface + nao_sample + nao_prev + nao_winter + amo_sample + amo_winter, data = junpresab))
+write.csv(vif_nogear_cor_jun, "../output/bio/vif/monthly_vifs/vif_nogear_cor_oct_chl.csv", row.names = TRUE)
+vif_nogear_cor_jun
+```
+
+
+
 in the presences, which rows are missing either temp_depth, salinity_depth, or o2_depth?
 ```{r}
 fmatch("o2_depth", names(presence)) #32
