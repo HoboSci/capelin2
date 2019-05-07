@@ -14,7 +14,7 @@ You can install and load them using the following code which uses a function cal
 
 
 ```{r pre-install & load packages, include=FALSE}
-options(java.parameters = "-Xmx1g" )#needs to run before dismo loaded - boosts memory for java to 1g
+options(java.parameters = "-Xmx2g" )#needs to run before dismo loaded - boosts memory for java to 1g
 packages <- c("dismo", "stringr", "rJava", "raster", "ecospat", "bossMaps", "lattice", "tidyr", "enmSdm")
 source("../src/ipak.R")
 ipak(packages)
@@ -44,7 +44,7 @@ janvar <- c("occurrence", "year", "temp_depth", "salinity_depth", "o2_depth", "c
 marvar <- c("occurrence", "year", "temp_depth", "salinity_depth", "o2_depth", "chl_surface", "nao_sample", "nao_prev", "nao_winter", "amo_sample", "amo_winter")
 aprvar <- c("occurrence", "year", "temp_depth", "salinity_depth", "o2_depth", "chl_surface", "nao_sample", "nao_prev", "nao_winter", "amo_sample", "amo_winter")
 mayvar <- c("occurrence", "year", "temp_depth", "salinity_depth", "o2_depth", "chl_surface", "nao_sample", "nao_prev", "nao_winter", "amo_sample", "amo_winter")
-junvar <- c("occurrence", "year", "temp_depth", "salinity_depth", "o2_depth", "chll_surface", "nao_sample", "nao_prev", "nao_winter", "amo_sample", "amo_winter")
+junvar <- c("occurrence", "year", "temp_depth", "salinity_depth", "o2_depth", "chl_surface", "nao_sample", "nao_prev", "nao_winter", "amo_sample", "amo_winter")
 julvar <- c("occurrence", "year", "temp_depth", "salinity_depth", "o2_depth", "chl_surface", "nao_sample", "nao_prev", "nao_winter", "amo_sample", "amo_winter")
 augvar <- c("occurrence", "year", "temp_depth", "salinity_depth", "o2_depth", "chl_surface", "nao_sample", "nao_prev", "nao_winter", "amo_sample", "amo_winter")
 sepvar <- c("occurrence", "year", "temp_depth", "salinity_depth", "o2_depth", "chl_surface", "nao_sample", "nao_prev", "nao_winter", "amo_sample", "amo_winter")
@@ -98,7 +98,7 @@ for (year in 1:nrow(modelmonth)){
   
   for (h in 1:nrow(betavallist)){
     betaval <-  betavallist[h]
-    mod <- maxent(x = train, p = trainpa, path = paste0("../output/maxent/models/", timeslice), args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "addsamplestobackground=TRUE", paste0("betamultiplier=", betavallist[h])))
+    mod <- maxent(x = train, p = trainpa, path = paste0("../output/maxent/models/", timeslice), args=c('plots=FALSE', "maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "addsamplestobackground=TRUE", paste0("betamultiplier=", betavallist[h])))
 
     #now based on glover-kapfer pdf with excel manual + https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/10-1171.1... + adaptation for        getting testAUC.. horrible code
 
@@ -140,8 +140,8 @@ for (year in 1:nrow(modelmonth)){
     if(aicetc$regularization[i] == betaval){
       aicetc$train_AUC[i] <- trainauc
       aicetc$no_trainng_points[i] <- notrainingpoints
-      aicetc$test_coefficients[i] <- nocoeff
-      aicetc$test_sum.of.logs[i] <- sumsamplepred
+      aicetc$coefficients[i] <- nocoeff
+      aicetc$sum.of.logs[i] <- sumsamplepred
       aicetc$test_AUC[i] <- evauc
       aicetc$test_evcor[i] <- evcor
       aicetc$test_evpcor[i] <- evpcor
@@ -158,8 +158,8 @@ for (year in 1:nrow(modelmonth)){
       #calculate minimal predicted area using ecospat
       aicetc$mpa_0.9_cum[i] <- ecospat.mpa(samplepred$Cumulative.prediction, perc = 0.9) #90%
       
-    aicetc$AIC <- ((2*aicetc$coefficients)-(2*aicetc$sum.of.logs))
-    aicetc$AICc <- (-2*(aicetc$sum.of.logs)+((2*aicetc$coefficients)*(aicetc$n/(aicetc$n - aicetc$coefficients-1))))
+    aicetc$AIC[i] <- ((2*aicetc$coefficients[i])-(2*aicetc$sum.of.logs[i]))
+    aicetc$AICc[i] <- (-2*(aicetc$sum.of.logs[i])+((2*aicetc$coefficients[i])*(aicetc$no_trainng_points[i]/(aicetc$no_trainng_points[i] - aicetc$coefficients[i]-1))))
     }
    }
   }
@@ -202,16 +202,18 @@ for (year in 1:nrow(modelmonth)){
   train  <- subset(train, select = -c(year, occurrence)) #don't need year and occurrence for modelling
 
   
-  if (yr == "2001" | yr == "2006" | yr == "2007"){
+  if (yr == "2006"){
+    betaval <- 0.25
+  } else if (yr == "2005"| yr == "2008"){
+    betaval <- 1.25
+  } else if (yr == "2003" | yr == "2007"){
+    betaval <- 1.5
+  } else if (yr == "1998" | yr == "1999" | yr == "2002" | yr == "2010" | yr == "2011"){
     betaval <- 1.75
-  } else if (yr == "2000"| yr == "2002" | yr == "2003" | yr == "2004"){
+  } else if (yr == "2001" | yr == "2009"){
     betaval <- 2
-  } else if (yr == "1999" | yr == "2005" | yr == "2008" | yr == "2009"){
+  } else if (yr == "2000" | yr == "2004"){
     betaval <- 2.25
-  } else if (yr == "2010" | yr == "2011"){
-    betaval <- 2.5
-  } else if (yr == "1998"){
-    betaval <- 2.75
   }
   
   
@@ -263,8 +265,8 @@ for (year in 1:nrow(modelmonth)){
   
       aicetc$train_AUC <- trainauc #training only AUC - not tested
       aicetc$no_trainng_points <- notrainingpoints #numberof points used for training
-      aicetc$test_coefficients <- nocoeff #this is to calculate the AIC
-      aicetc$test_sum.of.logs <- sumsamplepred #this is to calculate the AIC
+      aicetc$coefficients <- nocoeff #this is to calculate the AIC
+      aicetc$sum.of.logs <- sumsamplepred #this is to calculate the AIC
       aicetc$test_AUC <- evauc #testing AUC
       aicetc$test_evcor <- evcor #testing correlation coefficient
       aicetc$test_evpcor <- evpcor # testing p-value for correlation coefficient
@@ -282,7 +284,7 @@ for (year in 1:nrow(modelmonth)){
       aicetc$cbi <- cbi
       
     aicetc$AIC <- ((2*aicetc$coefficients)-(2*aicetc$sum.of.logs))
-    aicetc$AICc <- (-2*(aicetc$sum.of.logs)+((2*aicetc$coefficients)*(aicetc$n/(aicetc$n - aicetc$coefficients-1))))
+    aicetc$AICc <- (-2*(aicetc$sum.of.logs)+((2*aicetc$coefficients)*(aicetc$no_trainng_points/(aicetc$no_trainng_points - aicetc$coefficients-1))))
     
     #calculate minimal predicted area using ecospat
     aicetc$mpa_0.9_cum <- ecospat.mpa(samplepred$Cumulative.prediction, perc = 0.9) #90%
