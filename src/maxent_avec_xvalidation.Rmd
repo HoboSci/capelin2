@@ -57,8 +57,8 @@ mthnavar_lst <- list(jan = janvar, mar = marvar, apr = aprvar, may = mayvar, jun
 
 select month
 ```{r month of interest -change}
-mthna <- "dec"
-mthno <- "12"
+mthna <- "jan"
+mthno <- "1"
 ```
 
 
@@ -966,7 +966,7 @@ binaryprob_list <- list.files(paste0("../output/maxent/predictions/", mthna), pa
 
 binstack <- stack(binaryprob_list)
 stacksum <- sum(binstack, na.rm = TRUE)
-writeRaster(stastaccksum, paste0("../output/maxent/predictions/", mthna, "/binary_highavg_2d.asc"), overwrite=TRUE)
+writeRaster(stacksum, paste0("../output/maxent/predictions/", mthna, "/binary_highavg_2d.asc"), overwrite=TRUE)
 plot(stacksum, png(paste0("../output/maxent/predictions/", mthna, "/binary_highprob_avg_2d.png")))
 dev.off()
 ```
