@@ -85,7 +85,7 @@ normal model..
 mod12 <- maxent(x = prab, p = pa, file = .asc, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "addsamplestobackground=TRUE")) 
 mod12
 
-#```{r train and test inc AIC for reg val}
+```{r train and test inc AIC for reg val}
 presyrs <-  #this is to get years with complete presence data 
   
 
@@ -179,7 +179,7 @@ write.csv(aicetc, paste0("../output/maxent/models/", timeslice, "/AICforMaxentRe
 }  
   
 
-#```
+```
 
 #model selection
 next step... select the models you want for each year and run those models again (primarily based on lowest AICc but check test AUC and other things too)
@@ -679,5 +679,370 @@ print(bydepth)
 dev.off()
 ```
 
+#probability selected maps
+
+```{r habitat classification on probability - 3 classifications}
+
+binprob <- function(x){
+  ifelse(x >= 0.8, 3,
+  ifelse(x >= 0.7 & x <0.8, 2,
+  ifelse(x >= 0.6 & x <0.7, 1,
+  ifelse(x < 0.6, 0, NA)))) 
+}
 
 
+  modelmonth <- cbind(paste0(mthna, unique(prback$year)))
+  clogasc_list <- list.files(paste0("../output/maxent/predictions/", mthna), pattern = "^cloglog_.*.asc", full.names = TRUE)
+
+  for (modtime in 1:nrow(modelmonth)){
+    timeslice <- modelmonth[modtime]
+    yr <- str_sub(timeslice, -4)
+    for (cum in 1:length(clogasc_list)){
+      cumascyr <- str_sub(clogasc_list[cum], start = 44, end = 47) #selects the year from the file name
+      if(yr == cumascyr){
+        cumasc <- raster(clogasc_list[cum])
+        ascname <- names(cumasc)
+        probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
+        writeRaster(probbin, paste0("../output/maxent/predictions/", mthna,  "/binary_prob_", ascname, ".asc"), overwrite = TRUE)
+        plot(probbin, png(paste0("../output/maxent/predictions/", mthna, "/binary_prob_", ascname, ".png")), overwrite = TRUE)
+        dev.off() # stops automatic saving of the plot to a png
+      }
+    }
+  }
+```
+
+```{r habitat classification on probability - high only}
+
+binprob <- function(x){
+  ifelse(x >= 0.8, 1,
+  ifelse(x < 0.8, 0, NA)) 
+}
+
+
+modelmonth <- cbind(paste0(mthna, unique(prback$year)))
+clogasc_list <- list.files(paste0("../output/maxent/predictions/", mthna), pattern = "^cloglog_.*.asc", full.names = TRUE)
+
+  for (modtime in 1:nrow(modelmonth)){
+    timeslice <- modelmonth[modtime]
+    yr <- str_sub(timeslice, -4)
+    for (cum in 1:length(clogasc_list)){
+      cumascyr <- str_sub(clogasc_list[cum], start = 44, end = 47) #selects the year from the file name
+      if(yr == cumascyr){
+        cumasc <- raster(clogasc_list[cum])
+        ascname <- names(cumasc)
+        probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
+        writeRaster(probbin, paste0("../output/maxent/predictions/", mthna,  "/binary_highprob_", ascname, ".asc"), overwrite = TRUE)
+        plot(probbin, png(paste0("../output/maxent/predictions/", mthna, "/binary_highprob_", ascname, ".png")), overwrite = TRUE)
+        dev.off() # stops automatic saving of the plot to a png
+      }
+    }
+  }
+
+```
+
+
+```{r habitat classification on probability - med only}
+binprob <- function(x){
+  ifelse(x >= 0.7 & x <0.8, 1,
+  ifelse(x < 0.7, 0, NA)) 
+}
+
+
+modelmonth <- cbind(paste0(mthna, unique(prback$year)))
+clogasc_list <- list.files(paste0("../output/maxent/predictions/", mthna), pattern = "^cloglog_.*.asc", full.names = TRUE)
+
+  for (modtime in 1:nrow(modelmonth)){
+    timeslice <- modelmonth[modtime]
+    yr <- str_sub(timeslice, -4)
+    for (cum in 1:length(clogasc_list)){
+      cumascyr <- str_sub(clogasc_list[cum], start = 44, end = 47) #selects the year from the file name
+      if(yr == cumascyr){
+        cumasc <- raster(clogasc_list[cum])
+        ascname <- names(cumasc)
+        probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
+        writeRaster(probbin, paste0("../output/maxent/predictions/", mthna,  "/binary_medprob_", ascname, ".asc"), overwrite = TRUE)
+        plot(probbin, png(paste0("../output/maxent/predictions/", mthna, "/binary_medprob_", ascname, ".png")), overwrite = TRUE)
+        dev.off() # stops automatic saving of the plot to a png
+      }
+    }
+  }
+```
+
+```{r habitat classification on probability - low only}
+binprob <- function(x){
+  ifelse(x >= 0.6 & x <0.7, 1,
+  ifelse(x < 0.6, 0, NA)) 
+}
+
+
+modelmonth <- cbind(paste0(mthna, unique(prback$year)))
+clogasc_list <- list.files(paste0("../output/maxent/predictions/", mthna), pattern = "^cloglog_.*.asc", full.names = TRUE)
+
+  for (modtime in 1:nrow(modelmonth)){
+    timeslice <- modelmonth[modtime]
+    yr <- str_sub(timeslice, -4)
+    for (cum in 1:length(clogasc_list)){
+      cumascyr <- str_sub(clogasc_list[cum], start = 44, end = 47) #selects the year from the file name
+      if(yr == cumascyr){
+        cumasc <- raster(clogasc_list[cum])
+        ascname <- names(cumasc)
+        probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
+        writeRaster(probbin, paste0("../output/maxent/predictions/", mthna,  "/binary_lowprob_", ascname, ".asc"), overwrite = TRUE)
+        plot(probbin, png(paste0("../output/maxent/predictions/", mthna, "/binary_lowprob_", ascname, ".png")), overwrite = TRUE)
+        dev.off() # stops automatic saving of the plot to a png
+      }
+    }
+  }
+```
+
+now you need to do summary maps....
+
+
+```{r high probability map per year 2D representation}
+binaryprob_list <- list.files(paste0("../output/maxent/predictions/", mthna), pattern = "^binary_highprob_cloglog.*.asc", full.names = TRUE)
+yrlayer <- data.frame(matrix(ncol = 2, nrow = length(binaryprob_list)))
+colnames(yrlayer) <- c("layer", "year")
+
+for (yrlyr in 1:length(binaryprob_list)){
+  yearoflyr <- str_sub(binaryprob_list[yrlyr], start = 60, end = 63) #selects the year from the file name
+  yrlayer$year[yrlyr] <- yearoflyr
+  yrlayer$layer[yrlyr] <- binaryprob_list[yrlyr]
+}
+
+y_list <- split(yrlayer, yrlayer$year)
+noyrs <- unique(yrlayer$year)
+
+for (binyr in (1:length(y_list))){
+  binstack <- stack(y_list[[binyr]]$layer)
+  year <- y_list[[binyr]]$year[1]
+  stacksum <- sum(binstack, na.rm = TRUE)
+  writeRaster(stacksum, paste0("../output/maxent/predictions/", mthna, "/highprob_2d_", year, ".asc"), overwrite=TRUE)
+  plot(stacksum, png(paste0("../output/maxent/predictions/", mthna, "/highprob_2d_", year, ".png")))
+  dev.off()
+}
+  
+```
+
+```{r med probability map per year 2D representation}
+binaryprob_list <- list.files(paste0("../output/maxent/predictions/", mthna), pattern = "^binary_medprob_cloglog.*.asc", full.names = TRUE)
+yrlayer <- data.frame(matrix(ncol = 2, nrow = length(binaryprob_list)))
+colnames(yrlayer) <- c("layer", "year")
+
+for (yrlyr in 1:length(binaryprob_list)){
+  yearoflyr <- str_sub(binaryprob_list[yrlyr], start = 59, end = 62) #selects the year from the file name
+  yrlayer$year[yrlyr] <- yearoflyr
+  yrlayer$layer[yrlyr] <- binaryprob_list[yrlyr]
+}
+
+y_list <- split(yrlayer, yrlayer$year)
+noyrs <- unique(yrlayer$year)
+
+for (binyr in (1:length(y_list))){
+  binstack <- stack(y_list[[binyr]]$layer)
+  year <- y_list[[binyr]]$year[1]
+  stacksum <- sum(binstack, na.rm = TRUE)
+  writeRaster(stacksum, paste0("../output/maxent/predictions/", mthna, "/medprob_2d_", year, ".asc"), overwrite=TRUE)
+  plot(stacksum, png(paste0("../output/maxent/predictions/", mthna, "/medprob_2d_", year, ".png")))
+  dev.off()
+}
+  
+```
+
+```{r low probability map per year 2D representation}
+binaryprob_list <- list.files(paste0("../output/maxent/predictions/", mthna), pattern = "^binary_lowprob_cloglog.*.asc", full.names = TRUE)
+yrlayer <- data.frame(matrix(ncol = 2, nrow = length(binaryprob_list)))
+colnames(yrlayer) <- c("layer", "year")
+
+for (yrlyr in 1:length(binaryprob_list)){
+  yearoflyr <- str_sub(binaryprob_list[yrlyr], start = 59, end = 62) #selects the year from the file name
+  yrlayer$year[yrlyr] <- yearoflyr
+  yrlayer$layer[yrlyr] <- binaryprob_list[yrlyr]
+}
+
+y_list <- split(yrlayer, yrlayer$year)
+noyrs <- unique(yrlayer$year)
+
+for (binyr in (1:length(y_list))){
+  binstack <- stack(y_list[[binyr]]$layer)
+  year <- y_list[[binyr]]$year[1]
+  stacksum <- sum(binstack, na.rm = TRUE)
+  writeRaster(stacksum, paste0("../output/maxent/predictions/", mthna, "/lowprob_2d_", year, ".asc"), overwrite=TRUE)
+  plot(stacksum, png(paste0("../output/maxent/predictions/", mthna, "/lowprob_2d_", year, ".png")))
+  dev.off()
+}
+  
+```
+
+now average probability split maps - again low, med, high and all
+
+```{r habitat classification on average probability - 3 classifications}
+
+binprob <- function(x){
+  ifelse(x >= 0.8, 3,
+  ifelse(x >= 0.7 & x <0.8, 2,
+  ifelse(x >= 0.6 & x <0.7, 1,
+  ifelse(x < 0.6, 0, NA)))) 
+}
+
+
+clogasc_list <- list.files(paste0("../output/maxent/predictions/", mthna), pattern = "^avg_cloglog_.*.asc", full.names = TRUE)
+
+    for (cum in 1:length(clogasc_list)){
+      cumasc <- raster(clogasc_list[cum])
+      ascname <- names(cumasc)
+      probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
+      writeRaster(probbin, paste0("../output/maxent/predictions/", mthna,  "/binary_avgprob_", ascname, ".asc"), overwrite = TRUE)
+      plot(probbin, png(paste0("../output/maxent/predictions/", mthna, "/binary_avgprob_", ascname, ".png")), overwrite = TRUE)
+      dev.off() # stops automatic saving of the plot to a png
+    }
+  
+```
+
+```{r habitat classification on average probability - high}
+
+binprob <- function(x){
+  ifelse(x >= 0.8, 1,
+  ifelse(x < 0.8, 0, NA))  
+}
+
+
+clogasc_list <- list.files(paste0("../output/maxent/predictions/", mthna), pattern = "^avg_cloglog_.*.asc", full.names = TRUE)
+
+    for (cum in 1:length(clogasc_list)){
+      cumasc <- raster(clogasc_list[cum])
+      ascname <- names(cumasc)
+      probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
+      writeRaster(probbin, paste0("../output/maxent/predictions/", mthna,  "/binary_avg_highprob_", ascname, ".asc"), overwrite = TRUE)
+      plot(probbin, png(paste0("../output/maxent/predictions/", mthna, "/binary_avg_highprob_", ascname, ".png")), overwrite = TRUE)
+      dev.off() # stops automatic saving of the plot to a png
+    }
+  
+```
+
+```{r habitat classification on average probability - med}
+
+binprob <- function(x){
+  ifelse(x >= 0.7 & x <0.8, 1,
+  ifelse(x < 0.7, 0, NA)) 
+}
+
+
+clogasc_list <- list.files(paste0("../output/maxent/predictions/", mthna), pattern = "^avg_cloglog_.*.asc", full.names = TRUE)
+
+    for (cum in 1:length(clogasc_list)){
+      cumasc <- raster(clogasc_list[cum])
+      ascname <- names(cumasc)
+      probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
+      writeRaster(probbin, paste0("../output/maxent/predictions/", mthna,  "/binary_avg_medprob_", ascname, ".asc"), overwrite = TRUE)
+      plot(probbin, png(paste0("../output/maxent/predictions/", mthna, "/binary_avg_medprob_", ascname, ".png")), overwrite = TRUE)
+      dev.off() # stops automatic saving of the plot to a png
+    }
+  
+```
+
+```{r habitat classification on average probability - low}
+
+binprob <- function(x){
+  ifelse(x >= 0.6 & x <0.7, 1,
+  ifelse(x < 0.6, 0, NA)) 
+}
+
+
+clogasc_list <- list.files(paste0("../output/maxent/predictions/", mthna), pattern = "^avg_cloglog_.*.asc", full.names = TRUE)
+
+    for (cum in 1:length(clogasc_list)){
+      cumasc <- raster(clogasc_list[cum])
+      ascname <- names(cumasc)
+      probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
+      writeRaster(probbin, paste0("../output/maxent/predictions/", mthna,  "/binary_avg_lowprob_", ascname, ".asc"), overwrite = TRUE)
+      plot(probbin, png(paste0("../output/maxent/predictions/", mthna, "/binary_avg_lowprob_", ascname, ".png")), overwrite = TRUE)
+      dev.off() # stops automatic saving of the plot to a png
+    }
+  
+```
+
+```{r high probability average map per year 2D representation}
+binaryprob_list <- list.files(paste0("../output/maxent/predictions/", mthna), pattern = "^binary_avg_highprob.*.asc", full.names = TRUE)
+
+binstack <- stack(binaryprob_list)
+stacksum <- sum(binstack, na.rm = TRUE)
+writeRaster(stastaccksum, paste0("../output/maxent/predictions/", mthna, "/binary_highavg_2d.asc"), overwrite=TRUE)
+plot(stacksum, png(paste0("../output/maxent/predictions/", mthna, "/binary_highprob_avg_2d.png")))
+dev.off()
+```
+```{r med probability average map per year 2D representation}
+binaryprob_list <- list.files(paste0("../output/maxent/predictions/", mthna), pattern = "^binary_avg_medprob.*.asc", full.names = TRUE)
+
+binstack <- stack(binaryprob_list)
+stacksum <- sum(binstack, na.rm = TRUE)
+writeRaster(stacksum, paste0("../output/maxent/predictions/", mthna, "/binary_medavg_2d.asc"), overwrite=TRUE)
+plot(stacksum, png(paste0("../output/maxent/predictions/", mthna, "/binary_medprob_avg_2d.png")))
+dev.off()
+```
+
+```{r low probability average map per year 2D representation}
+binaryprob_list <- list.files(paste0("../output/maxent/predictions/", mthna), pattern = "^binary_avg_lowprob.*.asc", full.names = TRUE)
+
+binstack <- stack(binaryprob_list)
+stacksum <- sum(binstack, na.rm = TRUE)
+writeRaster(stacksum, paste0("../output/maxent/predictions/", mthna, "/binary_lowavg_2d.asc"), overwrite=TRUE)
+plot(stacksum, png(paste0("../output/maxent/predictions/", mthna, "/binary_lowprob_avg_2d.png")))
+dev.off()
+```
+
+
+first need some statistcs... for each layer how many cells have a value of 1...
+
+```{r calc no presence cells per layer (avg probability)} 
+ascdepth_list_high <- list.files(paste0("../output/maxent/predictions/", mthna), pattern = "^binary_avg_highprob_.*asc", full.names = TRUE)
+ascdepth_list_med <- list.files(paste0("../output/maxent/predictions/", mthna), pattern = "^binary_avg_medprob_.*asc", full.names = TRUE)
+ascdepth_list_low <- list.files(paste0("../output/maxent/predictions/", mthna), pattern = "^binary_avg_lowprob_.*asc", full.names = TRUE)
+
+
+binaryavgstack <- stack(ascdepth_list_high)
+stackstathigh <- data.frame(matrix(ncol = 2, nrow = nlayers(binaryavgstack)))
+stackstathigh[ ,1] <- c(1:49)
+colnames(stackstathigh) <- c("layer", "high_cell_sum")
+
+for (lyr in 1:nlayers(binaryavgstack)){
+  lyrsum <- cellStats(binaryavgstack[[lyr]], sum)
+  stackstathigh$high_cell_sum[lyr] <- lyrsum
+}
+
+binaryavgstack <- stack(ascdepth_list_med)
+stackstatmed <- data.frame(matrix(ncol = 2, nrow = nlayers(binaryavgstack)))
+stackstatmed[ ,1] <- c(1:49)
+colnames(stackstatmed) <- c("layer", "med_cell_sum")
+
+for (lyr in 1:nlayers(binaryavgstack)){
+  lyrsum <- cellStats(binaryavgstack[[lyr]], sum)
+  stackstatmed$med_cell_sum[lyr] <- lyrsum
+}
+
+binaryavgstack <- stack(ascdepth_list_low)
+stackstatlow <- data.frame(matrix(ncol = 2, nrow = nlayers(binaryavgstack)))
+stackstatlow[ ,1] <- c(1:49)
+colnames(stackstatlow) <- c("layer", "low_cell_sum")
+
+for (lyr in 1:nlayers(binaryavgstack)){
+  lyrsum <- cellStats(binaryavgstack[[lyr]], sum)
+  stackstatlow$low_cell_sum[lyr] <- lyrsum
+}
+
+stackstat <- cbind(stackstathigh, stackstatmed[ , 2], stackstatlow[ ,2])
+colnames(stackstat) <- c("layer", "high", "med", "low")
+stackstat <- melt(stackstat, id = "layer")
+
+write.csv(stackstat, paste0("../output/maxent/predictions/", mthna, "/probability_cellcount_bydepth_avg.csv"), row.names = FALSE)
+```
+
+
+a crude plot but ok to show slr
+
+```{r graph by depth - prob plot (avg)}
+bydepth <- ggplot(data = stackstat, aes(x = layer, y = value, fill = variable)) + geom_bar(stat = "identity") +   scale_x_reverse() +
+coord_flip()
+png(paste0("../output/maxent/predictions/", mthna, "/depthplot_probavg.png"))
+print(bydepth)
+dev.off()
+```
