@@ -15,7 +15,7 @@ You can install and load them using the following code which uses a function cal
 
 ```{r pre-install & load packages, include=FALSE}
 options(java.parameters = "-Xmx2g" )#needs to run before dismo loaded - boosts memory for java to 1g
-packages <- c("dismo", "stringr", "rJava", "raster", "ecospat", "bossMaps", "lattice", "tidyr", "enmSdm")
+packages <- c("dismo", "stringr", "rJava", "raster", "ecospat", "bossMaps", "lattice", "tidyr", "enmSdm", "ggplot2", "plyr")
 source("../src/ipak.R")
 ipak(packages)
 ```
@@ -57,8 +57,8 @@ mthnavar_lst <- list(jan = janvar, mar = marvar, apr = aprvar, may = mayvar, jun
 
 select month
 ```{r month of interest -change}
-mthna <- "jan"
-mthno <- "1"
+mthna <- "oct"
+mthno <- "10"
 ```
 
 
@@ -456,6 +456,225 @@ maxrm <- rbind(maxr, maxrm)
 write.csv(avgAIC, paste0("../output/maxent/models/", mthna, "avgAIC.csv"), row.names = FALSE)
 write.csv(maxrm, paste0("../output/maxent/models/", mthna, "avgmaxentresults.csv"), row.names = FALSE)
 ```
+
+summary table of average maxent results for each month
+```{r average AIC etc for each month in one table}
+aic_lst <- list.files("../output/maxent/models/", pattern = "avgAIC.csv", full.names = TRUE)
+aicsum <- data.frame(matrix(ncol = 11, nrow = length(aic_lst)))
+colnames(aicsum) <- c("Month", "BetaVal", "AICc", "Test AUC", "Training AUC", "Correlation", "Correlation P-Val", "TSS", "CBI", "No Omissions", "Prevalence")
+
+for (a in 1:length(aic_lst)){
+  aicr <- read.csv(aic_lst[a])
+  mth <- str_sub(aic_lst[a], start = 25, end = 27) #selects the month from the filename
+  aicsum$Month[a] <- mth
+  aicres <- tail(aicr, 1)
+  aicsum$BetaVal[a] <- aicres$beta
+  aicsum$AICc[a] <- aicres$AICc
+  aicsum$`Test AUC`[a] <- aicres$test_AUC
+  aicsum$`Training AUC`[a] <- aicres$train_AUC
+  aicsum$Correlation[a] <- aicres$test_evcor
+  aicsum$`Correlation P-Val` <- aicres$test_evpcor
+  aicsum$TSS[a] <- aicres$tss
+  aicsum$CBI[a] <- aicres$cbi
+  aicsum$`No Omissions`[a] <- aicres$test_no_omission
+  aicsum$Prevalence[a] <- aicres$test_prevalence
+}
+
+write.csv(aicsum, "../output/maxent/models/aicsummary.csv", row.names = FALSE)
+```
+
+stacked permutation importance plot on average
+
+```{r permutation & jack data}
+maxr_lst <- list.files("../output/maxent/models/", pattern = "maxentresults.csv", full.names = TRUE)
+maxr_lst <- maxr_lst[-4] #removing january because this month has slightly different variables than the others
+perm <- data.frame(matrix(ncol = 10, nrow = length(maxr_lst)))
+colnames(perm) <- c("Month", "amo_sample", "amo_winter", "chl_surface", "nao_prev", "nao_sample", "nao_winter", "o2_depth", "salinity_depth", "temp_depth")
+jack <- data.frame(matrix(ncol = 10, nrow = length(maxr_lst)))
+colnames(jack) <- c("Month", "amo_sample", "amo_winter", "chl_surface", "nao_prev", "nao_sample", "nao_winter", "o2_depth", "salinity_depth", "temp_depth")
+
+for (m in 1:length(maxr_lst)){
+  maxr <- read.csv(maxr_lst[m])
+  mth <- str_sub(maxr_lst[m], start = 25, end = 27) #selects the month from the filename
+  perm$Month[m] <- mth
+  jack$Month[m] <- mth
+  maxt <- tail(maxr, 1)
+  perm$amo_sample[m] <- maxt$amo_sample.permutation.importance
+  perm$amo_winter[m] <- maxt$amo_winter.permutation.importance
+  perm$chl_surface[m] <- maxt$chl_surface.permutation.importance
+  perm$nao_prev[m] <- maxt$nao_prev.permutation.importance
+  perm$nao_sample[m] <- maxt$nao_sample.permutation.importance
+  perm$nao_winter[m] <- maxt$nao_winter.permutation.importance
+  perm$o2_depth[m] <- maxt$o2_depth.permutation.importance
+  perm$salinity_depth[m] <- maxt$salinity_depth.permutation.importance
+  perm$temp_depth[m] <- maxt$temp_depth.permutation.importance
+
+  jack$amo_sample[m] <- maxt$Training.gain.without.amo_sample
+  jack$amo_winter[m] <- maxt$Training.gain.without.amo_winter
+  jack$chl_surface[m] <- maxt$Training.gain.without.chl_surface
+  jack$nao_prev[m] <- maxt$Training.gain.without.nao_prev
+  jack$nao_sample[m] <- maxt$Training.gain.without.nao_sample
+  jack$nao_winter[m] <- maxt$Training.gain.without.nao_winter
+  jack$o2_depth[m] <- maxt$Training.gain.without.o2_depth
+  jack$salinity_depth[m] <- maxt$Training.gain.without.salinity_depth
+  jack$temp_depth[m] <- maxt$Training.gain.without.temp_depth
+}
+
+# now for january
+
+maxr_lstj <- list.files("../output/maxent/models/", pattern = "janavgmaxentresults.csv", full.names = TRUE)
+permj <- data.frame(matrix(ncol = 7, nrow = length(maxr_lstj)))
+colnames(permj) <- c("Month", "chl_surface", "nao_sample", "nao_winter", "o2_depth", "salinity_depth", "temp_depth")
+jackj <- data.frame(matrix(ncol = 7, nrow = length(maxr_lstj)))
+colnames(jackj) <- c("Month", "chl_surface", "nao_sample", "nao_winter", "o2_depth", "salinity_depth", "temp_depth")
+
+for (m in 1:length(maxr_lstj)){
+  maxr <- read.csv(maxr_lstj[m])
+  mth <- str_sub(maxr_lstj[m], start = 25, end = 27) #selects the month from the filename
+  permj$Month[m] <- mth
+  jackj$Month[m] <- mth
+  maxt <- tail(maxr, 1)
+  permj$chl_surface[m] <- maxt$chl_surface.permutation.importance
+  permj$nao_sample[m] <- maxt$nao_sample.permutation.importance
+  permj$nao_winter[m] <- maxt$nao_winter.permutation.importance
+  permj$o2_depth[m] <- maxt$o2_depth.permutation.importance
+  permj$salinity_depth[m] <- maxt$salinity_depth.permutation.importance
+  permj$temp_depth[m] <- maxt$temp_depth.permutation.importance
+
+
+  jackj$chl_surface[m] <- maxt$Training.gain.without.chl_surface
+  jackj$nao_sample[m] <- maxt$Training.gain.without.nao_sample
+  jackj$nao_winter[m] <- maxt$Training.gain.without.nao_winter
+  jackj$o2_depth[m] <- maxt$Training.gain.without.o2_depth
+  jackj$salinity_depth[m] <- maxt$Training.gain.without.salinity_depth
+  jackj$temp_depth[m] <- maxt$Training.gain.without.temp_depth
+}
+
+
+permu <- rbind.fill(perm, permj)
+jackk <- rbind.fill(jack, jackj)
+
+mthord <- c("jan", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec") # a list of months to order by
+permu <- permu[match(mthord, permu$Month), ] #reorder based on mthord
+jackk <- jackk[match(mthord, jackk$Month), ] #reorder based on mthord
+
+write.csv(permu, "../output/maxent/models/permutation_avg.csv", row.names = FALSE)
+write.csv(jackk, "../output/maxent/models/jack_avg.csv", row.names = FALSE)
+
+```
+
+```{r}
+maxr_lst <- list.files("../output/maxent/models/", pattern = "maxentresults.csv", full.names = TRUE)
+maxr_lst <- maxr_lst[-4] #removing january because this month has slightly different variables than the others
+jack_df <- list()
+maxr_lstj <- list.files("../output/maxent/models/", pattern = "janavgmaxentresults.csv", full.names = TRUE)
+jack_dfj <- list()
+
+
+for (m in 1:length(maxr_lst)){
+  res <- read.csv(maxr_lst[m], header = TRUE)
+  mth <- str_sub(maxr_lst[m], start = 25, end = 27) #selects the month from the filename
+  res_df <- tail(res, 1)
+  var_df <- res_df[,c(grep("Training.gain.with*",names(res_df)))]
+  var_df$id <- 1:nrow(var_df)
+  var_df <- melt(var_df, id.vars=c("id"))
+  jack_with <- var_df[grep("with.only",var_df$variable),]
+  jack_with$Type_of_Run <- "With only the variable"
+  jack_without <- var_df[grep("without",var_df$variable),]
+  jack_without$Type_of_Run <- "Without the variable"
+  gain_all <- res_df[c(grep("Regularized.",names(res_df)))]
+  gain_all$id <- 1:nrow(gain_all)
+  gain_all <- melt(gain_all, id.vars=c("id"))
+  gain_all$Type_of_Run <- "With all variables"
+  gain_all$variable <- "all_variables"
+  jack_table <- rbind(jack_with,jack_without,gain_all)
+  jack_table$state <- mth 
+  
+
+  jack_table$variable <- gsub(".*[.]","",jack_table$variable)
+  jack_df[[m]] <- jack_table
+}
+
+var_jack <- do.call(rbind, jack_df)
+
+for (m in 1:length(maxr_lstj)){
+  res <- read.csv(maxr_lstj[m], header = TRUE)
+  mth <- str_sub(maxr_lstj[m], start = 25, end = 27) #selects the month from the filename
+  res_df <- tail(res, 1)
+  var_df <- res_df[,c(grep("Training.gain.with*",names(res_df)))]
+  var_df$id <- 1:nrow(var_df)
+  var_df <- melt(var_df, id.vars=c("id"))
+  jack_with <- var_df[grep("with.only",var_df$variable),]
+  jack_with$Type_of_Run <- "With only the variable"
+  jack_without <- var_df[grep("without",var_df$variable),]
+  jack_without$Type_of_Run <- "Without the variable"
+  gain_all <- res_df[c(grep("Regularized.",names(res_df)))]
+  gain_all$id <- 1:nrow(gain_all)
+  gain_all <- melt(gain_all, id.vars=c("id"))
+  gain_all$Type_of_Run <- "With all variables"
+  gain_all$variable <- "all_variables"
+  jack_table <- rbind(jack_with,jack_without,gain_all)
+  jack_table$state <- mth 
+  
+
+  jack_table$variable <- gsub(".*[.]","",jack_table$variable)
+  jack_dfj[[m]] <- jack_table
+}
+
+var_jackj <- do.call(rbind, jack_dfj)
+
+var_jack$state <- factor(var_jack$state,levels=c("mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"))
+var_jack$Type_of_Run <- factor(var_jack$Type_of_Run,levels=c("With all variables", "Without the variable","With only the variable"))
+var_jackj$state <- factor(var_jackj$state,levels="jan")
+var_jackj$Type_of_Run <- factor(var_jackj$Type_of_Run,levels=c("With all variables", "Without the variable","With only the variable"))
+a <- subset(var_jack, state == "mar" | state == "apr" |state == "may" | state == "jun" | state == "jul")
+b <- subset(var_jack, state == "aug" | state == "sep" |state == "oct" | state == "nov" | state == "dec")
+c <- subset(var_jackj, state == "jan")
+
+plotlst <- list(a, b, c)
+
+color_type_1 <- c("#000000", "#009E73","#999999")
+
+for (p in 1:length(plotlst)){
+  pt <- p
+  dev.new()
+  jack <- ggplot(plotlst[[p]], aes(variable,value))+
+  geom_bar(aes(fill=Type_of_Run),position="dodge",stat="identity")+ coord_flip()+ facet_grid(state~., scales="free", space = "free")+
+  theme_bw(14)+
+  scale_fill_manual(values=color_type_1,guide=guide_legend(reverse=TRUE))+
+  theme(axis.text=element_text(size=8)) +
+  theme(legend.title=element_blank())+
+  theme(legend.position="top")+
+  theme(strip.text=element_text(size=12))+
+  theme(strip.text.y = element_text(angle = 0)) +
+  labs(x="Variable",y="Jackknife of Regularized Training Gain")
+  ggsave(filename = paste0("../output/maxent/models/jackknife_plot_", pt, ".png"), plot = jack, dpi = 900, height = 9, width = 7)
+  dev.off()
+}
+
+
+#png("../output/maxent/models/jackknife_plot.png")
+#print(jack)
+#dev.off()
+```
+
+
+
+
+
+```{r permulation plot}
+permelt <- melt(permu, id = "Month") #need to melt the data into this format for ggplot
+perpl <- ggplot(data = permelt, aes(x = Month, y = value, fill = variable)) + geom_bar(stat = "identity") + scale_fill_brewer(palette = "Set1")
+png("../output/maxent/models/permutation_plot.png")
+print(perpl)
+dev.off()
+```
+
+```{r jackknife plot}
+color_type_1 <- c("#000000", "#009E73","#999999")
+jackpl <- ggplot(jackk, aes(x = variable, y = value)) + geom_bar(aes(fill=Type_of_Run),position="dodge",stat="identity")+
+```
+
 
 #binary maps - individual year layers
 
@@ -1046,3 +1265,13 @@ png(paste0("../output/maxent/predictions/", mthna, "/depthplot_probavg.png"))
 print(bydepth)
 dev.off()
 ```
+
+
+#which cells are used in all months?
+
+start with mpa binary map first
+
+```{r}
+
+```
+
