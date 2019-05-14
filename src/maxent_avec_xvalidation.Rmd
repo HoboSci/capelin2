@@ -1272,6 +1272,39 @@ dev.off()
 start with mpa binary map first
 
 ```{r}
+mthlst <- c("jan", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
+
+for(m in 1:length(mthlst)){
+  mthna <- mthlst[m]
+  mpabin_lst <- list.files(paste0("../output/maxent/predictions/", mthna), pattern =  "^binary_avg_cloglog.*.asc", full.names = TRUE)
+
+  stdep <- read.csv("../output/maxent/models/dec1998/stack_depth.csv", header = TRUE)
+  depthlayers <- data.frame(cbind(unique(stdep$ascdepths)))
+  names(depthlayers)[names(depthlayers) == "cbind.unique.stdep.ascdepths.."] <- "depth"
+  depthlayers$depth <- as.character(depthlayers$depth)
+
+  colno <- 1
+
+  for (d in 1:nrow(depthlayers)){
+    dep <- depthlayers$depth[d]
+    for (a in 1:length(mpabin_lst)){
+      asc <- mpabin_lst[a]
+      if (grepl(dep, asc)){
+        depthlayers[d , paste0("a", colno)] <- asc
+          colno <- colno+1
+      }
+    }
+  }
+  write.csv(depthlayers, (paste0("../output/maxent/predictions/", mthna, "_binary_avg_asclayerbydepth.csv")), row.names = TRUE)
+}
+
+
+a <- read.csv("../output/maxent/predictions/apr_binary_avg_asclayerbydepth.csv", header = TRUE)
+b <- read.csv("../output/maxent/predictions/may_binary_avg_asclayerbydepth.csv", header = TRUE)
+c <- merge(a, b, by=0)
+
+data <- rbindlist(lapply(list.files("../output/maxent/predictions/", pattern = ".*binary_avg_asclayerbydepth.csv", full.names = TRUE), fread))
 
 ```
+
 
