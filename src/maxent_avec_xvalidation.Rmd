@@ -1269,42 +1269,105 @@ dev.off()
 
 #which cells are used in all months?
 
-start with mpa binary map first
+start with mpa binary map first - based on averages
 
-```{r}
+```{r get all csvs in one database}
 mthlst <- c("jan", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
+stdep <- read.csv("../output/maxent/models/dec1998/stack_depth.csv", header = TRUE)
+depthlayers <- data.frame(cbind(unique(stdep$ascdepths)))
+names(depthlayers)[names(depthlayers) == "cbind.unique.stdep.ascdepths.."] <- "depth"
+depthlayers$depth <- as.character(depthlayers$depth)
+
 
 for(m in 1:length(mthlst)){
   mthna <- mthlst[m]
+#mthna <- "jan"
   mpabin_lst <- list.files(paste0("../output/maxent/predictions/", mthna), pattern =  "^binary_avg_cloglog.*.asc", full.names = TRUE)
 
-  stdep <- read.csv("../output/maxent/models/dec1998/stack_depth.csv", header = TRUE)
-  depthlayers <- data.frame(cbind(unique(stdep$ascdepths)))
-  names(depthlayers)[names(depthlayers) == "cbind.unique.stdep.ascdepths.."] <- "depth"
-  depthlayers$depth <- as.character(depthlayers$depth)
 
-  colno <- 1
-
+  
   for (d in 1:nrow(depthlayers)){
     dep <- depthlayers$depth[d]
     for (a in 1:length(mpabin_lst)){
       asc <- mpabin_lst[a]
       if (grepl(dep, asc)){
-        depthlayers[d , paste0("a", colno)] <- asc
-          colno <- colno+1
+        depthlayers[d , paste0(mthna)] <- asc
+        
       }
     }
   }
-  write.csv(depthlayers, (paste0("../output/maxent/predictions/", mthna, "_binary_avg_asclayerbydepth.csv")), row.names = TRUE)
+  write.csv(depthlayers, ("../output/maxent/predictions/all_cells/binary_avg_asclayerbydepth.csv"), row.names = FALSE)
 }
-
-
-a <- read.csv("../output/maxent/predictions/apr_binary_avg_asclayerbydepth.csv", header = TRUE)
-b <- read.csv("../output/maxent/predictions/may_binary_avg_asclayerbydepth.csv", header = TRUE)
-c <- merge(a, b, by=0)
-
-data <- rbindlist(lapply(list.files("../output/maxent/predictions/", pattern = ".*binary_avg_asclayerbydepth.csv", full.names = TRUE), fread))
 
 ```
 
+```{r create stacks by depth}
+depthlayers <- read.csv("../output/maxent/predictions/all_cells/binary_avg_asclayerbydepth.csv", header = TRUE)
 
+
+for (x in 1:nrow(depthlayers)){
+  asclay <- depthlayers[x, ]
+  asclay <- asclay[!is.na(asclay)]
+  asclay <- as.data.frame(rbind(asclay))
+  asclay$V1 <- as.character(asclay$V1) #v1 corresponds to depth
+  asclay$V2 <- as.character(asclay$V2) #v2 to end corresponds to month
+  asclay$V3 <- as.character(asclay$V3)
+  asclay$V4 <- as.character(asclay$V4)
+  asclay$V5 <- as.character(asclay$V5)
+  asclay$V6 <- as.character(asclay$V6)
+  asclay$V7 <- as.character(asclay$V7)
+  asclay$V8 <- as.character(asclay$V8)
+  asclay$V9 <- as.character(asclay$V9)
+  asclay$V10 <- as.character(asclay$V10)
+  asclay$V11 <- as.character(asclay$V11)
+  asclay$V12 <- as.character(asclay$V12)
+
+
+  
+  asclaydep <- asclay$V1
+  
+  ascjan <- raster(asclay$V2)
+  ascmar <- raster(asclay$V3)
+  ascapr <- raster(asclay$V4)
+  ascmay <- raster(asclay$V5)
+  ascjun <- raster(asclay$V6)
+  ascjul <- raster(asclay$V7)
+  ascaug <- raster(asclay$V8)
+  ascsep <- raster(asclay$V9)
+  ascoct <- raster(asclay$V10)
+  ascnov <- raster(asclay$V11)
+  ascdec <- raster(asclay$V12)
+
+
+
+  stkasc <- stack(ascjan, ascmar, ascapr, ascmay, ascjun, ascjul, ascaug, ascsep, ascoct, ascnov, ascdec)
+
+  avg <- sum(stkasc, na.rm = TRUE)
+  
+  writeRaster(avg, paste0("../output/maxent/predictions/all_cells/count_cells_used_all_months_mpa", asclaydep, ".asc"), overwrite=TRUE)
+  avgplot <- plot(avg, png(paste0("../output/maxent/predictions/all_cells/count_cells_used_all_months_mpa", asclaydep, ".png")), overwrite = TRUE) 
+  dev.off()
+}
+
+```
+
+```{r create rasters showing cells that are suitable in all 11 months}
+cellslst <- list.files("../output/maxent/predictions/all_cells", pattern =  "^count_cells_used_all_months_mpa.*.asc", full.names = TRUE)
+
+allcell <- function(x){
+  ifelse(x == 12, 1,
+  ifelse(x < 12, 0, NA)) 
+}
+
+for (r in 1:length(cellslst)){
+  ras <- raster(cellslst[r])
+  ascname <- names(ras)
+  allc <- calc(ras, fun = allcell)
+  writeRaster(allc, paste0("../output/maxent/predictions/all_cells/total_cells_used_all_months_mpa", ascname, ".asc"), overwrite = TRUE)
+  plot(allc, png(paste0("../output/maxent/predictions/all_cells/total_cells_used_all_months_mpa", ascname, ".png")), overwrite = TRUE)
+  dev.off() # stops automatic saving of the plot to a png
+  
+}
+```
+
+there are no cells that are used in every month....
