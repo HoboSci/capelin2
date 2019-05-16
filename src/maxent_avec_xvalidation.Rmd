@@ -15,7 +15,7 @@ You can install and load them using the following code which uses a function cal
 
 ```{r pre-install & load packages, include=FALSE}
 options(java.parameters = "-Xmx2g" )#needs to run before dismo loaded - boosts memory for java to 1g
-packages <- c("dismo", "stringr", "rJava", "raster", "ecospat", "bossMaps", "lattice", "tidyr", "enmSdm", "ggplot2", "plyr")
+packages <- c("dismo", "stringr", "rJava", "raster", "ecospat", "bossMaps", "lattice", "tidyr", "enmSdm", "ggplot2", "plyr", "reshape2")
 source("../src/ipak.R")
 ipak(packages)
 ```
@@ -480,7 +480,11 @@ for (a in 1:length(aic_lst)){
   aicsum$Prevalence[a] <- aicres$test_prevalence
 }
 
+
+mthord <- c("jan", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec") # a list of months to order by
+aicsum <- aicsum[match(mthord, aicsum$Month), ] #reorder based on mthord
 write.csv(aicsum, "../output/maxent/models/aicsummary.csv", row.names = FALSE)
+
 ```
 
 stacked permutation importance plot on average
@@ -519,6 +523,7 @@ for (m in 1:length(maxr_lst)){
   jack$salinity_depth[m] <- maxt$Training.gain.without.salinity_depth
   jack$temp_depth[m] <- maxt$Training.gain.without.temp_depth
 }
+
 
 # now for january
 
@@ -666,6 +671,15 @@ for (p in 1:length(plotlst)){
 permelt <- melt(permu, id = "Month") #need to melt the data into this format for ggplot
 perpl <- ggplot(data = permelt, aes(x = Month, y = value, fill = variable)) + geom_bar(stat = "identity") + scale_fill_brewer(palette = "Set1")
 png("../output/maxent/models/permutation_plot.png")
+print(perpl)
+dev.off()
+
+#for jan
+
+permuj <- subset(permu, Month == "jan")
+permelt <- melt(permuj, id = "Month") #need to melt the data into this format for ggplot
+perpl <- ggplot(data = permelt, aes(x = Month, y = value, fill = variable)) + geom_bar(stat = "identity") + scale_fill_brewer(palette = "Set1")
+png("../output/maxent/models/permutation_plot_jan.png")
 print(perpl)
 dev.off()
 ```
@@ -869,7 +883,7 @@ dev.off()
 ```
 
 
-#plots by depth
+#plots by depth for MPA threshold
 
 first need some statistcs... for each layer how many cells have a value of 1...
 
@@ -1371,3 +1385,47 @@ for (r in 1:length(cellslst)){
 ```
 
 there are no cells that are used in every month....
+
+
+
+# quickly adding some black to some plots for mj slr
+```{r}
+mthlst <- c("jan", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
+
+for(m in 1:length(mthlst)){
+  mthna <- mthlst[m]
+  replst11 <- list.files(paste0("../output/maxent/predictions/", mthna), pattern =  ".*11.7737.*.asc", full.names = TRUE)
+  replst221 <- list.files(paste0("../output/maxent/predictions/", mthna), pattern =  ".*221.141.*.asc", full.names = TRUE)
+  replst508 <- list.files(paste0("../output/maxent/predictions/", mthna), pattern =  ".*508.64.*.asc", full.names = TRUE)
+  replst <- c(replst11, replst221, replst508)
+  for (r in 1:length(replst)){
+    ras <- raster(replst[r])
+    ascname <- names(ras)
+    plot(ras, colNA = 'black', png(paste0("../output/maxent/predictions/", mthna, "/", ascname, ".png")), overwrite = TRUE)
+    dev.off()
+  }
+}
+
+
+replst163 <- list.files("../output/maxent/predictions/jul/", pattern =  ".*163..*.asc", full.names = TRUE)
+for (r in 1:length(replst163)){
+    ras <- raster(replst163[r])
+    ascname <- names(ras)
+    plot(ras, colNA = 'black', png(paste0("../output/maxent/predictions/jul/", ascname, ".png")), overwrite = TRUE)
+    dev.off()
+}
+
+back <- raster("../output/maxent/predictions/mar/binary_avg_medprob_avg_cloglog_1.55586.asc")
+replst163 <- list.files("../output/maxent/predictions/jan/", pattern =  ".*avg_2d.*.asc", full.names = TRUE)
+for (r in 1:length(replst163)){
+    ras <- raster(replst163[r])
+    ascname <- names(ras)
+    bkras <- overlay(back, ras, fun=function(x,y){return(x+y)})
+    plot(bkras, colNA = 'black', png(paste0("../output/maxent/predictions/jan/", ascname, ".png")), overwrite = TRUE)
+    dev.off()
+}
+
+
+
+
+```
