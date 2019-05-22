@@ -57,8 +57,8 @@ mthnavar_lst <- list(jan = janvar, mar = marvar, apr = aprvar, may = mayvar, jun
 
 select month
 ```{r month of interest -change}
-mthna <- "oct"
-mthno <- "10"
+mthna <- "jan"
+mthno <- "1"
 ```
 
 
@@ -734,6 +734,7 @@ run cellStats (sum)
 save the output as they year
 
 ```{r binary map per year 2D representation}
+
 binaryclog_list <- list.files(paste0("../output/maxent/predictions/", mthna), pattern = "^binary_cloglog.*.asc", full.names = TRUE)
 yrlayer <- data.frame(matrix(ncol = 2, nrow = length(binaryclog_list)))
 colnames(yrlayer) <- c("layer", "year")
@@ -755,6 +756,7 @@ for (binyr in (1:length(y_list))){
   plot(stacksum, png(paste0("../output/maxent/predictions/", mthna, "/binary_2d_", year, ".png")))
   dev.off()
 }
+
   
 ```
 
@@ -872,6 +874,7 @@ for (avg in 1:length(avgasc_list)){
 ```
 
 ```{r binary map averaged 2D representation}
+
 binaryclog_list <- list.files(paste0("../output/maxent/predictions/", mthna), pattern = "^binary_avg_cloglog.*.asc", full.names = TRUE)
 
 binstack <- stack(binaryclog_list)
@@ -891,7 +894,7 @@ first need some statistcs... for each layer how many cells have a value of 1...
 ascdepth_list <- list.files(paste0("../output/maxent/predictions/", mthna), pattern = "^binary_avg_cloglog.*asc", full.names = TRUE)
 binaryavgstack <- stack(ascdepth_list)
 stackstat <- data.frame(matrix(ncol = 2, nrow = nlayers(binaryavgstack)))
-stackstat[ ,1] <- c(1:49)
+stackstat[ ,1] <- c(1:46)
 colnames(stackstat) <- c("layer", "cell_sum")
 
 for (lyr in 1:nlayers(binaryavgstack)){
@@ -902,6 +905,19 @@ for (lyr in 1:nlayers(binaryavgstack)){
 write.csv(stackstat, paste0("../output/maxent/predictions/", mthna, "/cellcount_bydepth_avg.csv"), row.names = FALSE)
 ```
 
+attach depth in meters (layer_name in depth_bin.csv) to the stackstat based on layer (stackstat) and depthlayerno (depth_bin.csv)
+
+```{r}
+dep <- read.csv("../data/env/depth_bin.csv", header = TRUE) # the depth bin file created way back
+dep <- subset(dep, select = c("depthlayerno", "layer_name"))
+stackstat <-  read.csv(paste0("../output/maxent/predictions/", mthna, "/cellcount_bydepth_avg.csv"), header = TRUE)
+colnames(dep)[names(dep) == "depthlayerno"] <- "layer"
+stackstat <- left_join(stackstat, dep)
+stackstat[ , "layer_name"]=round(stackstat[ , "layer_name"], 2)
+head(stackstat)
+
+```
+
 
 a crude plot but ok to show slr
 
@@ -910,6 +926,7 @@ bydepth <- barchart(layer ~ cell_sum, data = stackstat, ylim = c(49, 1))
 trellis.device(device="png", filename = paste0("../output/maxent/predictions/", mthna, "/depthplot_avg.png"))
 print(bydepth)
 dev.off()
+
 ```
 
 #probability selected maps
@@ -1032,6 +1049,7 @@ now you need to do summary maps....
 
 
 ```{r high probability map per year 2D representation}
+
 binaryprob_list <- list.files(paste0("../output/maxent/predictions/", mthna), pattern = "^binary_highprob_cloglog.*.asc", full.names = TRUE)
 yrlayer <- data.frame(matrix(ncol = 2, nrow = length(binaryprob_list)))
 colnames(yrlayer) <- c("layer", "year")
@@ -1053,7 +1071,7 @@ for (binyr in (1:length(y_list))){
   plot(stacksum, png(paste0("../output/maxent/predictions/", mthna, "/highprob_2d_", year, ".png")))
   dev.off()
 }
-  
+
 ```
 
 ```{r med probability map per year 2D representation}
@@ -1078,7 +1096,8 @@ for (binyr in (1:length(y_list))){
   plot(stacksum, png(paste0("../output/maxent/predictions/", mthna, "/medprob_2d_", year, ".png")))
   dev.off()
 }
-  
+
+
 ```
 
 ```{r low probability map per year 2D representation}
@@ -1104,6 +1123,7 @@ for (binyr in (1:length(y_list))){
   dev.off()
 }
   
+
 ```
 
 now average probability split maps - again low, med, high and all
@@ -1195,6 +1215,7 @@ clogasc_list <- list.files(paste0("../output/maxent/predictions/", mthna), patte
 ```
 
 ```{r high probability average map per year 2D representation}
+
 binaryprob_list <- list.files(paste0("../output/maxent/predictions/", mthna), pattern = "^binary_avg_highprob.*.asc", full.names = TRUE)
 
 binstack <- stack(binaryprob_list)
@@ -1202,8 +1223,13 @@ stacksum <- sum(binstack, na.rm = TRUE)
 writeRaster(stacksum, paste0("../output/maxent/predictions/", mthna, "/binary_highavg_2d.asc"), overwrite=TRUE)
 plot(stacksum, png(paste0("../output/maxent/predictions/", mthna, "/binary_highprob_avg_2d.png")))
 dev.off()
+
+
+
 ```
+
 ```{r med probability average map per year 2D representation}
+
 binaryprob_list <- list.files(paste0("../output/maxent/predictions/", mthna), pattern = "^binary_avg_medprob.*.asc", full.names = TRUE)
 
 binstack <- stack(binaryprob_list)
@@ -1211,9 +1237,13 @@ stacksum <- sum(binstack, na.rm = TRUE)
 writeRaster(stacksum, paste0("../output/maxent/predictions/", mthna, "/binary_medavg_2d.asc"), overwrite=TRUE)
 plot(stacksum, png(paste0("../output/maxent/predictions/", mthna, "/binary_medprob_avg_2d.png")))
 dev.off()
+
+
 ```
 
 ```{r low probability average map per year 2D representation}
+
+
 binaryprob_list <- list.files(paste0("../output/maxent/predictions/", mthna), pattern = "^binary_avg_lowprob.*.asc", full.names = TRUE)
 
 binstack <- stack(binaryprob_list)
@@ -1221,6 +1251,8 @@ stacksum <- sum(binstack, na.rm = TRUE)
 writeRaster(stacksum, paste0("../output/maxent/predictions/", mthna, "/binary_lowavg_2d.asc"), overwrite=TRUE)
 plot(stacksum, png(paste0("../output/maxent/predictions/", mthna, "/binary_lowprob_avg_2d.png")))
 dev.off()
+
+
 ```
 
 
@@ -1234,7 +1266,7 @@ ascdepth_list_low <- list.files(paste0("../output/maxent/predictions/", mthna), 
 
 binaryavgstack <- stack(ascdepth_list_high)
 stackstathigh <- data.frame(matrix(ncol = 2, nrow = nlayers(binaryavgstack)))
-stackstathigh[ ,1] <- c(1:49)
+stackstathigh[ ,1] <- c(1:46)
 colnames(stackstathigh) <- c("layer", "high_cell_sum")
 
 for (lyr in 1:nlayers(binaryavgstack)){
@@ -1244,7 +1276,7 @@ for (lyr in 1:nlayers(binaryavgstack)){
 
 binaryavgstack <- stack(ascdepth_list_med)
 stackstatmed <- data.frame(matrix(ncol = 2, nrow = nlayers(binaryavgstack)))
-stackstatmed[ ,1] <- c(1:49)
+stackstatmed[ ,1] <- c(1:46)
 colnames(stackstatmed) <- c("layer", "med_cell_sum")
 
 for (lyr in 1:nlayers(binaryavgstack)){
@@ -1254,7 +1286,7 @@ for (lyr in 1:nlayers(binaryavgstack)){
 
 binaryavgstack <- stack(ascdepth_list_low)
 stackstatlow <- data.frame(matrix(ncol = 2, nrow = nlayers(binaryavgstack)))
-stackstatlow[ ,1] <- c(1:49)
+stackstatlow[ ,1] <- c(1:46)
 colnames(stackstatlow) <- c("layer", "low_cell_sum")
 
 for (lyr in 1:nlayers(binaryavgstack)){
@@ -1267,6 +1299,7 @@ colnames(stackstat) <- c("layer", "high", "med", "low")
 stackstat <- melt(stackstat, id = "layer")
 
 write.csv(stackstat, paste0("../output/maxent/predictions/", mthna, "/probability_cellcount_bydepth_avg.csv"), row.names = FALSE)
+
 ```
 
 
@@ -1278,6 +1311,7 @@ coord_flip()
 png(paste0("../output/maxent/predictions/", mthna, "/depthplot_probavg.png"))
 print(bydepth)
 dev.off()
+
 ```
 
 
@@ -1429,3 +1463,7 @@ for (r in 1:length(replst163)){
 
 
 ```
+
+
+
+
