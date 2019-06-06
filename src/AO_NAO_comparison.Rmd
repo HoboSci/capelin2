@@ -1,0 +1,218 @@
+
+
+# NAO
+
+Dataset mes from [NCAR](https://climatedataguide.ucar.edu/climate-data/hurrell-north-atlantic-oscillation-nao-index-pc-based). Note I am using the monthly principal component (PC)-based indices of the North Atlantic Oscillation [(NAO)](https://climatedataguide.ucar.edu/sites/default/files/nao_pc_monthly.txt). I have already converted this file into a csv and removed unncesessary text. Note there are no headers...
+
+```{r}
+naoraw <- read.csv("./data/env/nao_pc_monthly.csv", header = FALSE) 
+head(naoraw)
+```
+
+lets give some column names. col 1  year, 2:13 are the months
+```{r}
+colnames(naoraw) <- c("year","Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+head(naoraw)
+```
+ 
+ NA values are represented by -999. Change these to NA
+```{r}
+naoraw <- replace(naoraw,naoraw==-999, NA)
+```
+ 
+Now subset the dataset to start in 1996 (the capelin data starts in 1998, but you want some previous time period stuff)
+
+```{r}
+nao <- naoraw[naoraw$year >= 1996, ]
+head(nao) 
+```
+
+And just for fun, plot the NAO follow the tutorial here
+
+```{r}
+naocolumn <- matrix(t(nao[ ,2:13]), ncol=1) #month data is in col 2 - 13 
+naocolumn1 <- as.vector(naocolumn)
+naotimeseries <- ts(naocolumn1, frequency = 12, start = c(1996,1))
+plot.ts(naotimeseries)
+abline(h = 0)
+#dev.copy(png, "../output/env/nao.png") #this prints a png of the plot
+#dev.off() #this turns off the print command
+```
+
+#AO
+
+```{r}
+aoraw <- read.csv("../data/env/arctic_osc_mon.csv", header = TRUE) 
+head(aoraw)
+```
+
+
+ NA values are represented by -999. Change these to NA
+```{r}
+aoraw <- replace(aoraw,aoraw==-999, NA)
+```
+ 
+Now subset the dataset to start in 1996 (the capelin data starts in 1998, but you want some previous time period stuff)
+
+```{r}
+ao <- aoraw[aoraw$X >= 1996, ]
+head(ao) 
+```
+
+And just for fun, plot the NAO follow the tutorial here
+
+```{r}
+aocolumn <- matrix(t(ao[ ,2:13]), ncol=1) #month data is in col 2 - 13 
+aocolumn1 <- as.vector(aocolumn)
+aotimeseries <- ts(aocolumn1, frequency = 12, start = c(1996,1))
+plot.ts(aotimeseries)
+abline(h = 0)
+dev.copy(png, "../output/env/ao.png") #this prints a png of the plot
+dev.off() #this turns off the print command
+```
+
+```{r}
+summary(nao)
+```
+
+need dplyr
+```{r}
+naoq1 <- summarize_all(nao, ~ quantile(.x, probs = 0.25, na.rm = TRUE))
+write.csv(naoq1, "../output/env/naoq1.csv", row.names = FALSE)
+naoq1 <- read.csv("../output/env/naoq1.csv", header = TRUE)
+
+naojanq1 <- subset(nao$year, nao$Jan <= naoq1$Jan)
+write.csv(naojanq1, "../output/env/nao_jan_q1.csv")        
+naofebq1 <- subset(nao$year, nao$Feb <= naoq1$Feb)
+write.csv(naofebq1, "../output/env/nao_feb_q1.csv") 
+naomarq1 <- subset(nao$year, nao$Mar <= naoq1$Mar)
+write.csv(naomarq1, "../output/env/nao_mar_q1.csv")        
+naoaprq1 <- subset(nao$year, nao$Apr <= naoq1$Apr)
+write.csv(naoaprq1, "../output/env/nao_apr_q1.csv")  
+naomayq1 <- subset(nao$year, nao$May <= naoq1$May)
+write.csv(naomayq1, "../output/env/nao_may_q1.csv")        
+naojunq1 <- subset(nao$year, nao$Jun <= naoq1$Jun)
+write.csv(naojunq1, "../output/env/nao_jun_q1.csv") 
+naojulq1 <- subset(nao$year, nao$Jul <= naoq1$Jul)
+write.csv(naojulq1, "../output/env/nao_jul_q1.csv")        
+naoaugq1 <- subset(nao$year, nao$Aug <= naoq1$Aug)
+write.csv(naoaugq1, "../output/env/nao_aug_q1.csv")  
+naosepq1 <- subset(nao$year, nao$Sep <= naoq1$Sep)
+write.csv(naosepq1, "../output/env/nao_sep_q1.csv")        
+naooctq1 <- subset(nao$year, nao$Oct <= naoq1$Oct)
+write.csv(naooctq1, "../output/env/nao_oct_q1.csv") 
+naonovq1 <- subset(nao$year, nao$Nov <= naoq1$Nov)
+write.csv(naonovq1, "../output/env/nao_nov_q1.csv")        
+naodecq1 <- subset(nao$year, nao$Dec <= naoq1$Dec)
+write.csv(naodecq1, "../output/env/nao_dec_q1.csv")  
+
+naoq1_all <- rbind(naojanq1, naofebq1, naomarq1, naoaprq1, naomayq1, naojunq1, naojulq1, naoaugq1, naosepq1, naooctq1, naonovq1, naodecq1)
+write.csv(naoq1_all, "../output/env/nao_q1_all.csv")
+
+
+naoq4 <- summarize_all(nao, ~ quantile(.x, probs = 0.75, na.rm = TRUE))
+write.csv(naoq4, "../output/env/naoq4.csv", row.names = FALSE)
+naoq4 <- read.csv("../output/env/naoq4.csv", header = TRUE)
+
+naojanq4 <- subset(nao$year, nao$Jan >= naoq4$Jan)
+write.csv(naojanq4, "../output/env/nao_jan_q4.csv")        
+naofebq4 <- subset(nao$year, nao$Feb >= naoq4$Feb)
+write.csv(naofebq4, "../output/env/nao_feb_q4.csv") 
+naomarq4 <- subset(nao$year, nao$Mar >= naoq4$Mar)
+write.csv(naomarq4, "../output/env/nao_mar_q4.csv")        
+naoaprq4 <- subset(nao$year, nao$Apr >= naoq4$Apr)
+write.csv(naoaprq4, "../output/env/nao_apr_q4.csv")  
+naomayq4 <- subset(nao$year, nao$May >= naoq4$May)
+write.csv(naomayq4, "../output/env/nao_may_q4.csv")        
+naojunq4 <- subset(nao$year, nao$Jun >= naoq4$Jun)
+write.csv(naojunq4, "../output/env/nao_jun_q4.csv") 
+naojulq4 <- subset(nao$year, nao$Jul >= naoq4$Jul)
+write.csv(naojulq4, "../output/env/nao_jul_q4.csv")        
+naoaugq4 <- subset(nao$year, nao$Aug >= naoq4$Aug)
+write.csv(naoaugq4, "../output/env/nao_aug_q4.csv")  
+naosepq4 <- subset(nao$year, nao$Sep >= naoq4$Sep)
+write.csv(naosepq4, "../output/env/nao_sep_q4.csv")        
+naooctq4 <- subset(nao$year, nao$Oct >= naoq4$Oct)
+write.csv(naooctq4, "../output/env/nao_oct_q4.csv") 
+naonovq4 <- subset(nao$year, nao$Nov >= naoq4$Nov)
+write.csv(naonovq4, "../output/env/nao_nov_q4.csv")        
+naodecq4 <- subset(nao$year, nao$Dec >= naoq4$Dec)
+write.csv(naodecq4, "../output/env/nao_dec_q4.csv")  
+
+naoq4_all <- rbind(naojanq4, naofebq4, naomarq4, naoaprq4, naomayq4, naojunq4, naojulq4, naoaugq4, naosepq4, naooctq4, naonovq4, naodecq4)
+write.csv(naoq4_all, "../output/env/nao_q4_all.csv")
+
+```
+
+
+need dplyr
+```{r}
+aoq1 <- summarize_all(ao, ~ quantile(.x, probs = 0.25, na.rm = TRUE))
+write.csv(aoq1, "../output/env/aoq1.csv", row.names = FALSE)
+aoq1 <- read.csv("../output/env/aoq1.csv", header = TRUE)
+
+aojanq1 <- subset(ao$X, ao$Jan <= aoq1$Jan)
+write.csv(aojanq1, "../output/env/ao_jan_q1.csv")        
+aofebq1 <- subset(ao$X, ao$Feb <= aoq1$Feb)
+write.csv(aofebq1, "../output/env/ao_feb_q1.csv") 
+aomarq1 <- subset(ao$X, ao$Mar <= aoq1$Mar)
+write.csv(aomarq1, "../output/env/ao_mar_q1.csv")        
+aoaprq1 <- subset(ao$X, ao$Apr <= aoq1$Apr)
+write.csv(aoaprq1, "../output/env/ao_apr_q1.csv")  
+aomayq1 <- subset(ao$X, ao$May <= aoq1$May)
+write.csv(aomayq1, "../output/env/ao_may_q1.csv")        
+aojunq1 <- subset(ao$X, ao$Jun <= aoq1$Jun)
+write.csv(aojunq1, "../output/env/ao_jun_q1.csv") 
+aojulq1 <- subset(ao$X, ao$Jul <= aoq1$Jul)
+write.csv(aojulq1, "../output/env/ao_jul_q1.csv")        
+aoaugq1 <- subset(ao$X, ao$Aug <= aoq1$Aug)
+write.csv(aoaugq1, "../output/env/ao_aug_q1.csv")  
+aosepq1 <- subset(ao$X, ao$Sep <= aoq1$Sep)
+write.csv(aosepq1, "../output/env/ao_sep_q1.csv")        
+aooctq1 <- subset(ao$X, ao$Oct <= aoq1$Oct)
+write.csv(aooctq1, "../output/env/ao_oct_q1.csv") 
+aonovq1 <- subset(ao$X, ao$Nov <= aoq1$Nov)
+write.csv(aonovq1, "../output/env/ao_nov_q1.csv")        
+aodecq1 <- subset(ao$X, ao$Dec <= aoq1$Dec)
+write.csv(aodecq1, "../output/env/ao_dec_q1.csv")  
+
+aoq1_all <- rbind(aojanq1, aofebq1, aomarq1, aoaprq1, aomayq1, aojunq1, aojulq1, aoaugq1, aosepq1, aooctq1, aonovq1, aodecq1)
+write.csv(aoq1_all, "../output/env/ao_q1_all.csv")
+
+
+aoq4 <- summarize_all(ao, ~ quantile(.x, probs = 0.75, na.rm = TRUE))
+write.csv(aoq4, "../output/env/aoq4.csv", row.names = FALSE)
+aoq4 <- read.csv("../output/env/aoq4.csv", header = TRUE)
+
+aojanq4 <- subset(ao$X, ao$Jan >= aoq4$Jan)
+write.csv(aojanq4, "../output/env/ao_jan_q4.csv")        
+aofebq4 <- subset(ao$X, ao$Feb >= aoq4$Feb)
+write.csv(aofebq4, "../output/env/ao_feb_q4.csv") 
+aomarq4 <- subset(ao$X, ao$Mar >= aoq4$Mar)
+write.csv(aomarq4, "../output/env/ao_mar_q4.csv")        
+aoaprq4 <- subset(ao$X, ao$Apr >= aoq4$Apr)
+write.csv(aoaprq4, "../output/env/ao_apr_q4.csv")  
+aomayq4 <- subset(ao$X, ao$May >= aoq4$May)
+write.csv(aomayq4, "../output/env/ao_may_q4.csv")        
+aojunq4 <- subset(ao$X, ao$Jun >= aoq4$Jun)
+write.csv(aojunq4, "../output/env/ao_jun_q4.csv") 
+aojulq4 <- subset(ao$X, ao$Jul >= aoq4$Jul)
+write.csv(aojulq4, "../output/env/ao_jul_q4.csv")        
+aoaugq4 <- subset(ao$X, ao$Aug >= aoq4$Aug)
+write.csv(aoaugq4, "../output/env/ao_aug_q4.csv")  
+aosepq4 <- subset(ao$X, ao$Sep >= aoq4$Sep)
+write.csv(aosepq4, "../output/env/ao_sep_q4.csv")        
+aooctq4 <- subset(ao$X, ao$Oct >= aoq4$Oct)
+write.csv(aooctq4, "../output/env/ao_oct_q4.csv") 
+aonovq4 <- subset(ao$X, ao$Nov >= aoq4$Nov)
+write.csv(aonovq4, "../output/env/ao_nov_q4.csv")        
+aodecq4 <- subset(ao$X, ao$Dec >= aoq4$Dec)
+write.csv(aodecq4, "../output/env/ao_dec_q4.csv")  
+
+aoq4_all <- rbind(aojanq4, aofebq4, aomarq4, aoaprq4, aomayq4, aojunq4, aojulq4, aoaugq4, aosepq4, aooctq4, aonovq4, aodecq4)
+write.csv(aoq4_all, "../output/env/ao_q4_all.csv")
+```
+
+
+so there are differences in upper quartile years...
+
