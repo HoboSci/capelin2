@@ -1223,3 +1223,45 @@ plot(e3, 'ROC')
 
 ```
 
+------------------------
+
+# trim layer by polygon
+
+C:\Users\bunny\Documents\GitHub\Chapter_1\output\maxent\predictions\jun\avg_cloglog_147.406.asc
+C:\Users\bunny\Documents\GitHub\Chapter_1\output\bio\minimum_convex_poly\mcp_capelin_100_poly.shp
+C:\Users\bunny\Documents\GitHub\Chapter_1\output\env\aea.tif
+
+```{r}
+testras <- raster("../output/maxent/predictions/jun/avg_cloglog_147.406.asc")
+mcp <- readOGR("../output/bio/minimum_convex_poly/mcp_capelin_100_poly.shp") 
+aea <- raster("../output/env/aea.tif")
+plot(testras)
+plot(mcp)
+class(mcp)
+rr <- mask(testras, mcp)
+plot(rr); plot(mcp, add = TRUE)
+plot(testras); plot(mcp, add = TRUE)
+plot(rr);plot(testras)
+```
+
+
+# add landmass
+
+```{r}
+us <- getData("GADM", country="USA", level=0)
+plot(us)
+class(us)
+projection(testras) <- CRS(aea)
+
+us <- spTransform(us, CRS(projection(aea)))
+
+
+crs(testras) <- aea
+
+rr <- mask(aea, us)
+plot(us)
+
+a <- plot(testras); plot(us, add = TRUE)
+
+```
+
