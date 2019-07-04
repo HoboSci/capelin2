@@ -32,7 +32,7 @@ colnames(presback)
 this dataset contains a lot of columns you don't need for the maxent models. Remove them here
 
 ```{r remove unnecessary columns}
-presback <- subset(presback, select = -c(cell_id, id, decimalLatitude, decimalLongitude, datecollected, institutioncode, individualcount, depth, resname, originalscientificname, collectioncode, day, nafo_zone, gear, longitude_meters, latitude_meters, total_cell_obs_xy, total_cell_obs_xyt, bottom_depth, XXtotal_cell_obs_xyzt, temp_celsius_depth, temp_celsius_surface, longitude_meters.1, latitude_meters.1, bottom_depth_glorys, longitude_meters.2, latitude_meters.2, cell_id_3d, total_cell_obs_xyzt, cell_id_xyzt, month, depthlayerno, depth_layer))
+prback <- subset(presback, select = -c(cell_id, id, decimalLatitude, decimalLongitude, datecollected, institutioncode, individualcount, depth, resname, originalscientificname, collectioncode, day, nafo_zone, gear, longitude_meters, latitude_meters, total_cell_obs_xy, total_cell_obs_xyt, bottom_depth, XXtotal_cell_obs_xyzt, temp_celsius_depth, temp_celsius_surface, longitude_meters.1, latitude_meters.1, bottom_depth_glorys, longitude_meters.2, latitude_meters.2, cell_id_3d, total_cell_obs_xyzt, cell_id_xyzt, depthlayerno, depth_layer))
 colnames(presback)
 ```
 
@@ -40,9 +40,9 @@ colnames(presback)
 For each monthly model, subset the data to the month you want, and the variables you want (Based on spearmans and VIF)
 
 ```{r}
-allvar <- c("occurrence", "year", "temp_surface", "temp_depth", "salinity_surface", "salinity_depth", "o2_depth", "chl_surface", "mlp_surface",  "nao_sample", "nao_prev", "nao_winter", "amo_sample", "amo_winter")
-presback <- subset(presback, select = c(allvar))
-colnames(presback)
+allvar <- c("occurrence", "year", "month", "temp_surface", "temp_depth", "salinity_surface", "salinity_depth", "o2_depth", "chl_surface", "mlp_surface",  "nao_sample", "nao_prev", "nao_winter", "amo_sample", "amo_winter")
+prback <- subset(prback, select = c(allvar))
+colnames(prback)
 ```
 
 
@@ -51,7 +51,13 @@ colnames(presback)
 now each month contains NAs - lets remove these (maxent principle doesnt allow for missing data - http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.15.5607&rep=rep1&type=pdf)
 
 ```{r remove na vals}
-prback <- na.omit(presback)
+prback <- na.omit(prback)
+
+prback <- subset(prback, month == 8)
+
+presyrs <-  subset(prback, occurrence == 1) #this is to get years with complete presence data 
+presyrs <- unique(presyrs$year) #make a vector of unique years
+prback <- prback[prback$year %in% presyrs, ] #keep only the data for which there is precence years
 ```
 
 ```{r}
@@ -70,16 +76,20 @@ mod12
 
 ```{r train and test inc AIC for reg val}
 aicetc <- read.csv("../data/env/AICcCalculations.csv", header = TRUE) #pre-created csv file
-betavallist <- cbind(aicetc$regularization)
+#betavallist <- cbind(aicetc$regularization)
+betavallist <- seq(0.25, 0.75, by = 0.25)
+
 timeslice <- "all_data"
 train <- prback
 trainpa <- train$occurrence #creates a vector of presence/background ID (1/0)
 train  <- subset(train, select = -c(year, occurrence)) #don't need year and occurrence for modelling
-nfolds <- cbind(c(1:5))
+nfolds <- cbind(c(1:2))
+
   
-  for (h in 1:nrow(betavallist)){
-    betamval <-  betavallist[h]
-    mod <- maxent(x = train, p = trainpa, path = paste0("../output/maxent/", timeslice, "/models"), args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "addsamplestobackground=TRUE", paste0("replicates=", nrow(nfolds)), "replicatetype=crossvalidate", paste0("betamultiplier=", betamval))) 
+ for (h in 1:length(betavallist)){
+   betamval <-  betavallist[h]
+    #betamval <-  0.5
+    mod <- maxent(x = train, p = trainpa, plots = FALSE, path = paste0("../output/maxent/", timeslice, "/models"), args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "addsamplestobackground=TRUE", paste0("replicates=", nrow(nfolds)), "replicatetype=crossvalidate", paste0("betamultiplier=", betamval))) 
 
     #now based on glover-kapfer pdf with excel manual + https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/10-1171.1... + adaptation for        getting testAUC.. horrible code
     
@@ -87,8 +97,13 @@ nfolds <- cbind(c(1:5))
     lambdas_list <- list.files(paste0("../output/maxent/", timeslice, "/models/"), pattern = "*lambdas", full.names = TRUE)
     samppred_list <- list.files(paste0("../output/maxent/", timeslice, "/models/"), pattern = "*samplePredictions.csv", full.names = TRUE)
     
+          #no presences used in model (less those used for testing)
+
+    maxresults <- read.csv(paste0("../output/maxent/", timeslice, "/models/maxentResults.csv"), header = TRUE)
+
+for (i in 1:nrow(aicetc)){   
 for(f in 1:nrow(nfolds)){
-  modn <- nfolds[f]-1
+    modn <- nfolds[f]-1
       lamf <- lambdas_list[f]
       sampf <- samppred_list[f]
       coefile <- read.csv(paste0(lamf), header = FALSE, stringsAsFactors=FALSE)
@@ -102,50 +117,51 @@ for(f in 1:nrow(nfolds)){
       samplepred$nat_log <- log(samplepred$Raw.prediction)
       sumsamplepred <- sum(samplepred$nat_log)
    
-      #no presences used in model (less those used for testing)
-
+      
       notrainingpoints <- maxresults$X.Training.samples[f]
       testauc <- maxresults$Test.AUC[f]
       trainauc <- maxresults$Training.AUC[f]
       modno <- maxresults$Species[f]
     
 
-      aicetc$train_AUC <- trainauc
-      aicetc$test_AUC <- testauc
-      aicetc$n <- notrainingpoints
-      aicetc$coefficients <- nocoeff
-      aicetc$sum.of.logs <- sumsamplepred
+   if(aicetc$nfold[i] == modn){
+      aicetc$Train_AUC[i] <- trainauc
+      aicetc$Test_AUC[i] <- testauc
+      aicetc$n[i] <- notrainingpoints
+      aicetc$coefficients[i] <- nocoeff
+      aicetc$sum.of.logs[i] <- sumsamplepred
   
-      aicetc$bic <- bic #not sure this is correct...
-      aicetc$beta <- betamval
-      aicetc$foldno <- modn
-      
-    aicetc$AIC <- ((2*aicetc$coefficients)-(2*aicetc$sum.of.logs))
-    aicetc$AICc <- (-2*(aicetc$sum.of.logs)+((2*aicetc$coefficients)*(aicetc$n/(aicetc$n - aicetc$coefficients-1))))
+      aicetc$bic[i] <- bic #not sure this is correct...
+      aicetc$beta[i] <- betamval
+      aicetc$foldno[i] <- modn
+
     
     #calculate minimal predicted area using ecospat
-    aicetc$mpa_0.9_cum <- ecospat.mpa(samplepred$Cumulative.prediction, perc = 0.9) #90%
+    aicetc$mpa_0.9_cum[i] <- ecospat.mpa(samplepred$Cumulative.prediction, perc = 0.9) #90%
     
-    aicetc$AIC <- ((2*aicetc$coefficients)-(2*aicetc$sum.of.logs))
-    aicetc$AICc <- (-2*(aicetc$sum.of.logs)+((2*aicetc$coefficients)*(aicetc$n/(aicetc$n - aicetc$coefficients-1))))
-    write.csv(aicetc, paste0("../output/maxent/", timeslice, "/models/", betamval, "_", modn, "_", "AICforMaxentReg.csv"), row.names = FALSE)
-      }
+    aicetc$AIC[i] <- ((2*aicetc$coefficients[i])-(2*aicetc$sum.of.logs[i]))
+    aicetc$AICc[i] <- (-2*(aicetc$sum.of.logs[i])+((2*aicetc$coefficients[i])*(aicetc$n[i]/(aicetc$n[i] - aicetc$coefficients[i]-1))))
+   }
     
-  # aa <- paste0("fold", modn, "_", betamval, "_", "AICforMaxentReg.csv")
-    aicperbetalst <- list.files(paste0("../output/maxent/", timeslice, "/models/"), pattern = paste0("^", betamval, ".*AICforMaxentReg.csv"), full.names = TRUE)
-    aicperbeta <- lapply(aicperbetalst, read.csv, header = TRUE)
-    aicperbeta <- do.call(rbind, aicperbeta)
-    aicbetamean <- colMeans(aicperbeta)
-    aicperbeta <- rbind(aicperbeta, aicbetamean)
-    aicperbeta$foldno[f+1] <- f+1
-    write.csv(aicperbeta, paste0("../output/maxent/", timeslice, "/models/aicperbetasum_", betamval, ".csv"), row.names = FALSE)
-    
-    betaavglst <- list.files(paste0("../output/maxent/", timeslice, "/models/"), pattern = "aicperbetasum_.*csv", full.names = TRUE)
-    bavg <- lapply(betaavglst, read.csv, header = TRUE)
-    bavg <- do.call(rbind, bavg)
-    bavg <- subset(bavg, foldno == f+1)
-    write.csv(bavg, paste0("../output/maxent/", timeslice, "/models/avgbetalst.csv"), row.names = FALSE)
   }
+    write.csv(aicetc, paste0("../output/maxent/", timeslice, "/models/", "_", betamval, "_AICforMaxentReg.csv"), row.names = FALSE)
+
+}
+  }
+ 
+    aicperbetalst <- list.files(paste0("../output/maxent/", timeslice, "/models/"), pattern = paste0(".*AICforMaxentReg.csv"), full.names = TRUE)
+    for (beta in 1:length(aicperbetalst)){
+      aic <- read.csv(aicperbetalst[beta])
+      bval <- str_sub(aicperbetalst[beta], 35, -20) #the year being used for testing
+      aicmean <- colwise(mean)(aic)
+      write.csv(aicmean, paste0("../output/maxent/", timeslice, "/models/aic_mean_", bval, ".csv"), row.names = FALSE)
+    }
+    
+    aicmeanlst <- list.files(paste0("../output/maxent/", timeslice, "/models/"), pattern = paste0("^aic_mean"), full.names = TRUE)
+    bavg <- lapply(aicmeanlst, read.csv, header = TRUE)
+    bavg <- do.call(rbind, bavg)
+    write.csv(bavg, paste0("../output/maxent/", timeslice, "/models/avgbetalst.csv"), row.names = FALSE)
+
 
 ```
 

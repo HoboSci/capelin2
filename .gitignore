@@ -43,6 +43,7 @@ packrat/lib*/
 *.nc
 *.ini
 *.tiff
+*.png
 data/bio/nafo_zones
 /output
 /data/env
