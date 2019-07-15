@@ -394,4 +394,118 @@ circlize_dendrogram(dend2)
 ```
 
 
+# violin plots
+
+```{r}
+#load a test raster
+
+ras <- raster("../output/maxent/predictions/apr/cloglog_st201004000120.asc")
+plot(ras)
+ras2 <- raster("../output/maxent/predictions/oct/cloglog_st201010000120.asc")
+plot(ras2)
+rasd <- as.data.frame(ras)
+rasd$month <- "4"
+rasd2 <- as.data.frame(ras2)
+rasd2$month <- "10"
+names(rasd)[names(rasd) == "cloglog_st201004000120"] <- "prob"
+names(rasd2)[names(rasd2) == "cloglog_st201010000120"] <- "prob"
+rasd$month <- as.factor(rasd$month)
+rasd2$month <- as.factor(rasd2$month)
+rd <- rbind(rasd, rasd2)
+rd
+p <- ggplot(rd, aes(x=month, y = prob)) + geom_violin(trim=FALSE)
+plot(p)
+
+
+mth <- c("jan", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
+for (m in 1:length(mth)){
+  mon <- mth[m]
+  vlst <- list.files(paste0("../output/maxent/predictions/", mon), pattern = "^avg_cloglog.*.asc", full.names = TRUE)
+  for (v in 1:length(vlst)){
+    ras <- raster(vlst[v])
+    rasd <- as.data.frame(ras)
+    if (mon == "jan"){
+      rasd$month <- "1"
+      rnm <- names(ras)
+      names(rasd)[names(rasd) == rnm] <- "prob"
+      rasd$month <- as.factor(rasd$month)
+      rd1 <- rasd
+      } else if(mon == "mar"){
+        rasd$month <- "3"
+        rnm <- names(ras)
+        names(rasd)[names(rasd) == rnm] <- "prob"
+        rasd$month <- as.factor(rasd$month)
+        rd3 <- rasd
+      } else if(mon == "apr"){
+        rasd$month <- "4"
+        rnm <- names(ras)
+        names(rasd)[names(rasd) == rnm] <- "prob"
+        rasd$month <- as.factor(rasd$month)
+        rd4 <- rasd
+      } else if(mon == "may"){
+        rasd$month <- "5"
+        rnm <- names(ras)
+        names(rasd)[names(rasd) == rnm] <- "prob"
+        rasd$month <- as.factor(rasd$month)
+        rd5 <- rasd
+      } else if(mon == "jun"){
+        rasd$month <- "6"
+        rnm <- names(ras)
+        names(rasd)[names(rasd) == rnm] <- "prob"
+        rasd$month <- as.factor(rasd$month)
+        rd6 <- rasd
+      } else if(mon == "jul"){
+        rasd$month <- "7"
+        rnm <- names(ras)
+        names(rasd)[names(rasd) == rnm] <- "prob"
+        rasd$month <- as.factor(rasd$month)
+        rd7 <- rasd
+      } else if(mon == "aug"){
+        rasd$month <- "8"
+        rnm <- names(ras)
+        names(rasd)[names(rasd) == rnm] <- "prob"
+        rasd$month <- as.factor(rasd$month)
+        rd8 <- rasd
+      } else if(mon == "sep"){
+        rasd$month <- "9"
+        rnm <- names(ras)
+        names(rasd)[names(rasd) == rnm] <- "prob"
+        rasd$month <- as.factor(rasd$month)
+        rd9 <- rasd
+      } else if(mon == "oct"){
+        rasd$month <- "10"
+        rnm <- names(ras)
+        names(rasd)[names(rasd) == rnm] <- "prob"
+        rasd$month <- as.factor(rasd$month)
+        rd10 <- rasd
+      } else if(mon == "nov"){
+        rasd$month <- "11"
+        rnm <- names(ras)
+        names(rasd)[names(rasd) == rnm] <- "prob"
+        rasd$month <- as.factor(rasd$month)
+        rd11 <- rasd
+      } else if(mon == "dec"){
+        rasd$month <- "12"
+        rnm <- names(ras)
+        names(rasd)[names(rasd) == rnm] <- "prob"
+        rasd$month <- as.factor(rasd$month)
+        rd12 <- rasd
+      }
+   
+      rd <- cbind(rd1, rd3, rd4, rd5, rd6, rd7, rd8, rd9, rd10, rd11, rd12)
+    #rd <- as.data.frame(rd)
+    #rd$month <- as.factor(rd$month)
+  }
+ 
+p <- ggplot(rd2, aes(x=month, y = prob)) + geom_violin(trim=FALSE)
+plot(p)
+
+}
+
+
+
+
+
+
+```
 

@@ -14,8 +14,9 @@ You can install and load them using the following code which uses a function cal
 
 
 ```{r pre-install & load packages, include=FALSE}
-options (java.parameters = "-Xmx2048m")
-packages <- c("rJava", "dismo", "stringr", "raster", "ecospat")
+gc() 
+options (java.parameters = "-Xmx6g")
+packages <- c("rJava", "dismo", "stringr", "raster", "ecospat", "plyr", "data.table", "RColorBrewer")
 source("../src/ipak.R")
 ipak(packages)
 ```
@@ -40,7 +41,7 @@ colnames(presback)
 For each monthly model, subset the data to the month you want, and the variables you want (Based on spearmans and VIF)
 
 ```{r}
-allvar <- c("occurrence", "year", "month", "temp_surface", "temp_depth", "salinity_surface", "salinity_depth", "o2_depth", "chl_surface", "mlp_surface",  "nao_sample", "nao_prev", "nao_winter", "amo_sample", "amo_winter")
+allvar <- c("occurrence", "year", "month", "temp_depth", "salinity_depth", "o2_depth", "chl_surface", "nao_sample", "nao_prev", "nao_winter", "amo_sample", "amo_winter")
 prback <- subset(prback, select = c(allvar))
 colnames(prback)
 ```
@@ -52,9 +53,7 @@ now each month contains NAs - lets remove these (maxent principle doesnt allow f
 
 ```{r remove na vals}
 prback <- na.omit(prback)
-
-prback <- subset(prback, month == 8)
-
+#prback <- subset(prback, month == 8)
 presyrs <-  subset(prback, occurrence == 1) #this is to get years with complete presence data 
 presyrs <- unique(presyrs$year) #make a vector of unique years
 prback <- prback[prback$year %in% presyrs, ] #keep only the data for which there is precence years
@@ -76,20 +75,19 @@ mod12
 
 ```{r train and test inc AIC for reg val}
 aicetc <- read.csv("../data/env/AICcCalculations.csv", header = TRUE) #pre-created csv file
-#betavallist <- cbind(aicetc$regularization)
-betavallist <- seq(0.25, 0.75, by = 0.25)
+betavallist <- seq(1.75, 4, by = 0.25)
 
 timeslice <- "all_data"
 train <- prback
 trainpa <- train$occurrence #creates a vector of presence/background ID (1/0)
-train  <- subset(train, select = -c(year, occurrence)) #don't need year and occurrence for modelling
-nfolds <- cbind(c(1:2))
+train  <- subset(train, select = -c(year, occurrence, month)) #don't need year and occurrence for modelling
+nfolds <- cbind(c(1:5))
 
   
  for (h in 1:length(betavallist)){
    betamval <-  betavallist[h]
     #betamval <-  0.5
-    mod <- maxent(x = train, p = trainpa, plots = FALSE, path = paste0("../output/maxent/", timeslice, "/models"), args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "addsamplestobackground=TRUE", paste0("replicates=", nrow(nfolds)), "replicatetype=crossvalidate", paste0("betamultiplier=", betamval))) 
+    mod <- maxent(x = train, p = trainpa, plots = FALSE, path = paste0("../output/maxent/", timeslice, "/models"), args=c("maximumiterations=5000", "responsecurves=FALSE", "jackknife=FALSE", "plots=FALSE", "threads=8", "addsamplestobackground=TRUE", paste0("replicates=", nrow(nfolds)), "replicatetype=crossvalidate", paste0("betamultiplier=", betamval))) 
 
     #now based on glover-kapfer pdf with excel manual + https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/10-1171.1... + adaptation for        getting testAUC.. horrible code
     
@@ -152,7 +150,7 @@ for(f in 1:nrow(nfolds)){
     aicperbetalst <- list.files(paste0("../output/maxent/", timeslice, "/models/"), pattern = paste0(".*AICforMaxentReg.csv"), full.names = TRUE)
     for (beta in 1:length(aicperbetalst)){
       aic <- read.csv(aicperbetalst[beta])
-      bval <- str_sub(aicperbetalst[beta], 35, -20) #the year being used for testing
+      bval <- str_sub(aicperbetalst[beta], 35, -20) #the beta value
       aicmean <- colwise(mean)(aic)
       write.csv(aicmean, paste0("../output/maxent/", timeslice, "/models/aic_mean_", bval, ".csv"), row.names = FALSE)
     }
@@ -166,55 +164,47 @@ for(f in 1:nrow(nfolds)){
 ```
 
 #model selection
-next step... select the models you want for each year and run those models again (primarily based on lowest AICc but check test AUC and other things too)
 
-KEEP A NOTE OF THESE IN ONENOTE
-
-y1998 = 2.75
-y1999 = 2.25
-y2000 = 2
-y2001 = 1.75
-y2002 = 2
-y2003 = 2
-y2004 = 2
-y2005 = 2.25
-y2006 = 1.75
-y2007 = 1.75
-y2008 = 2.25
-y2009 = 2.25
-y2010 = 2.5
-y2011 =  2.5
-
+lowest aicc is 0.25
 
 ```{r final models plus predict}
-modelmonth <- cbind(paste0(mthna, unique(prback$year)))
-aicetc <- read.csv("../data/env/AICcFinalmod.csv", header = TRUE) #pre-created csv file
-unlayer <- read.csv(paste0("../data/env/asc_layerlist", mthna, ".csv"), header = TRUE) #if code doesnt work put back to unlayer_yr
 
-#for (year in 1:nrow(modelmonth)){
- # timeslice <- modelmonth[year] #testing timeslice
-  #yr <- str_sub(timeslice, -4) #the year being used for testing
-  train <- subset(prback, year != yr) #training data is all years but testing
-  trainpa <- train$occurrence #creates a vector of presence/background ID (1/0)
-  test <-  subset(prback, year == yr) #creates the testing dataset
-  testp <- subset(test, occurrence == "1") #splits the testing dataset into presences
-  testp <- subset(testp, select = -c(year, occurrence)) #don't need year and occurrence for modelling
-  testb <- subset(test, occurrence == "0") #splits the testing dataset into background
-  testb <- subset(testb, select = -c(year, occurrence)) #don't need year and occurrence for modelling
-  train  <- subset(train, select = -c(year, occurrence)) #don't need year and occurrence for modelling
+aicetc <- read.csv("../data/env/AICcCalculations.csv", header = TRUE) #pre-created csv file
+betaval <-  0.25
 
-  
-  if (yr == "2003" | yr == "2004"){
-    betaval <- 1
-  } else if (yr == "2005"){
-    betaval <- 1.5
-  } else if (yr == "2006"){
-    betaval <- 2.25
-  }
-  
-    mod <- maxent(x = train, p = trainpa, path = paste0("../output/maxent/models/", timeslice), args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "addsamplestobackground=TRUE", paste0("betamultiplier=", betaval)))
+timeslice <- "all_data"
+train <- prback
+trainpa <- train$occurrence #creates a vector of presence/background ID (1/0)
+train  <- subset(train, select = -c(year, occurrence, month)) #don't need year and occurrence for modelling
+nfolds <- cbind(c(1:5))
+
+
+mod <- maxent(x = train, p = trainpa, path = paste0("../output/maxent/all_data/models"), args=c("maximumiterations=5000", "threads=8", "addsamplestobackground=TRUE", paste0("replicates=", nrow(nfolds)), "replicatetype=crossvalidate", paste0("betamultiplier=", betaval)))
 
     #now based on glover-kapfer pdf with excel manual + https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/10-1171.1... + adaptation for        getting testAUC.. horrible code
+
+
+  #count number of non-zero coefficients, excluding the final four rows
+    lambdas_list <- list.files(paste0("../output/maxent/", timeslice, "/models/"), pattern = "*lambdas", full.names = TRUE)
+    samppred_list <- list.files(paste0("../output/maxent/", timeslice, "/models/"), pattern = "*samplePredictions.csv", full.names = TRUE)
+    
+          #no presences used in model (less those used for testing)
+
+    maxresults <- read.csv(paste0("../output/maxent/", timeslice, "/models/maxentResults.csv"), header = TRUE)
+
+for (i in 1:nrow(aicetc)){   
+for(f in 1:nrow(nfolds)){
+    modn <- nfolds[f]-1
+      lamf <- lambdas_list[f]
+      sampf <- samppred_list[f]
+      coefile <- read.csv(paste0(lamf), header = FALSE, stringsAsFactors=FALSE)
+      coefile <- head(coefile, -4)
+      coefile2 <- subset(coefile, V2 != 0)
+      nocoeff <- nrow(coefile2)
+      bick <- sum(as.numeric(coefile2[, 2])) #dodgy 
+      bic <- (bick*log(sum(trainpa == 1)) - 2*11) #dodgy
+      
+  #now based on glover-kapfer pdf with excel manual + https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/10-1171.1... + adaptation for        getting testAUC.. horrible code
 
     #count number of non-zero coefficients, excluding the final four rows
     coefile <- read.csv(paste0("../output/maxent/models/", timeslice, "/species.lambdas"), header = FALSE, stringsAsFactors=FALSE)
@@ -250,15 +240,22 @@ unlayer <- read.csv(paste0("../data/env/asc_layerlist", mthna, ".csv"), header =
     evequal_sens_spec <- threshold(ev, 'equal_sens_spec')
     evsensitivity <- threshold(ev, 'sensitivity')
     
+    #continuous boyce index
+    predPres <- read.csv(paste0("../output/maxent/models/", timeslice, "/species_samplePredictions.csv"), header = TRUE)
+    predBg <- read.csv(paste0("../output/maxent/models/", timeslice, "/species_backgroundPredictions.csv"), header = TRUE)
+    predPres <- predPres$Cloglog.prediction
+    predBg <- predBg$Cloglog
+    cbi <- contBoyce(pres = predPres, bg = predBg)
+    
   
-      aicetc$train_AUC <- trainauc
-      aicetc$no_trainng_points <- notrainingpoints
-      aicetc$test_coefficients <- nocoeff
-      aicetc$test_sum.of.logs <- sumsamplepred
-      aicetc$test_AUC <- evauc
-      aicetc$test_evcor <- evcor
-      aicetc$test_evpcor <- evpcor
-      aicetc$test_nopresence <- evnp
+      aicetc$train_AUC <- trainauc #training only AUC - not tested
+      aicetc$no_trainng_points <- notrainingpoints #numberof points used for training
+      aicetc$coefficients <- nocoeff #this is to calculate the AIC
+      aicetc$sum.of.logs <- sumsamplepred #this is to calculate the AIC
+      aicetc$test_AUC <- evauc #testing AUC
+      aicetc$test_evcor <- evcor #testing correlation coefficient
+      aicetc$test_evpcor <- evpcor # testing p-value for correlation coefficient
+      aicetc$test_nopresence <- evnp 
       aicetc$test_nobackground <- evna
       aicetc$test_maxsumsenspec <- evmaxtprtnr
       aicetc$test_maxkap <- evmaxkap
@@ -266,31 +263,38 @@ unlayer <- read.csv(paste0("../data/env/asc_layerlist", mthna, ".csv"), header =
       aicetc$test_prevalence <- evprevalence
       aicetc$test_equal_sens_spec <- evequal_sens_spec
       aicetc$test_sensitivity <- evsensitivity
+      aicetc$tss <- max(ev@TPR + ev@TNR) - 1
       aicetc$test_bic <- bic #not sure this is correct...
       aicetc$beta <- betaval
+      aicetc$cbi <- cbi
       
     aicetc$AIC <- ((2*aicetc$coefficients)-(2*aicetc$sum.of.logs))
-    aicetc$AICc <- (-2*(aicetc$sum.of.logs)+((2*aicetc$coefficients)*(aicetc$n/(aicetc$n - aicetc$coefficients-1))))
+    aicetc$AICc <- (-2*(aicetc$sum.of.logs)+((2*aicetc$coefficients)*(aicetc$no_trainng_points/(aicetc$no_trainng_points - aicetc$coefficients-1))))
     
     #calculate minimal predicted area using ecospat
     aicetc$mpa_0.9_cum <- ecospat.mpa(samplepred$Cumulative.prediction, perc = 0.9) #90%
     aicetc$mpa_0.9_clog <- ecospat.mpa(samplepred$Cloglog.prediction, perc = 0.9) #90%
+    aicetc$year <- yr
 
+}
+}
+    
+    write.csv(aicetc, paste0("../output/maxent/", timeslice, "/models/", "_", betaval, "_AICforMaxentReg.csv"), row.names = FALSE)
 
-    write.csv(aicetc, paste0("../output/maxent/models/", timeslice, "/AICforMaxentReg.csv"), row.names = FALSE)
+    saveRDS(mod, file = "../output/maxent/all_data/maxmod.rds", ascii = FALSE, version = NULL, compress = TRUE, refhook = NULL)
+    
+```
+    
+```{r final models predict}
 
-
-    unlayer_yr <- subset(unlayer, ascyears == yr)
-    unlayer_yr <- unlayer_yr[-c(1), ]
-    unlayer_yr[] <- lapply(unlayer_yr, as.character) #from https://stackoverflow.com/questions/2851015/convert-data-frame-columns-from-factors-to-characters
-    stackdeplst <- list()
-    stackdep <- subset(unlayer_yr, select = c(stackname, ascdepths))
-    stackdeplst[[year]] <- stackdep
-    #write.csv(stackdep, paste0("../output/maxent/predictions/stackdepthlist_", yr, ".csv"), row.names = FALSE)
-    aea <- raster("../output/env/aea.tif") 
+filenames <- list.files("../data/all_data_layers/", pattern="*.csv", full.names=TRUE)
+unlayer_yrX <- rbindlist(lapply(filenames,fread))
+unlayer_yrX <- unlayer_yrX[complete.cases(unlayer_yrX), ]
+aea <- raster("../output/env/aea.tif") 
+unlayer_yr <- subset(unlayer_yrX, ascmonths == "7")
 
    for (td in 1:nrow(unlayer_yr)){
-      temp_depth <- raster(unlayer_yr$temp_depth[td])
+temp_depth <- raster(unlayer_yr$temp_depth[td])
       crs(temp_depth) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0" 
       names(temp_depth) <- "temp_depth"
       temp_depth <- projectRaster(temp_depth, aea)
@@ -310,23 +314,33 @@ unlayer <- read.csv(paste0("../data/env/asc_layerlist", mthna, ".csv"), header =
       crs(nao_sample) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0" 
       names(nao_sample) <- "nao_sample"
       nao_sample <- projectRaster(nao_sample, aea)
+      nao_prev <- raster(unlayer_yr$nao_prev[td])
+      crs(nao_prev) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0" 
+      names(nao_prev) <- "nao_prev"
+      nao_prev <- projectRaster(nao_prev, aea)
       nao_winter <- raster(unlayer_yr$nao_winter[td])
       crs(nao_winter) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"
       names(nao_winter) <- "nao_winter"
       nao_winter <- projectRaster(nao_winter, aea)
+      amo_sample <- raster(unlayer_yr$amo_sample[td])
+      crs(amo_sample) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0" 
+      names(amo_sample) <- "amo_sample"
+      amo_sample <- projectRaster(amo_sample, aea)
+      amo_winter <- raster(unlayer_yr$amo_winter[td])
+      crs(amo_winter) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"
+      names(amo_winter) <- "amo_winter"
+      amo_winter <- projectRaster(amo_winter, aea)
       stackn <- unlayer_yr$stackname[td]
       stack <- stack(temp_depth, salinity_depth, o2_depth, chl_surface, nao_sample, nao_prev, nao_winter, amo_sample, amo_winter)
+
       #stackSave(test,unlayer_yr$stackname[td])
-      pred <- predict(mod, stack, file = paste0("../output/maxent/predictions/", mthna, "/", "cloglog_", stackn, ".asc"), overwrite=TRUE, args='outputformat=cloglog') 
-      predcum <- predict(mod, stack, file = paste0("../output/maxent/predictions/", mthna, "/", "cumu_", stackn, ".asc"), overwrite=TRUE, args=c('outputformat=Cumulative')) 
-      prplot <- plot(pred, png(paste0("../output/maxent/predictions/", mthna, "/", "cloglog_", stackn, ".png")))
-      dev.off() # stops automatic saving of the plot to a png
+      pred <- predict(mod, stack, file = paste0("../output/maxent/all_data/predictions/", "cloglog_", stackn, ".asc"), overwrite=TRUE, args='outputformat=cloglog') 
+      #prplot <- plot(pred, png(paste0("../output/maxent/all_data/predictions/", "cloglog_", stackn, ".png")))
+      #dev.off() # stops automatic saving of the plot to a png
      
     }
 #}
 
-stdep <- do.call(rbind, stackdeplst)
-write.csv(stdep, paste0("../output/maxent/predictions/", mthna, "/stack_depth.csv"), row.names = FALSE)
 ```
 
 #model averageing
@@ -339,83 +353,7 @@ ok! now to average results:
 
 open all maxentReg files
 
-```{r avg maxentReg}
 
-for (i in 1:length(modelmonth)){
-  timeslice <- modelmonth[i]
-  yr <- str_sub(timeslice, -4) #the year being used for testing
-  if(yr == 1998){
-    aic1998 <- read.csv(paste0("../output/maxent/models/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
-    maxr1998 <- read.csv(paste0("../output/maxent/models/", timeslice, "/maxentResults.csv"), header = TRUE)
-    } else if (yr == 1999){
-    aic1999 <- read.csv(paste0("../output/maxent/models/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
-    maxr1999 <- read.csv(paste0("../output/maxent/models/", timeslice, "/maxentResults.csv"), header = TRUE)
-    } else if (yr == 2000){
-    aic2000 <- read.csv(paste0("../output/maxent/models/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
-    maxr2000 <- read.csv(paste0("../output/maxent/models/", timeslice, "/maxentResults.csv"), header = TRUE)
-    } else if (yr == 2001){
-    aic2001 <- read.csv(paste0("../output/maxent/models/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
-    maxr2001 <- read.csv(paste0("../output/maxent/models/", timeslice, "/maxentResults.csv"), header = TRUE)
-    } else if (yr == 2002){
-    aic2002 <- read.csv(paste0("../output/maxent/models/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
-    maxr2002 <- read.csv(paste0("../output/maxent/models/", timeslice, "/maxentResults.csv"), header = TRUE)
-    } else if (yr == 2003){
-    aic2003 <- read.csv(paste0("../output/maxent/models/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
-    maxr2003 <- read.csv(paste0("../output/maxent/models/", timeslice, "/maxentResults.csv"), header = TRUE)
-    } else if (yr == 2004){
-    aic2004 <- read.csv(paste0("../output/maxent/models/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
-    maxr2004 <- read.csv(paste0("../output/maxent/models/", timeslice, "/maxentResults.csv"), header = TRUE)
-    } else if (yr == 2005){
-    aic2005 <- read.csv(paste0("../output/maxent/models/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
-    maxr2005 <- read.csv(paste0("../output/maxent/models/", timeslice, "/maxentResults.csv"), header = TRUE)
-    } else if (yr == 2006){
-    aic2006 <- read.csv(paste0("../output/maxent/models/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
-    maxr2006 <- read.csv(paste0("../output/maxent/models/", timeslice, "/maxentResults.csv"), header = TRUE)
-    } else if (yr == 2007){
-    aic2007 <- read.csv(paste0("../output/maxent/models/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
-    maxr2007 <- read.csv(paste0("../output/maxent/models/", timeslice, "/maxentResults.csv"), header = TRUE)
-    } else if (yr == 2008){
-    aic2008 <- read.csv(paste0("../output/maxent/models/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
-    maxr2008 <- read.csv(paste0("../output/maxent/models/", timeslice, "/maxentResults.csv"), header = TRUE)
-    } else if (yr == 2009){
-    aic2009 <- read.csv(paste0("../output/maxent/models/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
-    maxr2009 <- read.csv(paste0("../output/maxent/models/", timeslice, "/maxentResults.csv"), header = TRUE)
-    } else if (yr == 2010){
-    aic2010 <- read.csv(paste0("../output/maxent/models/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
-    maxr2010 <- read.csv(paste0("../output/maxent/models/", timeslice, "/maxentResults.csv"), header = TRUE)
-    } else if (yr == 2011){
-    aic2011 <- read.csv(paste0("../output/maxent/models/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
-    maxr2011 <- read.csv(paste0("../output/maxent/models/", timeslice, "/maxentResults.csv"), header = TRUE)
-    } else if (yr == 2012){
-    aic2012 <- read.csv(paste0("../output/maxent/models/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
-    maxr2012 <- read.csv(paste0("../output/maxent/models/", timeslice, "/maxentResults.csv"), header = TRUE)
-    } else if (yr == 2013){
-    aic2013 <- read.csv(paste0("../output/maxent/models/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
-    maxr2013 <- read.csv(paste0("../output/maxent/models/", timeslice, "/maxentResults.csv"), header = TRUE)
-    } else if (yr == 2014){
-    aic2014 <- read.csv(paste0("../output/maxent/models/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
-    maxr2014 <- read.csv(paste0("../output/maxent/models/", timeslice, "/maxentResults.csv"), header = TRUE)
-    } else if (yr == 2015){
-    aic2015 <- read.csv(paste0("../output/maxent/models/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
-    maxr2015 <- read.csv(paste0("../output/maxent/models/", timeslice, "/maxentResults.csv"), header = TRUE)
-  }
-}
-
-aic <- rbind(aic2003, aic2004, aic2005, aic2006)
-maxr <- rbind(maxr2003, maxr2004, maxr2005, maxr2006)
-
-aicm <- colMeans(aic)
-aicm$mod <- "avg"
-avgAIC <- rbind(aic, aicm)
-
-maxr$Species <- 1
-maxrm <- colMeans(maxr)
-maxrm$Species <- "avg"
-maxrm <- rbind(maxr, maxrm)
-
-write.csv(avgAIC, paste0("../output/maxent/models/", mthna, "avgAIC.csv"), row.names = FALSE)
-write.csv(maxrm, paste0("../output/maxent/models/", mthna, "avgmaxentresults.csv"), row.names = FALSE)
-```
 
 
 for this bit may need to stack rasters by depth... this will need some working with the name
@@ -424,7 +362,8 @@ ignore the first X characters in the filename (yr_mthna_) and stack based on the
 then do something probably with raster package
 
 ```{r avg asc layers cloglog}
-asc_list <- list.files(paste0("../output/maxent/predictions/", mthna), pattern = "cloglog*.asc", full.names = TRUE)
+stdep <- read.csv("../output/maxent/all_data/stackdepthlist.csv", header = TRUE)
+asc_list <- list.files(paste0("../output/maxent/all_data/predictions/"), pattern = "cloglog.*.asc", full.names = TRUE)
 depthlayers <- data.frame(cbind(unique(stdep$ascdepths)))
 names(depthlayers)[names(depthlayers) == "cbind.unique.stdep.ascdepths.."] <- "depth"
 depthlayers$depth <- as.character(depthlayers$depth)
@@ -437,189 +376,122 @@ for (d in 1:nrow(depthlayers)){
     asc <- asc_list[a]
     if (grepl(dep, asc)){
       depthlayers[d , paste0("a", colno)] <- asc
-        colno <- colno+1
+      colno <- colno+1
     }
   }
 }
-write.csv(depthlayers, (paste0("../output/maxent/predictions/", mthna, "/cloglog_asclayerbydepth.csv")), row.names = TRUE)
+write.csv(depthlayers, ("../output/maxent/all_data/predictions/cloglog_asclayerbydepth.csv"), row.names = FALSE)
 
+#depthlayers <- read.csv("../output/maxent/all_data/predictions/cloglog_asclayerbydepth.csv", header = FALSE)
 
 for (x in 1:nrow(depthlayers)){
+  dstack <- stack()
   asclay <- depthlayers[x, ]
   asclay <- asclay[!is.na(asclay)]
+  dep <- as.character(asclay[1])
   asclay <- as.data.frame(rbind(asclay))
-  asclay$V1 <- as.character(asclay$V1) #v1 corresponds to depth
-  asclay$V2 <- as.character(asclay$V2) #v2 to end corresponds to year
-  asclay$V3 <- as.character(asclay$V3)
-  asclay$V4 <- as.character(asclay$V4)
-  asclay$V5 <- as.character(asclay$V5)
-  asclay$V6 <- as.character(asclay$V6)
-  asclay$V7 <- as.character(asclay$V7)
-  asclay$V8 <- as.character(asclay$V8)
-  asclay$V9 <- as.character(asclay$V9)
-  asclay$V10 <- as.character(asclay$V10)
-  asclay$V11 <- as.character(asclay$V11)
-  asclay$V12 <- as.character(asclay$V12)
-  asclay$V13 <- as.character(asclay$V13)
-  asclay$V14 <- as.character(asclay$V14)
-  asclay$V15 <- as.character(asclay$V15)  
+  asclay[1] <- NULL
+  for (ly in 1:length(asclay)){
+    lay <- as.character(asclay[ ,40])
+    layr <- raster(lay)
+    dstack <- stack(dstack, layr)
+    if(ly == length(asclay)){
+      stavg <- calc(dstack, fun = mean, na.rm = TRUE)
+      writeRaster(stavg, (paste0("../output/maxent/all_data/predictions/avg_", dep, ".asc")), overwrite=TRUE)
+      avgplot <- plot(stavg, png(paste0("../output/maxent/all_data/predictions/avg_", dep, ".png")))
+      while (!is.null(dev.list()))  dev.off()
+    }
+  }
+}  
   
-  asclaydep <- asclay$V1
-  
-  asc1998 <- raster(asclay$V2)
-  asc1999 <- raster(asclay$V3)
-  asc2000 <- raster(asclay$V4)
-  asc2001 <- raster(asclay$V5)
-  asc2002 <- raster(asclay$V6)
-  asc2003 <- raster(asclay$V7)
-  asc2004 <- raster(asclay$V8)
-  asc2005 <- raster(asclay$V9)
-  asc2006 <- raster(asclay$V10)
-  asc2007 <- raster(asclay$V11)
-  asc2008 <- raster(asclay$V12)
-  asc2009 <- raster(asclay$V13)
-  asc2010 <- raster(asclay$V14)
-  asc2011 <- raster(asclay$V15)
-
-  stkasc <- stack(asc1998, asc1999, asc2000, asc2001, asc2002, asc2003, asc2004, asc2005, asc2006, asc2007, asc2008, asc2009, asc2010, asc2011)
-  avg <- calc(stkasc, fun = mean)
-  
-  writeRaster(avg, (paste0("../output/maxent/predictions/", mthna, "/avg_", asclaydep, ".asc")), overwrite=TRUE, args='outputformat=cloglog')
-  avgplot <- plot(avg, png(paste0("../output/maxent/predictions/", mthna, "/avg_", asclaydep, ".png"))) 
-  dev.off()
-}
 
 
-ascdepth_list <- list.files(paste0("../output/maxent/predictions/", mthna), glob2rx(pattern = "avg_*.asc"), full.names = TRUE)
 
-
-clog_asc120  <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_120.asc"))
-clog_asc41.18 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_41.18.asc"))
-clog_asc1.55586 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_1.55586.asc"))
-clog_asc1045.85 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_1045.85.asc"))
-clog_asc108.03 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_108.03.asc"))
-clog_asc11.7737 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_11.7737.asc"))
-clog_asc1151.99 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_1151.99.asc"))
-clog_asc1265.86 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_1265.86.asc"))
-clog_asc13.991 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_13.991.asc"))
-clog_asc133.076 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_133.076.asc"))
-clog_asc1387.38 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_1387.38.asc"))
-clog_asc147.406 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_147.406.asc"))
-clog_asc16.5253 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_16.5253.asc"))
-clog_asc163.165 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_163.165.asc"))
-clog_asc180.55 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_180.55.asc"))
-clog_asc19.4298 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_19.4298.asc"))
-clog_asc199.79 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_199.79.asc"))
-clog_asc2.66768 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_2.66768.asc"))
-clog_asc22.7576 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_22.7576.asc"))
-clog_asc221.141 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_221.141.asc"))
-clog_asc244.891 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_244.891.asc"))
-clog_asc26.5583 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_26.5583.asc"))
-clog_asc271.356 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_271.356.asc"))
-clog_asc3.85628 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_3.85628.asc"))
-clog_asc30.8746 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_30.8746.asc"))
-clog_asc300.888 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_300.888.asc"))
-clog_asc333.863 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_333.863.asc"))
-clog_asc35.7402 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_35.7402.asc"))
-clog_asc370.689 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_370.689.asc"))
-clog_asc411.794 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_411.794.asc"))
-clog_asc457.626 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_457.626.asc"))
-clog_asc47.2119 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_47.2119.asc"))
-clog_asc5.14036 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_5.14036.asc"))
-clog_asc508.64 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_508.64.asc"))
-clog_asc53.8506 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_53.8506.asc"))
-clog_asc565.292 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_565.292.asc"))
-clog_asc6.54303 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_6.54303.asc"))
-clog_asc61.1128 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_61.1128.asc"))
-clog_asc628.026 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_628.026.asc"))
-clog_asc69.0217 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_69.0217.asc"))
-clog_asc697.259 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_697.259.asc"))
-clog_asc77.6112 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_77.6112.asc"))
-clog_asc773.368 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_773.368.asc"))
-clog_asc8.09252 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_8.09252.asc"))
-clog_asc856.679 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_856.679.asc"))
-clog_asc86.9294 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_86.9294.asc"))
-clog_asc9.82275 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_9.82275.asc"))
-clog_asc947.448 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_947.448.asc"))
-clog_asc97.0413 <- raster(paste0("../output/maxent/predictions/", mthna, "/avg_97.0413.asc"))
-
-stackavg <- stack(clog_asc120, clog_asc41.18, clog_asc1.55586, clog_asc1045.85, clog_asc108.03, clog_asc11.7737, clog_asc1151.99, clog_asc1265.86, clog_asc13.991, clog_asc133.076, clog_asc1387.38, clog_asc147.406, clog_asc16.5253, clog_asc163.165, clog_asc180.55, clog_asc19.4298, clog_asc199.79, clog_asc2.66768, clog_asc22.7576, clog_asc221.141, clog_asc244.891, clog_asc26.5583, clog_asc271.356, clog_asc3.85628, clog_asc30.8746, clog_asc300.888, clog_asc333.863, clog_asc35.7402, clog_asc370.689, clog_asc411.794, clog_asc457.626, clog_asc47.2119, clog_asc5.14036, clog_asc508.64, clog_asc53.8506, clog_asc565.292, clog_asc6.54303, clog_asc61.1128, clog_asc628.026, clog_asc69.0217, clog_asc697.259, clog_asc77.6112, clog_asc773.368, clog_asc8.09252, clog_asc856.679, clog_asc86.9294, clog_asc9.82275, clog_asc947.448, clog_asc97.0413)
-
-stsum <- sum(stackavg, na.rm = TRUE)
-  writeRaster(stsum, (paste0("../output/maxent/predictions/", mthna, "/clog_sum_", mthna, ".asc")), overwrite=TRUE)
-  sumplot <- plot(stsum, png(paste0("../output/maxent/predictions/", mthna, "/clog_sum_", mthna, ".png"))) 
-  dev.off()
-stavg <- calc(stackavg, fun = mean, na.rm = TRUE)
-  writeRaster(stavg, (paste0("../output/maxent/predictions/", mthna, "/clog_avg_", mthna, ".asc")), overwrite=TRUE)
-  avgplot <- plot(stavg, png(paste0("../output/maxent/predictions/", mthna, "/clog_avg_", mthna, ".png"))) 
-  dev.off()
 
 ```
 
 
+```{r binary maps on averaged depth layer}
+#calculate minimal predicted area using ecospat
 
-#binary maps
+samplepred1 <- read.csv(paste0("../output/maxent/all_data/models/species_1_samplePredictions.csv"), header = TRUE)
+mpa_thr1 <- ecospat.mpa(samplepred1$Cloglog.prediction, perc = 0.9) #90%
+samplepred2 <- read.csv(paste0("../output/maxent/all_data/models/species_2_samplePredictions.csv"), header = TRUE)
+mpa_thr2 <- ecospat.mpa(samplepred2$Cloglog.prediction, perc = 0.9) #90%
+samplepred3 <- read.csv(paste0("../output/maxent/all_data/models/species_3_samplePredictions.csv"), header = TRUE)
+mpa_thr3 <- ecospat.mpa(samplepred3$Cloglog.prediction, perc = 0.9) #90%
+samplepred4 <- read.csv(paste0("../output/maxent/all_data/models/species_4_samplePredictions.csv"), header = TRUE)
+mpa_thr4 <- ecospat.mpa(samplepred4$Cloglog.prediction, perc = 0.9) #90%
+samplepred5 <- read.csv(paste0("../output/maxent/all_data/models/species_0_samplePredictions.csv"), header = TRUE)
+mpa_thr5 <- ecospat.mpa(samplepred5$Cloglog.prediction, perc = 0.9) #90%
+mpa_avg <- mean(mpa_thr1, mpa_thr2, mpa_thr3, mpa_thr4, mpa_thr5)
 
-there seem to be two primary ways to create binary maps. the most common for conservation purposes seems to be to use maxsumspensspec values, however MPA also comes recommended (but is def less common). probably best to use cumulative for both (merrow 2013)
 
-the thresholds are in the monthavgAIC.csv file in the model folder (not model/month)
-
-```{r binary maps}
-thresholds <- read.csv(paste0("../output/maxent/models/", mthna, "avgAIC.csv"), header = TRUE)
-thresholds <- tail(thresholds, 1)
-mpa <- thresholds$mpa_0.9_cum
-maxsesp <- thresholds$test_maxsumsenspec
-cumasc_list <- list.files(paste0("../output/maxent/predictions/", mthna), pattern = "^cumu_.*.asc", full.names = TRUE) 
-depthlayers <- data.frame(cbind(unique(stdep$ascdepths)))
-names(depthlayers)[names(depthlayers) == "cbind.unique.stdep.ascdepths.."] <- "depth"
-depthlayers$depth <- as.character(depthlayers$depth)
-
-colno <- 1
-
-for (d in 1:nrow(depthlayers)){
-  dep <- depthlayers$depth[d]
-  for (a in 1:length(cumasc_list)){
-    asc <- cumasc_list[a]
-    if (grepl(dep, asc)){
-      depthlayers[d , paste0("a", colno)] <- asc
-        colno <- colno+1
-    }
+#binary threshold function
+binmpa <- function(x) {
+  ifelse(x <  mpa_thr, 0,
+  ifelse(x >=  mpa_thr, 1, NA))
   }
-}
-write.csv(depthlayers, (paste0("../output/maxent/predictions/", mthna, "/cumu_asclayerbydepth.csv")), row.names = TRUE)
+
+clogasc_list <- list.files(paste0("../output/maxent/all_data/predictions/"), pattern = "^avg_.*.asc", full.names = TRUE)
+
+mpa_thr <- mpa_avg
+for (cum in 1:length(clogasc_list)){
+  cumascyr <- str_sub(clogasc_list[46], start = 43) #selects the year from the file name
+  cumascyr <- str_sub(cumascyr, end = -4) #selects the year from the file name
+  cumasc <- raster(clogasc_list[cum])
+  ascname <- names(cumasc)
+  cum_mpathr <- calc(cumasc, fun = binmpa)
+  writeRaster(cum_mpathr, paste0("../output/maxent/all_data/predictions/binary_mpa_", ascname, ".asc"), overwrite = TRUE)
+  plot(cum_mpathr, png(paste0("../output/maxent/all_data/predictions/binary_mpa_", ascname, ".png")), overwrite = TRUE)
+  dev.off() # stops automatic saving of the plot to a png
+  }
 
 
-for (x in 1:nrow(depthlayers)){
-  asclay <- depthlayers[x, ]
-  asclay <- asclay[!is.na(asclay)]
-  asclay <- as.data.frame(rbind(asclay))
-  asclay$V1 <- as.character(asclay$V1) #v1 corresponds to depth
-  asclay$V2 <- as.character(asclay$V2) #v2 to end corresponds to year
-  asclay$V3 <- as.character(asclay$V3)
-  asclay$V4 <- as.character(asclay$V4)
-  asclay$V5 <- as.character(asclay$V5)
-  
-  asclaydep <- asclay$V1
-  
-  asc2003 <- raster(asclay$V2)
-  asc2004 <- raster(asclay$V3)
-  asc2005 <- raster(asclay$V4)
-  asc2006 <- raster(asclay$V5)
-  
-  stkasc <- stack(asc2003, asc2004, asc2005, asc2006)
-  avg <- calc(stkasc, fun = mean)
-  
-  writeRaster(avg, (paste0("../output/maxent/predictions/", mthna, "/cumu_avg_", asclaydep, ".asc")), overwrite=TRUE, args='outputformat=cumulative')
-
-}
-
-cumavg_list <- list.files(paste0("../output/maxent/predictions/", mthna), pattern = "^cumu_avg_.*.asc", full.names = TRUE) 
-for(lyr in 1:length(cumavg_list)){
-  avgras <- raster(cumavg_list[lyr])
-  reclassmpa <- c(mpa, Inf, 1)
-  reclassmpa <- matrix(reclassmpa, ncol = 3, byrow = TRUE)
-  binavgras <- reclassify(avgras, reclassmpa)
-}
 
 ```
 
+```{r binary map averaged 2D representation}
+
+binaryclog_list <- list.files(paste0("../output/maxent/all_data/predictions/"), pattern = "^binary_mpa_avg_.*.asc", full.names = TRUE)
+
+binstack <- stack(binaryclog_list)
+stacksum <- sum(binstack, na.rm = TRUE)
+writeRaster(stacksum, paste0("../output/maxent/all_data/predictions/binary_avg_2d.asc"), overwrite=TRUE)
+plot(stacksum, png(paste0("../output/maxent/all_data/predictions/binary_avg_2d.png")))
+dev.off()
+
+
+
+
+```
+
+
+add land to plots with standard legend (working code) THIS WORK!!!
+```{r}
+aea <- raster("../output/env/aea.tif") #the correct CRS
+maplst <- list.files("../output/maxent/all_data/predictions/", pattern = "binary_avg_2d.*.asc", full.names = TRUE)
+s <- shapefile("../data/env/landp/landpro.shp") #made in arcgis
+apr <- aea@crs
+#brk <- seq(0.1, 1, 0.1) #for legend
+redtrans <- rgb(218, 215, 216, 90, maxColorValue=255) 
+outsidemcp <- shapefile("../data/env/landp/mcpout.shp") #made in arcgis
+
+r <- raster(maplst[1])
+plot(pras)
+
+for (pred in 1:length(maplst)){
+  pras <- raster(maplst[pred])
+  crs(pras) <- apr
+  ascname <- names(pras)
+  pras[pras >0] <- 1
+  lp <- plot(pras, breaks=brk, col=rev(colorRampPalette(brewer.pal(10, "Spectral"))(10)), axes = FALSE, box = FALSE, legend = FALSE)
+  lp <- plot(pras)
+  lp <- plot(outsidemcp,  col = redtrans, border = redtrans, add = TRUE)
+  lp <- plot(s, col = "#474646", border = "#474646", add = TRUE)
+  print(lp)
+  dev.copy(png, (paste0("../output/maxent/all_data/predictions/", ascname, pred, ".png")), width = 1920,height = 1080)
+  dev.off() # stops automatic saving of the plot to a png))
+}
+
+```
