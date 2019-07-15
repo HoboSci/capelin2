@@ -492,15 +492,16 @@ for (m in 1:length(mth)){
         rd12 <- rasd
       }
    
-      rd <- cbind(rd1, rd3, rd4, rd5, rd6, rd7, rd8, rd9, rd10, rd11, rd12)
-    #rd <- as.data.frame(rd)
-    #rd$month <- as.factor(rd$month)
+     
   }
- 
-p <- ggplot(rd2, aes(x=month, y = prob)) + geom_violin(trim=FALSE)
-plot(p)
+
 
 }
+  rd <- rbind(rd1, rd3, rd4, rd5, rd6, rd7, rd8, rd9, rd10, rd11, rd12)
+    #rd <- as.data.frame(rd)
+    #rd$month <- as.factor(rd$month)
+p <- ggplot(rd, aes(x=month, y = prob)) + geom_violin(trim=FALSE)
+plot(p)
 
 
 
