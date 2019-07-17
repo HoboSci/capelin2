@@ -510,3 +510,99 @@ plot(p)
 
 ```
 
+
+
+
+
+. For key predictor variables, can you plot probability of occurrence (y-axis) vs predictor (x-axis). I would like to see raw data which will be 1 for presence and 0 for background and then overlay the model predicted relationships on top of the raw data for the two models (full year, month). Functiona "abline (model name)" plots the model prediction for many models in R - not sure this will work for MaxEnt. This will show how the predictions vary for the different variables - perhaps it is just one driving the differences. Does this make sense?
+
+
+first need to add the same depth indicator as used in the file names
+
+```{r}
+completeFun <- function(data, desiredCols) {
+  completeVec <- complete.cases(data[, desiredCols])
+  return(data[completeVec, ])
+}
+
+data_aea <- read.csv("../output/bio/presab_nafo_yr.csv", header = TRUE)
+data_aea$depthlyr_mod <- NA
+data_aea$predicted <- NA
+data_aea <- completeFun(data_aea, "depth_layer")
+
+avgasc_list <- list.files(paste0("../output/maxent/all_data/predictions/july/"), pattern = "^avg_.*.asc", full.names = TRUE) #true means the full path is included
+depths <- list()
+for (i in 1:length(avgasc_list)){
+  ascname <-  str_sub(avgasc_list[i], 48, -5)
+  depths[[paste0(i)]] <- ascname
+}
+
+for (j in 1:nrow(data_aea)){
+  d <- data_aea$depth_layer[j]
+  d3 <- str_sub(d, end = 3) #extract first 3 digits 
+   for (k in 1:length(depths)){
+    l <- depths[[k]]
+    l3 <- str_sub(l, end = 3) #extract first 3 digits
+    if (d3 == l3){
+      data_aea$depthlyr_mod[j] <- l
+    }
+  }
+}
+data_aea <- completeFun(data_aea, "depthlyr_mod")
+
+
+```
+
+
+```{r}
+mth <- c("1", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12")
+mthn <- c("jan", "mar", "apr", "may", "jun", "july", "aug", "sep", "oct", "nov","dec")
+aea <- raster("../output/env/aea.tif") 
+
+
+
+#for (m in 1:length(mth)){
+#mont <- mth[m]
+mont <- 7
+data_aeaX <- subset(data_aea, month == mont)
+xy <- data_aeaX[ ,c(19,20)] # This is to tell R where the coordinates are (in column 18 and 19). Note that the column order needs to be longitude, latitude
+data_aea_sp <- SpatialPointsDataFrame(coords = xy, data = data_aeaX, proj4string = CRS("+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-60 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")) # The CRS is used here is for the albers equal area projection.
+avgasc_list <- list.files(paste0("../output/maxent/all_data/predictions/july/"), pattern = "^avg_.*.asc", full.names = TRUE) #true means the full path is included
+for (j in 1:nrow(data_aea_sp)) { 
+for (i in 1:length(avgasc_list)) {  
+ de <- data_aea_sp$depthlyr_mod[j]  # a variable for the observation depth layer
+  mth <- (data_aea_sp$month[j])  # a variable for the observation month
+  rasdep <- str_sub(avgasc_list[i], 48, -5)
+       if (mth == mont & rasdep == de){
+          temp_brick <- raster(avgasc_list[i])
+        crs(temp_brick) <- aea@crs 
+              data_aea_sp$predicted[j] <- extract(x=temp_brick, y = data_aea_sp[j, ]) 
+              
+              }
+          }
+}
+
+#}
+              data_aea1 <- as.data.frame(data_aea_sp)
+
+write.csv(data_aea1, "../output/maxent/all_data/testforslr_jul.csv", row.names = FALSE)
+ #}
+  
+ # data_aea1 <- as.data.frame(data_aea_sp)
+
+```
+
+```{r}
+predjan <- read.csv("../output/maxent/all_data/testforslr_jan.csv", header = TRUE)
+predjanpr <- subset(predjan, occurrence == 1)
+plot(predjanpr$temp_depth, predjanpr$predicted)
+predjanbk <- subset(predjan, occurrence == 0)
+plot(predjanbk$temp_depth, predjanbk$predicted)
+```
+
+```{r}
+mod <- readRDS(file = "../output/maxent/all_data/maxmod.rds", refhook = NULL)
+px <- response(mod@models[[3]])
+```
+
+

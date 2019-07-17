@@ -16,7 +16,7 @@ You can install and load them using the following code which uses a function cal
 ```{r pre-install & load packages, include=FALSE}
 gc() 
 options (java.parameters = "-Xmx6g")
-packages <- c("rJava", "dismo", "stringr", "raster", "ecospat", "plyr", "data.table", "RColorBrewer")
+packages <- c("rJava", "dismo", "stringr", "raster", "ecospat", "enmSdm", "plyr", "data.table", "RColorBrewer")
 source("../src/ipak.R")
 ipak(packages)
 ```
@@ -179,7 +179,7 @@ train  <- subset(train, select = -c(year, occurrence, month)) #don't need year a
 nfolds <- cbind(c(1:5))
 
 
-mod <- maxent(x = train, p = trainpa, path = paste0("../output/maxent/all_data/models"), args=c("maximumiterations=5000", "threads=8", "addsamplestobackground=TRUE", paste0("replicates=", nrow(nfolds)), "replicatetype=crossvalidate", paste0("betamultiplier=", betaval)))
+mod <- maxent(x = train, p = trainpa, path = paste0("../output/maxent/all_data/models"), args=c("writebackgroundpredictions=TRUE", "maximumiterations=5000", "threads=8", "addsamplestobackground=TRUE", paste0("replicates=", nrow(nfolds)), "replicatetype=crossvalidate", paste0("betamultiplier=", betaval)))
 
     #now based on glover-kapfer pdf with excel manual + https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/10-1171.1... + adaptation for        getting testAUC.. horrible code
 
@@ -495,3 +495,82 @@ for (pred in 1:length(maplst)){
 }
 
 ```
+
+
+```{r habitat classification on probability - high only}
+
+
+#binary threshold function
+binprob <- function(x){
+  ifelse(x >= 0.8, 1,
+  ifelse(x < 0.8, 0, NA)) 
+}
+
+clogasc_list <- list.files(paste0("../output/maxent/all_data/predictions/july/"), pattern = "^avg_.*.asc", full.names = TRUE)
+
+for (cum in 1:length(clogasc_list)){
+  cumascdep <- str_sub(clogasc_list[cum], start = 47, end = -5) #selects the depth from the file name
+  cumasc <- raster(clogasc_list[cum])
+  ascname <- names(cumasc)
+  cum_mpathr <- calc(cumasc, fun = binprob)
+  writeRaster(cum_mpathr, paste0("../output/maxent/all_data/predictions/july/binary_p80_", cumascdep, ".asc"), overwrite = TRUE)
+  plot(cum_mpathr, png(paste0("../output/maxent/all_data/predictions/july/binary_p80_", cumascdep, ".png")), overwrite = TRUE)
+  dev.off() # stops automatic saving of the plot to a png
+  }
+
+```
+
+
+
+```{r binary map averaged 2D representation p80}
+
+binaryclog_list <- list.files(paste0("../output/maxent/all_data/predictions/july/"), pattern = "^binary_p80.*.asc", full.names = TRUE)
+
+binstack <- stack(binaryclog_list)
+stacksum <- sum(binstack, na.rm = TRUE)
+writeRaster(stacksum, paste0("../output/maxent/all_data/predictions/july/bin_p80_2d.asc"), overwrite=TRUE)
+plot(stacksum, png(paste0("../output/maxent/all_data/predictions/july/bin_avg_p80_2d.png")))
+dev.off()
+
+```
+
+
+```{r}
+aea <- raster("../output/env/aea.tif") #the correct CRS
+maplst <- list.files("../output/maxent/all_data/predictions/", pattern = "binary_avg_2d.*.asc", full.names = TRUE)
+s <- shapefile("../data/env/landp/landpro.shp") #made in arcgis
+apr <- aea@crs
+#brk <- seq(0.1, 1, 0.1) #for legend
+redtrans <- rgb(218, 215, 216, 90, maxColorValue=255) 
+outsidemcp <- shapefile("../data/env/landp/mcpout.shp") #made in arcgis
+
+
+  pras <- raster("../output/maxent/predictions/jul/binary_highavg_2d.asc")
+  crs(pras) <- apr
+  ascname <- names(pras)
+  pras[pras >0] <- 1
+  lp <- plot(pras, col=rev(colorRampPalette(brewer.pal(10, "Spectral"))(10)), axes = FALSE, box = FALSE, legend = FALSE)
+  lp <- plot(pras)
+  lp <- plot(outsidemcp,  col = redtrans, border = redtrans, add = TRUE)
+  lp <- plot(s, col = "#474646", border = "#474646", add = TRUE)
+  print(lp)
+  dev.copy(png, ("../output/maxent/all_data/predictions/july/oldmod_p80_2d_july.png"), width = 1920,height = 1080)
+  dev.off() # stops automatic saving of the plot to a png))
+```
+
+```{r}
+       #continuous boyce index 
+for(f in 1:nrow(nfolds)){
+  fold <- (f - 1)
+  predPres <- read.csv(paste0("../output/maxent/all_data/models/species_", fold,  "_samplePredictions.csv"), header = TRUE)
+  predBg <- read.csv(paste0("../output/maxent/all_data/models/species_", fold, "_backgroundPredictions.csv"), header = TRUE)
+  predPres <- predPres$Cloglog.prediction
+  predBg <- predBg$Cloglog
+  cbi <- contBoyce(pres = predPres, bg = predBg)
+  write.csv(cbi, paste0("../output/maxent/all_data/cbi_", fold, ".csv"))
+  
+}
+```
+
+
+
