@@ -286,12 +286,14 @@ for(f in 1:nrow(nfolds)){
 ```
     
 ```{r final models predict}
+mod <- readRDS(file = "../output/maxent/all_data/maxmod.rds", refhook = NULL)
+px <- response(mod@models[[4]])
 
 filenames <- list.files("../data/all_data_layers/", pattern="*.csv", full.names=TRUE)
 unlayer_yrX <- rbindlist(lapply(filenames,fread))
 unlayer_yrX <- unlayer_yrX[complete.cases(unlayer_yrX), ]
 aea <- raster("../output/env/aea.tif") 
-unlayer_yr <- subset(unlayer_yrX, ascmonths == "7")
+unlayer_yr <- subset(unlayer_yrX, ascmonths == "11")
 
    for (td in 1:nrow(unlayer_yr)){
 temp_depth <- raster(unlayer_yr$temp_depth[td])
@@ -334,7 +336,7 @@ temp_depth <- raster(unlayer_yr$temp_depth[td])
       stack <- stack(temp_depth, salinity_depth, o2_depth, chl_surface, nao_sample, nao_prev, nao_winter, amo_sample, amo_winter)
 
       #stackSave(test,unlayer_yr$stackname[td])
-      pred <- predict(mod, stack, file = paste0("../output/maxent/all_data/predictions/", "cloglog_", stackn, ".asc"), overwrite=TRUE, args='outputformat=cloglog') 
+      pred <- predict(mod, stack, file = paste0("../output/maxent/all_data/predictions/nov/", "cloglog_", stackn, ".asc"), overwrite=TRUE, args='outputformat=cloglog') 
       #prplot <- plot(pred, png(paste0("../output/maxent/all_data/predictions/", "cloglog_", stackn, ".png")))
       #dev.off() # stops automatic saving of the plot to a png
      
@@ -363,7 +365,7 @@ then do something probably with raster package
 
 ```{r avg asc layers cloglog}
 stdep <- read.csv("../output/maxent/all_data/stackdepthlist.csv", header = TRUE)
-asc_list <- list.files(paste0("../output/maxent/all_data/predictions/"), pattern = "cloglog.*.asc", full.names = TRUE)
+asc_list <- list.files(paste0("../output/maxent/all_data/predictions/nov"), pattern = "cloglog.*.asc", full.names = TRUE)
 depthlayers <- data.frame(cbind(unique(stdep$ascdepths)))
 names(depthlayers)[names(depthlayers) == "cbind.unique.stdep.ascdepths.."] <- "depth"
 depthlayers$depth <- as.character(depthlayers$depth)
@@ -380,7 +382,7 @@ for (d in 1:nrow(depthlayers)){
     }
   }
 }
-write.csv(depthlayers, ("../output/maxent/all_data/predictions/cloglog_asclayerbydepth.csv"), row.names = FALSE)
+write.csv(depthlayers, ("../output/maxent/all_data/predictions/nov/cloglog_asclayerbydepth.csv"), row.names = FALSE)
 
 #depthlayers <- read.csv("../output/maxent/all_data/predictions/cloglog_asclayerbydepth.csv", header = FALSE)
 
@@ -397,8 +399,8 @@ for (x in 1:nrow(depthlayers)){
     dstack <- stack(dstack, layr)
     if(ly == length(asclay)){
       stavg <- calc(dstack, fun = mean, na.rm = TRUE)
-      writeRaster(stavg, (paste0("../output/maxent/all_data/predictions/avg_", dep, ".asc")), overwrite=TRUE)
-      avgplot <- plot(stavg, png(paste0("../output/maxent/all_data/predictions/avg_", dep, ".png")))
+      writeRaster(stavg, (paste0("../output/maxent/all_data/predictions/nov/avg_", dep, ".asc")), overwrite=TRUE)
+      avgplot <- plot(stavg, png(paste0("../output/maxent/all_data/predictions/nov/avg_", dep, ".png")))
       while (!is.null(dev.list()))  dev.off()
     }
   }
@@ -543,16 +545,21 @@ apr <- aea@crs
 #brk <- seq(0.1, 1, 0.1) #for legend
 redtrans <- rgb(218, 215, 216, 90, maxColorValue=255) 
 outsidemcp <- shapefile("../data/env/landp/mcpout.shp") #made in arcgis
+presback <- read.csv("../output/bio/presab_nafo_yr.csv", header = TRUE)
+pronly <- subset(presback, occurrence == 1)
+prjul <- subset(pronly, month == 7)
+prjan <- subset(pronly, month == 1)
 
 
   pras <- raster("../output/maxent/predictions/jul/binary_highavg_2d.asc")
   crs(pras) <- apr
   ascname <- names(pras)
   pras[pras >0] <- 1
-  lp <- plot(pras, col=rev(colorRampPalette(brewer.pal(10, "Spectral"))(10)), axes = FALSE, box = FALSE, legend = FALSE)
-  lp <- plot(pras)
+  #lp <- plot(pras, col=rev(colorRampPalette(brewer.pal(10, "Spectral"))(10)), axes = FALSE, box = FALSE, legend = FALSE)
+  lp <- plot(pras, axes = FALSE, box = FALSE, legend = FALSE)
   lp <- plot(outsidemcp,  col = redtrans, border = redtrans, add = TRUE)
   lp <- plot(s, col = "#474646", border = "#474646", add = TRUE)
+  lp <- points(prjul$longitude_meters, prjul$latitude_meters, add = TRUE)
   print(lp)
   dev.copy(png, ("../output/maxent/all_data/predictions/july/oldmod_p80_2d_july.png"), width = 1920,height = 1080)
   dev.off() # stops automatic saving of the plot to a png))

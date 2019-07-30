@@ -237,163 +237,6 @@ dev.off() #this turns off the print command
 
 
 
-```{r}
-df <- iris
-df <- na.omit(df)
-df <- scale(df[ ,-5])
-
-
-# Dissimilarity matrix
-d <- dist(df, method = "euclidean")
-
-# Hierarchical clustering using Complete Linkage
-hc1 <- hclust(d, method = "complete" )
-
-# Plot the obtained dendrogram
-plot(hc1, cex = 0.6, hang = -1)
-```
-
-```{r}
-iris2 <- pres[ ,-12]
-species_labels <- pres[ ,12]
-library(colorspace) # get nice colors
-species_col <- rev(rainbow_hcl(4))[as.numeric(species_labels)]
-
-# Plot a SPLOM:
-pairs(iris2, col = species_col,
-      lower.panel = NULL,
-       cex.labels=2, pch=19, cex = 1.2)
-
-# Add a legend
-par(xpd = TRUE)
-legend(x = 0.05, y = 0.4, cex = 2,
-   legend = as.character(levels(species_labels)),
-    fill = unique(species_col))
-par(xpd = NA)
-```
-
-```{r}
-par(las = 1, mar = c(4.5, 3, 3, 2) + 0.1, cex = .8)
-MASS::parcoord(iris2, col = species_col, var.label = TRUE, lwd = 2)
-
-# Add Title
-title("Parallel coordinates plot of the Iris data")
-# Add a legend
-par(xpd = TRUE)
-legend(x = 1.75, y = -.25, cex = 1,
-   legend = as.character(levels(species_labels)),
-    fill = unique(species_col), horiz = TRUE)
-```
-
-
-```{r}
-d_iris <- dist(iris2) # method="man" # is a bit better
-hc_iris <- hclust(d_iris, method = "complete")
-iris_species <- rev(levels(pres[,12]))
-
-library(dendextend)
-dend <- as.dendrogram(hc_iris)
-# order it the closest we can to the order of the observations:
-dend <- rotate(dend, 1:6361)
-
-# Color the branches based on the clusters:
-dend <- color_branches(dend, k=4) #, groupLabels=iris_species)
-
-# Manually match the labels, as much as possible, to the real classification of the flowers:
-labels_colors(dend) <-
-   rainbow_hcl(3)[sort_levels_values(
-      as.numeric(pres[,12])[order.dendrogram(dend)]
-   )]
-
-# We shall add the flower type to the labels:
-labels(dend) <- paste(as.character(iris[,5])[order.dendrogram(dend)],
-                           "(",labels(dend),")", 
-                           sep = "")
-# We hang the dendrogram a bit:
-dend <- hang.dendrogram(dend,hang_height=0.1)
-# reduce the size of the labels:
-# dend <- assign_values_to_leaves_nodePar(dend, 0.5, "lab.cex")
-dend <- set(dend, "labels_cex", 0.5)
-# And plot:
-par(mar = c(3,3,3,7))
-plot(dend, 
-     main = "Clustered Iris data set
-     (the labels give the true flower species)", 
-     horiz =  TRUE,  nodePar = list(cex = .007))
-legend("topleft", legend = iris_species, fill = rainbow_hcl(3))
-```
-
-```{r}
-library(circlize)
-par(mar = rep(0,4))
-circlize_dendrogram(dend)
-```
-
-
-```{r}
-iris3 <- pres[ ,-2]
-species_labels <- pres[ ,2]
-library(colorspace) # get nice colors
-species_col <- rev(rainbow_hcl(12))[as.numeric(species_labels)]
-
-# Plot a SPLOM:
-pairs(iris3, col = species_col,
-      lower.panel = NULL,
-       cex.labels=2, pch=19, cex = 1.2)
-
-# Add a legend
-par(xpd = TRUE)
-legend(x = 0.05, y = 0.4, cex = 2,
-   legend = as.character(levels(species_labels)),
-    fill = unique(species_col))
-par(xpd = NA)
-```
-
-```{r}
-d_iris2 <- dist(pres) # method="man" # is a bit better
-hc_iris2 <- hclust(d_iris2, method = "complete")
-iris_species2 <- rev(levels(pres[,12]))
-
-library(dendextend)
-dend2 <- as.dendrogram(hc_iris2)
-# order it the closest we can to the order of the observations:
-dend2 <- rotate(dend2, 1:6361)
-
-# Color the branches based on the clusters:
-dend2 <- color_branches(dend2, k=4) #, groupLabels=iris_species)
-
-# Manually match the labels, as much as possible, to the real classification of the flowers:
-labels_colors(dend2) <-
-   rainbow_hcl(3)[sort_levels_values(
-      as.numeric(pres[,12])[order.dendrogram(dend2)]
-   )]
-
-# We shall add the flower type to the labels:
-labels(dend2) <- paste(as.character(iris[,5])[order.dendrogram(dend2)],
-                           "(",labels(dend2),")", 
-                           sep = "")
-# We hang the dendrogram a bit:
-dend2 <- hang.dendrogram(dend2,hang_height=0.1)
-# reduce the size of the labels:
-# dend <- assign_values_to_leaves_nodePar(dend, 0.5, "lab.cex")
-dend22 <- set(dend2, "labels_cex", 0.5)
-# And plot:
-par(mar = c(3,3,3,7))
-plot(dend2, 
-     main = "Clustered Iris data set
-     (the labels give the true flower species)", 
-     horiz =  TRUE,  nodePar = list(cex = .007))
-legend("topleft", legend = species_labels, fill = rainbow_hcl(3))
-```
-
-
-```{r}
-library(circlize)
-par(mar = rep(0,4))
-circlize_dendrogram(dend2)
-```
-
-
 # violin plots
 
 ```{r}
@@ -527,7 +370,7 @@ completeFun <- function(data, desiredCols) {
 
 data_aea <- read.csv("../output/bio/presab_nafo_yr.csv", header = TRUE)
 data_aea$depthlyr_mod <- NA
-data_aea$predicted <- NA
+data_aea$predicted_alldata <- NA
 data_aea <- completeFun(data_aea, "depth_layer")
 
 avgasc_list <- list.files(paste0("../output/maxent/all_data/predictions/july/"), pattern = "^avg_.*.asc", full.names = TRUE) #true means the full path is included
@@ -555,24 +398,24 @@ data_aea <- completeFun(data_aea, "depthlyr_mod")
 
 
 ```{r}
-mth <- c("1", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12")
-mthn <- c("jan", "mar", "apr", "may", "jun", "july", "aug", "sep", "oct", "nov","dec")
+#mth <- c("1", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12")
+#mthn <- c("jan", "may", "apr", "may", "jun", "july", "aug", "sep", "oct", "nov","dec")
 aea <- raster("../output/env/aea.tif") 
 
 
 
 #for (m in 1:length(mth)){
 #mont <- mth[m]
-mont <- 7
+mont <- 11
 data_aeaX <- subset(data_aea, month == mont)
 xy <- data_aeaX[ ,c(19,20)] # This is to tell R where the coordinates are (in column 18 and 19). Note that the column order needs to be longitude, latitude
 data_aea_sp <- SpatialPointsDataFrame(coords = xy, data = data_aeaX, proj4string = CRS("+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-60 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")) # The CRS is used here is for the albers equal area projection.
-avgasc_list <- list.files(paste0("../output/maxent/all_data/predictions/july/"), pattern = "^avg_.*.asc", full.names = TRUE) #true means the full path is included
+avgasc_list <- list.files(paste0("../output/maxent/all_data/predictions/nov/"), pattern = "^avg_.*.asc", full.names = TRUE) #true means the full path is included
 for (j in 1:nrow(data_aea_sp)) { 
 for (i in 1:length(avgasc_list)) {  
  de <- data_aea_sp$depthlyr_mod[j]  # a variable for the observation depth layer
   mth <- (data_aea_sp$month[j])  # a variable for the observation month
-  rasdep <- str_sub(avgasc_list[i], 48, -5)
+  rasdep <- str_sub(avgasc_list[i], 47, -5)
        if (mth == mont & rasdep == de){
           temp_brick <- raster(avgasc_list[i])
         crs(temp_brick) <- aea@crs 
@@ -585,12 +428,49 @@ for (i in 1:length(avgasc_list)) {
 #}
               data_aea1 <- as.data.frame(data_aea_sp)
 
-write.csv(data_aea1, "../output/maxent/all_data/testforslr_jul.csv", row.names = FALSE)
+write.csv(data_aea1, "../output/maxent/all_data/pred_file_nov.csv", row.names = FALSE)
  #}
   
  # data_aea1 <- as.data.frame(data_aea_sp)
 
 ```
+
+
+```{r}
+
+aea <- raster("../output/env/aea.tif") 
+
+
+
+#for (m in 1:length(mth)){
+#mont <- mth[m]
+mont <- 11
+data_aeaX <- read.csv("../output/maxent/all_data/pred_file_nov.csv", header = TRUE)
+data_aeaX$mthpred <- NA
+xy <- data_aeaX[ ,c(19,20)] # This is to tell R where the coordinates are (in column 18 and 19). Note that the column order needs to be longitude, latitude
+data_aea_sp <- SpatialPointsDataFrame(coords = xy, data = data_aeaX, proj4string = CRS("+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-60 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")) # The CRS is used here is for the albers equal area projection.
+avgasc_list <- list.files(paste0("../output/maxent/predictions/nov/"), pattern = "^avg_.*.asc", full.names = TRUE) #true means the full path is included
+for (j in 1:nrow(data_aea_sp)) { 
+for (i in 1:length(avgasc_list)) {  
+ de <- data_aea_sp$depthlyr_mod[j]  # a variable for the observation depth layer
+  mth <- (data_aea_sp$month[j])  # a variable for the observation month
+  rasdep <- str_sub(avgasc_list[i], 46, -5)
+       if (mth == mont & rasdep == de){
+          temp_brick <- raster(avgasc_list[i])
+        crs(temp_brick) <- aea@crs 
+              data_aea_sp$mthpred[j] <- extract(x=temp_brick, y = data_aea_sp[j, ]) 
+              
+              }
+          }
+}
+
+#}
+              data_aea1 <- as.data.frame(data_aea_sp)
+              write.csv(data_aea1, "../output/maxent/all_data/pred_file_nov.csv", row.names = FALSE)
+
+
+```
+
 
 ```{r}
 predjan <- read.csv("../output/maxent/all_data/testforslr_jan.csv", header = TRUE)
@@ -602,7 +482,542 @@ plot(predjanbk$temp_depth, predjanbk$predicted)
 
 ```{r}
 mod <- readRDS(file = "../output/maxent/all_data/maxmod.rds", refhook = NULL)
-px <- response(mod@models[[3]])
+px <- response(mod@models[[4]])
+```
+
+#get all probabiltiy values for a period of time and find the upper 20%
+
+
+for july with all data
+```{r}
+clogasc_list <- list.files(paste0("../output/maxent/all_data/predictions/july/"), pattern = "^avg_.*.asc", full.names = TRUE) # first list the files containing the data
+a <- stack(clogasc_list) #stack the files
+b <- getValues(a) # create a matrix of the values 
+c <- as.vector(b) #make into vector
+d <- na.omit(c) #remove all na values
+d <- sort(d, decreasing = TRUE) # order from high to low
+drow <- length(d) # how many values are there
+dr20 <- (drow*20)/100  # calculate which value is the upper 20%
+d20 <- d[dr20] # 0.149577....
+dmaxv <- max(d) #0.998087
+dm20 <- (dmaxv*80)/100 # calculate the 20% of 0.998097...  = 0.798477....
+
+
+#binary threshold function d20
+bind20 <- function(x){
+  ifelse(x >= d20, 1,
+  ifelse(x < d20, 0, NA)) 
+}
+
+#binary threshold function dm20
+bindm20 <- function(x){
+  ifelse(x >= dm20, 1,
+  ifelse(x < dm20, 0, NA)) 
+}
+
+for (cum in 1:length(clogasc_list)){
+  cumascdep <- str_sub(clogasc_list[cum], start = 47, end = -5) #selects the depth from the file name
+  cumasc <- raster(clogasc_list[cum])
+  ascname <- names(cumasc)
+  cum_d20 <- calc(cumasc, fun = bind20)
+  cum_dm20 <- calc(cumasc, fun = bindm20)
+  writeRaster(cum_d20, paste0("../output/maxent/slr_analysis/july_alldata/july_alldata_d20_", ascname, ".asc"), overwrite = TRUE)
+  writeRaster(cum_dm20, paste0("../output/maxent/slr_analysis/july_alldata/july_alldata_dm20_", ascname, ".asc"), overwrite = TRUE)
+  }
+
+
+
+binaryclog_list <- list.files(paste0("../output/maxent/slr_analysis/july_alldata"), pattern = "^july_alldata_d20_.*.asc", full.names = TRUE)
+binstack <- stack(binaryclog_list)
+stacksum <- sum(binstack, na.rm = TRUE)
+writeRaster(stacksum, "../output/maxent/slr_analysis/july_alldata/d20_2d.asc", overwrite=TRUE)
+plot(stacksum, png("../output/maxent/slr_analysis/july_alldata/d20_2d.png"))
+dev.off()
+binaryclog_list <- list.files(paste0("../output/maxent/slr_analysis/july_alldata"), pattern = "^july_alldata_dm20_.*.asc", full.names = TRUE)
+binstack <- stack(binaryclog_list)
+stacksum <- sum(binstack, na.rm = TRUE)
+writeRaster(stacksum, "../output/maxent/slr_analysis/july_alldata/dm20_2d.asc", overwrite=TRUE)
+plot(stacksum, png("../output/maxent/slr_analysis/july_alldata/dm20_2d.png"))
+dev.off()
+
+
+#make map
+
+aea <- raster("../output/env/aea.tif") #the correct CRS
+s <- shapefile("../data/env/landp/landpro.shp") #made in arcgis
+apr <- aea@crs
+#brk <- seq(0.1, 1, 0.1) #for legend
+redtrans <- rgb(218, 215, 216, 90, maxColorValue=255) 
+outsidemcp <- shapefile("../data/env/landp/mcpout.shp") #made in arcgis
+presback <- read.csv("../output/bio/presab_nafo_yr.csv", header = TRUE)
+pronly <- subset(presback, occurrence == 1)
+prjul <- subset(pronly, month == 7)
+#prjan <- subset(pronly, month == 1)
+
+
+  pras <- raster("../output/maxent/slr_analysis/july_alldata/d20_2d.asc")
+  crs(pras) <- apr
+  ascname <- names(pras)
+  pras[pras >0] <- 1
+  #lp <- plot(pras, col=rev(colorRampPalette(brewer.pal(10, "Spectral"))(10)), axes = FALSE, box = FALSE, legend = FALSE)
+  lp <- plot(pras, axes = FALSE, box = FALSE, legend = FALSE)
+  lp <- plot(outsidemcp,  col = redtrans, border = redtrans, add = TRUE)
+  lp <- plot(s, col = "#474646", border = "#474646", add = TRUE)
+  lp <- points(prjul$longitude_meters, prjul$latitude_meters, add = TRUE, pch=19, cex = 0.5, col = "red")
+  print(lp)
+  dev.copy(png, ("../output/maxent/slr_analysis/july_alldata/d20_2d.png"), width = 1920,height = 1080)
+  dev.off() # stops automatic saving of the plot to a png))
+  
+  pras <- raster("../output/maxent/slr_analysis/july_alldata/dm20_2d.asc")
+  crs(pras) <- apr
+  ascname <- names(pras)
+  pras[pras >0] <- 1
+  #lp <- plot(pras, col=rev(colorRampPalette(brewer.pal(10, "Spectral"))(10)), axes = FALSE, box = FALSE, legend = FALSE)
+  lp <- plot(pras, axes = FALSE, box = FALSE, legend = FALSE)
+  lp <- plot(outsidemcp,  col = redtrans, border = redtrans, add = TRUE)
+  lp <- plot(s, col = "#474646", border = "#474646", add = TRUE)
+  lp <- points(prjul$longitude_meters, prjul$latitude_meters, add = TRUE, pch=19, cex = 0.5, col = "red")
+  print(lp)
+  dev.copy(png, ("../output/maxent/slr_analysis/july_alldata/dm20_2d.png"), width = 1920,height = 1080)
+  dev.off() # stops automatic saving of the plot to a png))
+
+```
+
+
+
+
+
+
+for july with just july data
+```{r}
+clogasc_list <- list.files(paste0("../output/maxent/predictions/jul/"), pattern = "^avg_cloglog_.*.asc", full.names = TRUE) # first list the files containing the data
+a <- stack(clogasc_list) #stack the files
+b <- getValues(a) # create a matrix of the values 
+c <- as.vector(b) #make into vector
+d <- na.omit(c) #remove all na values
+d <- sort(d, decreasing = TRUE) # order from high to low
+drow <- length(d) # how many values are there
+dr20 <- (drow*20)/100  # calculate which value is the upper 20%
+d20 <- d[dr20] # 0.083319....
+dmaxv <- max(d) #0.885157....
+dm20 <- (dmaxv*80)/100 # calculate the 20% of 0.885157....  = 0.70812....
+
+
+
+#binary threshold function d20
+bind20 <- function(x){
+  ifelse(x >= d20, 1,
+  ifelse(x < d20, 0, NA)) 
+}
+
+#binary threshold function dm20
+bindm20 <- function(x){
+  ifelse(x >= dm20, 1,
+  ifelse(x < dm20, 0, NA)) 
+}
+
+for (cum in 1:length(clogasc_list)){
+  cumascdep <- str_sub(clogasc_list[cum], start = 46, end = -5) #selects the depth from the file name
+  cumasc <- raster(clogasc_list[cum])
+  ascname <- names(cumasc)
+  cum_d20 <- calc(cumasc, fun = bind20)
+  cum_dm20 <- calc(cumasc, fun = bindm20)
+  writeRaster(cum_d20, paste0("../output/maxent/slr_analysis/july_alldata/july_monthdata_d20_", ascname, ".asc"), overwrite = TRUE)
+  writeRaster(cum_dm20, paste0("../output/maxent/slr_analysis/july_alldata/july_monthdata_dm20_", ascname, ".asc"), overwrite = TRUE)
+  }
+
+
+
+binaryclog_list <- list.files(paste0("../output/maxent/slr_analysis/july_alldata"), pattern = "^july_monthdata_d20_.*.asc", full.names = TRUE)
+binstack <- stack(binaryclog_list)
+stacksum <- sum(binstack, na.rm = TRUE)
+writeRaster(stacksum, "../output/maxent/slr_analysis/july_alldata/d20_2d_month.asc", overwrite=TRUE)
+plot(stacksum, png("../output/maxent/slr_analysis/july_alldata/d20_2d_month.png"))
+dev.off()
+binaryclog_list <- list.files(paste0("../output/maxent/slr_analysis/july_alldata"), pattern = "^july_monthdata_dm20_.*.asc", full.names = TRUE)
+binstack <- stack(binaryclog_list)
+stacksum <- sum(binstack, na.rm = TRUE)
+writeRaster(stacksum, "../output/maxent/slr_analysis/july_alldata/dm20_2d_month.asc", overwrite=TRUE)
+plot(stacksum, png("../output/maxent/slr_analysis/july_alldata/dm20_2d_month.png"))
+dev.off()
+
+
+#make map
+
+aea <- raster("../output/env/aea.tif") #the correct CRS
+s <- shapefile("../data/env/landp/landpro.shp") #made in arcgis
+apr <- aea@crs
+#brk <- seq(0.1, 1, 0.1) #for legend
+redtrans <- rgb(218, 215, 216, 90, maxColorValue=255) 
+outsidemcp <- shapefile("../data/env/landp/mcpout.shp") #made in arcgis
+presback <- read.csv("../output/bio/presab_nafo_yr.csv", header = TRUE)
+pronly <- subset(presback, occurrence == 1)
+prjul <- subset(pronly, month == 7)
+#prjan <- subset(pronly, month == 1)
+
+
+  pras <- raster("../output/maxent/slr_analysis/july_alldata/d20_2d_month.asc")
+  crs(pras) <- apr
+  ascname <- names(pras)
+  pras[pras >0] <- 1
+  #lp <- plot(pras, col=rev(colorRampPalette(brewer.pal(10, "Spectral"))(10)), axes = FALSE, box = FALSE, legend = FALSE)
+  lp <- plot(pras, axes = FALSE, box = FALSE, legend = FALSE)
+  lp <- plot(outsidemcp,  col = redtrans, border = redtrans, add = TRUE)
+  lp <- plot(s, col = "#474646", border = "#474646", add = TRUE)
+  lp <- points(prjul$longitude_meters, prjul$latitude_meters, add = TRUE, pch=19, cex = 0.5, col = "red")
+  print(lp)
+  dev.copy(png, ("../output/maxent/slr_analysis/july_alldata/d20_2d_month.png"), width = 1920,height = 1080)
+  dev.off() # stops automatic saving of the plot to a png))
+  
+  pras <- raster("../output/maxent/slr_analysis/july_alldata/dm20_2d_month.asc")
+  crs(pras) <- apr
+  ascname <- names(pras)
+  pras[pras >0] <- 1
+  #lp <- plot(pras, col=rev(colorRampPalette(brewer.pal(10, "Spectral"))(10)), axes = FALSE, box = FALSE, legend = FALSE)
+  lp <- plot(pras, axes = FALSE, box = FALSE, legend = FALSE)
+  lp <- plot(outsidemcp,  col = redtrans, border = redtrans, add = TRUE)
+  lp <- plot(s, col = "#474646", border = "#474646", add = TRUE)
+  lp <- points(prjul$longitude_meters, prjul$latitude_meters, add = TRUE, pch=19, cex = 0.5, col = "red")
+  print(lp)
+  dev.copy(png, ("../output/maxent/slr_analysis/july_alldata/dm20_2d_month.png"), width = 1920,height = 1080)
+  dev.off() # stops automatic saving of the plot to a png))
+```
+
+for jan with all data
+```{r}
+clogasc_list <- list.files(paste0("../output/maxent/all_data/predictions/jan/"), pattern = "^avg_.*.asc", full.names = TRUE) # first list the files containing the data
+a <- stack(clogasc_list) #stack the files
+b <- getValues(a) # create a matrix of the values 
+c <- as.vector(b) #make into vector
+d <- na.omit(c) #remove all na values
+d <- sort(d, decreasing = TRUE) # order from high to low
+drow <- length(d) # how many values are there
+dr20 <- (drow*20)/100  # calculate which value is the upper 20%
+d20 <- d[dr20] # 0.08307....
+dmaxv <- max(d) #0.996738...
+dm20 <- (dmaxv*80)/100 # calculate the 20% of 0.996738...  = 0.7973906....
+
+
+#binary threshold function d20
+bind20 <- function(x){
+  ifelse(x >= d20, 1,
+  ifelse(x < d20, 0, NA)) 
+}
+
+#binary threshold function dm20
+bindm20 <- function(x){
+  ifelse(x >= dm20, 1,
+  ifelse(x < dm20, 0, NA)) 
+}
+
+for (cum in 1:length(clogasc_list)){
+  cumascdep <- str_sub(clogasc_list[cum], start = 47, end = -5) #selects the depth from the file name
+  cumasc <- raster(clogasc_list[cum])
+  ascname <- names(cumasc)
+  cum_d20 <- calc(cumasc, fun = bind20)
+  cum_dm20 <- calc(cumasc, fun = bindm20)
+  writeRaster(cum_d20, paste0("../output/maxent/slr_analysis/jan_alldata/jan_alldata_d20_", ascname, ".asc"), overwrite = TRUE)
+  writeRaster(cum_dm20, paste0("../output/maxent/slr_analysis/jan_alldata/jan_alldata_dm20_", ascname, ".asc"), overwrite = TRUE)
+  }
+
+
+binaryclog_list <- list.files(paste0("../output/maxent/slr_analysis/jan_alldata"), pattern = "^jan_alldata_d20_.*.asc", full.names = TRUE)
+binstack <- stack(binaryclog_list)
+stacksum <- sum(binstack, na.rm = TRUE)
+writeRaster(stacksum, "../output/maxent/slr_analysis/jan_alldata/d20_2d.asc", overwrite=TRUE)
+plot(stacksum, png("../output/maxent/slr_analysis/jan_alldata/d20_2d.png"))
+dev.off()
+binaryclog_list <- list.files(paste0("../output/maxent/slr_analysis/jan_alldata"), pattern = "^jan_alldata_dm20_.*.asc", full.names = TRUE)
+binstack <- stack(binaryclog_list)
+stacksum <- sum(binstack, na.rm = TRUE)
+writeRaster(stacksum, "../output/maxent/slr_analysis/jan_alldata/dm20_2d.asc", overwrite=TRUE)
+plot(stacksum, png("../output/maxent/slr_analysis/jan_alldata/dm20_2d.png"))
+dev.off()
+
+
+#make map
+
+aea <- raster("../output/env/aea.tif") #the correct CRS
+s <- shapefile("../data/env/landp/landpro.shp") #made in arcgis
+apr <- aea@crs
+#brk <- seq(0.1, 1, 0.1) #for legend
+redtrans <- rgb(218, 215, 216, 90, maxColorValue=255) 
+outsidemcp <- shapefile("../data/env/landp/mcpout.shp") #made in arcgis
+presback <- read.csv("../output/bio/presab_nafo_yr.csv", header = TRUE)
+pronly <- subset(presback, occurrence == 1)
+#prjul <- subset(pronly, month == 7)
+prjan <- subset(pronly, month == 1)
+
+
+  pras <- raster("../output/maxent/slr_analysis/jan_alldata/d20_2d.asc")
+  crs(pras) <- apr
+  ascname <- names(pras)
+  pras[pras >0] <- 1
+  #lp <- plot(pras, col=rev(colorRampPalette(brewer.pal(10, "Spectral"))(10)), axes = FALSE, box = FALSE, legend = FALSE)
+  lp <- plot(pras, axes = FALSE, box = FALSE, legend = FALSE)
+  lp <- plot(outsidemcp,  col = redtrans, border = redtrans, add = TRUE)
+  lp <- plot(s, col = "#474646", border = "#474646", add = TRUE)
+  lp <- points(prjan$longitude_meters, prjan$latitude_meters, add = TRUE, pch=19, cex = 0.5, col = "red")
+  print(lp)
+  dev.copy(png, ("../output/maxent/slr_analysis/jan_alldata/d20_2d.png"), width = 1920,height = 1080)
+  dev.off() # stops automatic saving of the plot to a png))
+  
+  pras <- raster("../output/maxent/slr_analysis/jan_alldata/dm20_2d.asc")
+  crs(pras) <- apr
+  ascname <- names(pras)
+  pras[pras >0] <- 1
+  #lp <- plot(pras, col=rev(colorRampPalette(brewer.pal(10, "Spectral"))(10)), axes = FALSE, box = FALSE, legend = FALSE)
+  lp <- plot(pras, axes = FALSE, box = FALSE, legend = FALSE)
+  lp <- plot(outsidemcp,  col = redtrans, border = redtrans, add = TRUE)
+  lp <- plot(s, col = "#474646", border = "#474646", add = TRUE)
+  lp <- points(prjan$longitude_meters, prjan$latitude_meters, add = TRUE, pch=19, cex = 0.5, col = "red")
+  print(lp)
+  dev.copy(png, ("../output/maxent/slr_analysis/jan_alldata/dm20_2d.png"), width = 1920,height = 1080)
+  dev.off() # stops automatic saving of the plot to a png))
+
+```
+
+for jan with just jan data
+```{r}
+clogasc_list <- list.files(paste0("../output/maxent/predictions/jan/"), pattern = "^avg_cloglog_.*.asc", full.names = TRUE) # first list the files containing the data
+a <- stack(clogasc_list) #stack the files
+b <- getValues(a) # create a matrix of the values 
+c <- as.vector(b) #make into vector
+d <- na.omit(c) #remove all na values
+d <- sort(d, decreasing = TRUE) # order from high to low
+drow <- length(d) # how many values are there
+dr20 <- (drow*20)/100  # calculate which value is the upper 20%
+d20 <- d[dr20] # 0.01165....
+dmaxv <- max(d) #0.73946....
+dm20 <- (dmaxv*80)/100 # calculate the 20% of 0.73946....  = 0.591569....
+
+
+#binary threshold function d20
+bind20 <- function(x){
+  ifelse(x >= d20, 1,
+  ifelse(x < d20, 0, NA)) 
+}
+
+#binary threshold function dm20
+bindm20 <- function(x){
+  ifelse(x >= dm20, 1,
+  ifelse(x < dm20, 0, NA)) 
+}
+
+for (cum in 1:length(clogasc_list)){
+  cumascdep <- str_sub(clogasc_list[cum], start = 46, end = -5) #selects the depth from the file name
+  cumasc <- raster(clogasc_list[cum])
+  ascname <- names(cumasc)
+  cum_d20 <- calc(cumasc, fun = bind20)
+  cum_dm20 <- calc(cumasc, fun = bindm20)
+  writeRaster(cum_d20, paste0("../output/maxent/slr_analysis/jan_alldata/jan_monthdata_d20_", ascname, ".asc"), overwrite = TRUE)
+  writeRaster(cum_dm20, paste0("../output/maxent/slr_analysis/jan_alldata/jan_monthdata_dm20_", ascname, ".asc"), overwrite = TRUE)
+  }
+
+
+
+binaryclog_list <- list.files(paste0("../output/maxent/slr_analysis/jan_alldata"), pattern = "^jan_monthdata_d20_.*.asc", full.names = TRUE)
+binstack <- stack(binaryclog_list)
+stacksum <- sum(binstack, na.rm = TRUE)
+writeRaster(stacksum, "../output/maxent/slr_analysis/jan_alldata/d20_2d_month.asc", overwrite=TRUE)
+plot(stacksum, png("../output/maxent/slr_analysis/jan_alldata/d20_2d_month.png"))
+dev.off()
+binaryclog_list <- list.files(paste0("../output/maxent/slr_analysis/jan_alldata"), pattern = "^jan_monthdata_dm20_.*.asc", full.names = TRUE)
+binstack <- stack(binaryclog_list)
+stacksum <- sum(binstack, na.rm = TRUE)
+writeRaster(stacksum, "../output/maxent/slr_analysis/jan_alldata/dm20_2d_month.asc", overwrite=TRUE)
+plot(stacksum, png("../output/maxent/slr_analysis/jan_alldata/dm20_2d_month.png"))
+dev.off()
+
+
+#make map
+
+aea <- raster("../output/env/aea.tif") #the correct CRS
+s <- shapefile("../data/env/landp/landpro.shp") #made in arcgis
+apr <- aea@crs
+#brk <- seq(0.1, 1, 0.1) #for legend
+redtrans <- rgb(218, 215, 216, 90, maxColorValue=255) 
+outsidemcp <- shapefile("../data/env/landp/mcpout.shp") #made in arcgis
+presback <- read.csv("../output/bio/presab_nafo_yr.csv", header = TRUE)
+pronly <- subset(presback, occurrence == 1)
+prjul <- subset(pronly, month == 7)
+#prjan <- subset(pronly, month == 1)
+
+
+  pras <- raster("../output/maxent/slr_analysis/jan_alldata/d20_2d_month.asc")
+  crs(pras) <- apr
+  ascname <- names(pras)
+  pras[pras >0] <- 1
+  #lp <- plot(pras, col=rev(colorRampPalette(brewer.pal(10, "Spectral"))(10)), axes = FALSE, box = FALSE, legend = FALSE)
+  lp <- plot(pras, axes = FALSE, box = FALSE, legend = FALSE)
+  lp <- plot(outsidemcp,  col = redtrans, border = redtrans, add = TRUE)
+  lp <- plot(s, col = "#474646", border = "#474646", add = TRUE)
+  lp <- points(prjan$longitude_meters, prjan$latitude_meters, add = TRUE, pch=19, cex = 0.5, col = "red")
+  print(lp)
+  dev.copy(png, ("../output/maxent/slr_analysis/jan_alldata/d20_2d_month.png"), width = 1920,height = 1080)
+  dev.off() # stops automatic saving of the plot to a png))
+  
+  pras <- raster("../output/maxent/slr_analysis/jan_alldata/dm20_2d_month.asc")
+  crs(pras) <- apr
+  ascname <- names(pras)
+  pras[pras >0] <- 1
+  #lp <- plot(pras, col=rev(colorRampPalette(brewer.pal(10, "Spectral"))(10)), axes = FALSE, box = FALSE, legend = FALSE)
+  lp <- plot(pras, axes = FALSE, box = FALSE, legend = FALSE)
+  lp <- plot(outsidemcp,  col = redtrans, border = redtrans, add = TRUE)
+  lp <- plot(s, col = "#474646", border = "#474646", add = TRUE)
+  lp <- points(prjan$longitude_meters, prjan$latitude_meters, add = TRUE, pch=19, cex = 0.5, col = "red")
+  print(lp)
+  dev.copy(png, ("../output/maxent/slr_analysis/jan_alldata/dm20_2d_month.png"), width = 1920,height = 1080)
+  dev.off() # stops automatic saving of the plot to a png))
+```
+
+
+
+
+```{r}
+
+mont <- 
+data_aeaX <- read.csv("../output/maxent/all_data/testforslr_jan.csv", header = TRUE)
+data_aeaX$predicted_mthdata <- NA
+
+xy <- data_aeaX[ ,c(19,20)] # This is to tell R where the coordinates are (in column 18 and 19). Note that the column order needs to be longitude, latitude
+data_aea_sp <- SpatialPointsDataFrame(coords = xy, data = data_aeaX, proj4string = CRS("+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-60 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")) # The CRS is used here is for the albers equal area projection.
+avgasc_list <- list.files(paste0("../output/maxent/predictions/jan"), pattern = "^avg_.*.asc", full.names = TRUE) #true means the full path is included
+for (j in 1:nrow(data_aea_sp)) { 
+for (i in 1:length(avgasc_list)) {  
+ de <- data_aea_sp$depthlyr_mod[j]  # a variable for the observation depth layer
+  rasdep <- str_sub(avgasc_list[i], 46, -5)
+       if (rasdep == de){
+          temp_brick <- raster(avgasc_list[i])
+        crs(temp_brick) <- aea@crs 
+              data_aea_sp$predicted_mthdata[j] <- extract(x=temp_brick, y = data_aea_sp[j, ]) 
+              
+              }
+          }
+}
+
+           data_aea1 <- as.data.frame(data_aea_sp)
+
+write.csv(data_aea1, "../output/maxent/all_data/predictions_jan.csv", row.names = FALSE)
+ #}
+  
+```
+
+
+
+#code to create benthic layers
+
+```{r}
+aea <- raster("../output/env/aea.tif") #the correct CRS
+benlst <- list.files("../data/env/ascii/benthic_layers/template", pattern = ".*.asc", full.names = TRUE)
+apr <- aea@crs
+
+
+
+for (pred in 1:length(benlst)){
+  pras <- raster(benlst[pred])
+  crs(pras) <- apr
+  ascname <- names(pras)
+  depth <-  (sapply(strsplit(ascname, "_"), "[[", 4)) # extracting the third part of the netcdf (inc.nc)
+  pras[pras >0] <- 0
+  pras[is.na(pras)] <- 1
+  writeRaster(pras, paste0("../data/env/ascii/benthic_layers/done/benthic_", depth, ".asc"), overwrite = TRUE)
+
+}
+
+#just check it works
+benlst <- list.files("../data/env/ascii/benthic_layers/done", pattern = ".*.asc", full.names = TRUE)
+
+
+for (pred in 1:length(benlst)){
+  pras <- raster(benlst[pred])
+  plot(pras)
+}
+
+
+```
+
+```{r}
+predjan <- read.csv("../output/maxent/all_data/predictions_jan.csv", header = TRUE)
+plot(predjan$occurrence, predjan$predicted_mthdata)
+plot(predjan$occurrence, predjan$predicted_alldata)
+```
+
+```{r}
+predjul <- read.csv("../output/maxent/all_data/predictions_jul.csv", header = TRUE)
+plot(predjul$occurrence, predjul$predicted_mthdata)
+plot(predjul$occurrence, predjul$predicted_alldata)
+```
+
+
+```{r}
+predjan <- read.csv("../output/maxent/all_data/predictions_jan.csv", header = TRUE)
+
+completeFun <- function(data, desiredCols) {
+  completeVec <- complete.cases(data[, desiredCols])
+  return(data[completeVec, ])
+}
+
+
+predjan <- completeFun(predjan, "predicted_mthdata")
+predjanoc <- subset(predjan, occurrence == 1)
+predjanbk <- subset(predjan, occurrence == 0)
+noc <- nrow(predjanoc)
+nbk <- nrow(predjanbk)
+janmth5plusoc <- sum(predjanoc$predicted_mthdata > 0.5)
+janmth5plusbk <- sum(predjanoc$predicted_mthdata > 0.5)
+janmthpp <- (janmth5plusoc/noc)*100
+janmthbkp <- (janmth5plusbk/nbk)*100
+
+janall5plusoc <- sum(predjanoc$predicted_alldata > 0.5)
+janall5plusbk <- sum(predjanoc$predicted_alldata > 0.5)
+janallpp <- (janall5plusoc/noc)*100
+janallbkp <- (janall5plusbk/nbk)*100
+```
+
+```{r}
+hist(predjanoc$predicted_mthdata)
+hist(predjanoc$predicted_alldata)
+hist(predjanbk$predicted_mthdata)
+hist(predjanbk$predicted_alldata)
+```
+
+
+
+```{r}
+predjul <- read.csv("../output/maxent/all_data/predictions_jul.csv", header = TRUE)
+
+completeFun <- function(data, desiredCols) {
+  completeVec <- complete.cases(data[, desiredCols])
+  return(data[completeVec, ])
+}
+
+
+predjul <- completeFun(predjul, "predicted_mthdata")
+predjuloc <- subset(predjul, occurrence == 1)
+predjulbk <- subset(predjul, occurrence == 0)
+noc <- nrow(predjuloc)
+nbk <- nrow(predjulbk)
+
+julmth5plusoc <- sum(predjuloc$predicted_mthdata > 0.5)
+julmth5plusbk <- sum(predjuloc$predicted_mthdata > 0.5)
+julmthpp <- (julmth5plusoc/noc)*100
+julmthbkp <- (julmth5plusbk/nbk)*100
+
+julall5plusoc <- subset(predjuloc, predicted_alldata > 0.5)
+julall5plusoc <- nrow(julall5plusoc)
+julall5plusbk <- subset(predjulbk, predicted_alldata > 0.5)
+julall5plusbk <- nrow(julall5plusbk)
+julallpp <- (julall5plusoc/noc)*100
+julallbkp <- (julall5plusbk/nbk)*100
+```
+
+
+```{r}
+hist(predjuloc$predicted_mthdata)
+hist(predjuloc$predicted_alldata)
+hist(predjulbk$predicted_mthdata)
+hist(predjulbk$predicted_alldata)
 ```
 
 
