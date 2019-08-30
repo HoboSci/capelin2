@@ -781,6 +781,8 @@ ignore the first X characters in the filename (yr_mthna_) and stack based on the
 then do something probably with raster package
 
 ```{r avg asc layers cloglog}
+mthna <- jul
+timeslice <- jul
 clogasc_list <- list.files(paste0("../output/maxent/predictions/", mthna), pattern = "^cloglog_.*.asc", full.names = TRUE)
 stdep <- read.csv(paste0("../output/maxent/models/", timeslice, "/stack_depth.csv"), header = TRUE)
 depthlayers <- data.frame(cbind(unique(stdep$ascdepths)))
@@ -789,13 +791,15 @@ depthlayers$depth <- as.character(depthlayers$depth)
 
 colno <- 1
 
+
 for (d in 1:nrow(depthlayers)){
   dep <- depthlayers$depth[d]
   for (a in 1:length(clogasc_list)){
     asc <- clogasc_list[a]
-    if (grepl(dep, asc)){
+    ascd <- str_sub(asc, 50, -5)
+    if (grepl(dep, ascd)){
       depthlayers[d , paste0("a", colno)] <- asc
-        colno <- colno+1
+       colno <- colno+1
     }
   }
 }

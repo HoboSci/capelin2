@@ -340,7 +340,9 @@ for (m in 1:length(mth)){
 
 
 }
-  rd <- rbind(rd1, rd3, rd4, rd5, rd6, rd7, rd8, rd9, rd10, rd11, rd12)
+  #rd <- rbind(rd1, rd3, rd4, rd5, rd6, rd7, rd8, rd9, rd10, rd11, rd12)
+  rd <- rbind(rd1, rd3, rd4)
+
     #rd <- as.data.frame(rd)
     #rd$month <- as.factor(rd$month)
 p <- ggplot(rd, aes(x=month, y = prob)) + geom_violin(trim=FALSE)
@@ -473,11 +475,15 @@ for (i in 1:length(avgasc_list)) {
 
 
 ```{r}
-predjan <- read.csv("../output/maxent/all_data/testforslr_jan.csv", header = TRUE)
+predjan <- read.csv("../output/maxent/all_data/pred_file_jan.csv", header = TRUE)
 predjanpr <- subset(predjan, occurrence == 1)
-plot(predjanpr$temp_depth, predjanpr$predicted)
 predjanbk <- subset(predjan, occurrence == 0)
-plot(predjanbk$temp_depth, predjanbk$predicted)
+png("janocc_temp_vs_prob.png")
+plot(predjanpr$temp_depth, predjanpr$predicted_mthdata, xlab = "temperature", ylab = "probability")
+dev.off()
+png("janbk_temp_vs_prob.png")
+plot(predjanbk$temp_depth, predjanbk$predicted_mthdata, xlab = "temperature", ylab = "probability")
+dev.off()
 ```
 
 ```{r}
@@ -877,12 +883,12 @@ prjul <- subset(pronly, month == 7)
 ```{r}
 
 mont <- 
-data_aeaX <- read.csv("../output/maxent/all_data/testforslr_jan.csv", header = TRUE)
+data_aeaX <- read.csv("../output/maxent/all_data/pred_file_nov.csv", header = TRUE)
 data_aeaX$predicted_mthdata <- NA
 
 xy <- data_aeaX[ ,c(19,20)] # This is to tell R where the coordinates are (in column 18 and 19). Note that the column order needs to be longitude, latitude
 data_aea_sp <- SpatialPointsDataFrame(coords = xy, data = data_aeaX, proj4string = CRS("+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-60 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")) # The CRS is used here is for the albers equal area projection.
-avgasc_list <- list.files(paste0("../output/maxent/predictions/jan"), pattern = "^avg_.*.asc", full.names = TRUE) #true means the full path is included
+avgasc_list <- list.files(paste0("../output/maxent/predictions/nov"), pattern = "^avg_.*.asc", full.names = TRUE) #true means the full path is included
 for (j in 1:nrow(data_aea_sp)) { 
 for (i in 1:length(avgasc_list)) {  
  de <- data_aea_sp$depthlyr_mod[j]  # a variable for the observation depth layer
@@ -898,7 +904,7 @@ for (i in 1:length(avgasc_list)) {
 
            data_aea1 <- as.data.frame(data_aea_sp)
 
-write.csv(data_aea1, "../output/maxent/all_data/predictions_jan.csv", row.names = FALSE)
+write.csv(data_aea1, "../output/maxent/all_data/pred_file_nov2.csv", row.names = FALSE)
  #}
   
 ```
@@ -944,9 +950,9 @@ plot(predjan$occurrence, predjan$predicted_alldata)
 ```
 
 ```{r}
-predjul <- read.csv("../output/maxent/all_data/predictions_jul.csv", header = TRUE)
+predjul <- read.csv("../output/maxent/all_data/pred_file_jul.csv", header = TRUE)
 plot(predjul$occurrence, predjul$predicted_mthdata)
-plot(predjul$occurrence, predjul$predicted_alldata)
+plot(predjul$occurrence, predjul$predicted_alldata, xlab = "occurrence", ylab = "probability", main = "probability for background (o) & occurrence (1) - all data model")
 ```
 
 
@@ -1019,5 +1025,1099 @@ hist(predjuloc$predicted_alldata)
 hist(predjulbk$predicted_mthdata)
 hist(predjulbk$predicted_alldata)
 ```
+
+
+```{r}
+predlst <- list.files(paste0("../output/maxent/all_data/"), pattern = "pred_file", full.names = TRUE)
+
+completeFun <- function(data, desiredCols) {
+  completeVec <- complete.cases(data[, desiredCols])
+  return(data[completeVec, ])
+}
+
+for (a in 1:length(predlst)){
+  pred <- read.csv(predlst[a])
+  mth <- str_sub(predlst[a], 37, -5) 
+  predc <- completeFun(pred, "predicted_mthdata")
+  predoc <- subset(predc, occurrence == 1)
+  predbk <- subset(predc, occurrence == 0)
+  png(paste0("monthly_pred_occurrence_", mth, ".png"))
+  hmthoc <- hist(predoc$predicted_mthdata, main = paste0("monthly predictions - ", mth, " occurrences"), xlab = "probability of occurrence")
+  dev.off() # stops automatic saving of the plot to a png
+  png(paste0("monthly_pred_background_", mth, ".png"))
+  hmthbk <- hist(predbk$predicted_mthdata, main = paste0("monthly predictions - ", mth, " background"), xlab = "probability of occurrence")
+  dev.off() # stops automatic saving of the plot to a png            
+  png(paste0("alldata_pred_occurrence_", mth, ".png"))
+  halloc <- hist(predoc$predicted_alldata, main = paste0("all data predictions - ", mth, " occurrences"), xlab = "probability of occurrence")
+  dev.off() # stops automatic saving of the plot to a png
+  png(paste0("alldata_pred_background_", mth, ".png"))
+  hallbk <- hist(predbk$predicted_alldata, main = paste0("all data predictions - ", mth, " background"), xlab = "probability of occurrence")
+  dev.off() # stops automatic saving of the plot to a png   
+
+}
+
+
+```
+
+
+tss for all data model
+```{r}
+ev <- evaluate(p = predoc$predicted_alldata , a = predbk$predicted_alldata, model = mod)
+
+tss <- max(ev@TPR + ev@TNR) - 1
+tss
+```
+
+```{r}
+janoc <- read.csv("../output/maxent/all_data/pred_file_jan.csv")
+b <- subset(janoc, occurrence == 1)
+c <- b$predicted_alldata
+a <-max(c, na.rm = TRUE)
+a
+```
+
+
+```{r habitat classification on probability - high only}
+
+
+#binary threshold function
+binprob <- function(x){
+  ifelse(x >= 0.8, 1,
+  ifelse(x < 0.8, 0, NA)) 
+}
+
+clogasc_list <- list.files(paste0("../output/maxent/all_data/predictions/july/"), pattern = "^avg_.*.asc", full.names = TRUE)
+
+for (cum in 1:length(clogasc_list)){
+  cumascdep <- str_sub(clogasc_list[cum], start = 47, end = -5) #selects the depth from the file name
+  cumasc <- raster(clogasc_list[cum])
+  ascname <- names(cumasc)
+  cum_mpathr <- calc(cumasc, fun = binprob)
+  writeRaster(cum_mpathr, paste0("../output/maxent/all_data/predictions/july/binary_p80_", cumascdep, ".asc"), overwrite = TRUE)
+  plot(cum_mpathr, png(paste0("../output/maxent/all_data/predictions/july/binary_p80_", cumascdep, ".png")), overwrite = TRUE)
+  dev.off() # stops automatic saving of the plot to a png
+  }
+
+```
+
+
+
+```{r binary map averaged 2D representation p80}
+
+binaryclog_list <- list.files(paste0("../output/maxent/all_data/predictions/july/"), pattern = "^binary_p80.*.asc", full.names = TRUE)
+
+binstack <- stack(binaryclog_list)
+stacksum <- sum(binstack, na.rm = TRUE)
+writeRaster(stacksum, paste0("../output/maxent/all_data/predictions/july/bin_p80_2d.asc"), overwrite=TRUE)
+plot(stacksum, png(paste0("../output/maxent/all_data/predictions/july/bin_avg_p80_2d.png")))
+dev.off()
+
+```
+
+
+```{r}
+outsidemcp <- shapefile("../data/env/landp/mcpout.shp") #made in arcgis
+redtrans <- rgb(218, 215, 216, 90, maxColorValue=255) 
+s <- shapefile("../data/env/landp/landpro.shp") #made in arcgis
+prpoints <- read.csv("../output/maxent/all_data/pred_file_jul.csv", header = TRUE)
+prpoints <- subset(prpoints, occurrence == 1)
+
+completeFun <- function(data, desiredCols) {
+  completeVec <- complete.cases(data[, desiredCols])
+  return(data[completeVec, ])
+  }
+  
+prpoints <- completeFun(prpoints, "predicted_mthdata")
+
+
+
+
+pras <- raster("../output/maxent/predictions/jul/bin_p80_2d.asc")
+  crs(pras) <- aea@crs
+  ascname <- names(pras)
+  pras <- calc(pras, fun = binprob)
+
+  pras[pras >0] <- 1
+
+  #lp <- plot(pras, col=rev(colorRampPalette(brewer.pal(10, "Spectral"))(10)), axes = FALSE, box = FALSE, legend = FALSE)
+  lp <- plot(pras, axes = FALSE, box = FALSE, legend = FALSE)
+  lp <- plot(outsidemcp,  col = redtrans, border = redtrans, add = TRUE)
+  lp <- plot(s, col = "#474646", border = "#474646", add = TRUE)
+  lp <- points(prpoints$longitude_meters, prpoints$latitude_meters, add = TRUE, pch=15, cex = 0.5, col = "red")
+  print(lp)
+  dev.copy(png, ("../output/maxent/all_data/julmth_over0.8.png"), width = 1920,height = 1080)
+  dev.off() # stops automatic saving of the plot to a png))
+
+
+
+```
+
+```{r habitat classification on probability - high onlyX}
+
+
+#binary threshold function
+binprob <- function(x){
+  ifelse(x >= 0.8, 1,
+  ifelse(x < 0.8, 0, NA)) 
+}
+
+clogasc_list <- list.files(paste0("../output/maxent/predictions/jul/"), pattern = "^avg_.*.asc", full.names = TRUE)
+
+for (cum in 1:length(clogasc_list)){
+  cumascdep <- str_sub(clogasc_list[cum], start = 47, end = -5) #selects the depth from the file name
+  cumasc <- raster(clogasc_list[cum])
+  ascname <- names(cumasc)
+  cum_mpathr <- calc(cumasc, fun = binprob)
+  writeRaster(cum_mpathr, paste0("../output/maxent/predictions/jul/binary_p80_", cumascdep, ".asc"), overwrite = TRUE)
+  plot(cum_mpathr, png(paste0("../output/maxent/predictions/jul/binary_p80_", cumascdep, ".png")), overwrite = TRUE)
+  dev.off() # stops automatic saving of the plot to a png
+  }
+
+```
+
+
+
+```{r binary map averaged 2D representation p80x}
+
+binaryclog_list <- list.files(paste0("../output/maxent/predictions/jul/"), pattern = "^binary_p80.*.asc", full.names = TRUE)
+
+binstack <- stack(binaryclog_list)
+stacksum <- sum(binstack, na.rm = TRUE)
+writeRaster(stacksum, paste0("../output/maxent/predictions/jul/bin_p80_2d.asc"), overwrite=TRUE)
+plot(stacksum, png(paste0("../output/maxent/predictions/jul/bin_avg_p80_2d.png")))
+dev.off()
+
+```
+
+
+
+add land to plots with standard legend (working code) THIS WORK!!!
+```{r}
+aea <- raster("../output/env/aea.tif") #the correct CRS
+#maplst <- list.files("../output/maxent/all_data/predictions/", pattern = "binary_avg_2d.*.asc", full.names = TRUE)
+s <- shapefile("../data/env/landp/landpro.shp") #made in arcgis
+apr <- aea@crs
+brk <- seq(0.1, 1, 0.1) #for legend
+redtrans <- rgb(218, 215, 216, 90, maxColorValue=255) 
+outsidemcp <- shapefile("../data/env/landp/mcpout.shp") #made in arcgis
+
+#r <- raster(avg_77.6112.asc)
+#plot(pras)
+
+#for (pred in 1:length(maplst)){
+  pras <- raster("../output/maxent/all_data/predictions/apr/avg_77.6112.asc")
+  plot(pras)
+  crs(pras) <- apr
+  ascname <- names(pras)
+  #pras[pras >0] <- 1
+  lp <- plot(pras, breaks=brk, col=rev(colorRampPalette(brewer.pal(10, "Spectral"))(10)), axes = FALSE, box = FALSE, legend = TRUE)
+  lp <- plot(pras)
+  lp <- plot(outsidemcp,  col = redtrans, border = redtrans, add = TRUE)
+  lp <- plot(s, col = "#474646", border = "#474646", add = TRUE)
+  print(lp)
+  dev.copy(png, (paste0("../output/maxent/all_data/predictions/", ascname, pred, ".png")), width = 1920,height = 1080)
+  dev.off() # stops automatic saving of the plot to a png))
+#}
+
+```
+
+
+barcharts showing probability distribution at depth
+
+
+first bin the probabilities for cells inside the mcp
+```{r bin probabilities}
+outsidemcp <- shapefile("../data/env/landp/mcpout.shp") #made in arcgis
+clogasc_list <- list.files(paste0("../output/maxent/predictions/nov/"), pattern = "^avg_cloglog_.*.asc", full.names = TRUE)
+
+
+
+binprob <- function(x){
+  ifelse(x > 0 & x < 0.1, 0.1,
+  ifelse(x <= 0, 0, NA))
+}
+
+for (cum in 1:length(clogasc_list)){
+  cumasc <- raster(clogasc_list[cum])
+  ascname <- names(cumasc)
+  cumasc <- mask(cumasc, outsidemcp, inverse = TRUE)
+  probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
+  writeRaster(probbin, paste0("../output/maxent/predictions/nov/binned_1_avgprob_", ascname, ".asc"), overwrite = TRUE)
+  plot(probbin, png(paste0("../output/maxent/predictions/nov/binned_1_avgprob_", ascname, ".png")), overwrite = TRUE)
+  dev.off() # stops automatic saving of the plot to a png
+}
+
+
+
+binprob <- function(x){
+  ifelse(x >= 0.1 & x < 0.2, 0.2,
+  ifelse(x <= 0, 0, NA))
+}
+
+
+
+for (cum in 1:length(clogasc_list)){
+  cumasc <- raster(clogasc_list[cum])
+  ascname <- names(cumasc)
+  cumasc <- mask(cumasc, outsidemcp, inverse = TRUE)
+  probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
+  writeRaster(probbin, paste0("../output/maxent/predictions/nov/binned_2_avgprob_", ascname, ".asc"), overwrite = TRUE)
+  plot(probbin, png(paste0("../output/maxent/predictions/nov/binned_2_avgprob_", ascname, ".png")), overwrite = TRUE)
+  dev.off() # stops automatic saving of the plot to a png
+}
+
+binprob <- function(x){
+  ifelse(x >= 0.2 & x < 0.3, 0.3,
+  ifelse(x <= 0, 0, NA))
+}
+
+
+
+for (cum in 1:length(clogasc_list)){
+  cumasc <- raster(clogasc_list[cum])
+  ascname <- names(cumasc)
+  cumasc <- mask(cumasc, outsidemcp, inverse = TRUE)
+  probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
+  writeRaster(probbin, paste0("../output/maxent/predictions/nov/binned_3_avgprob_", ascname, ".asc"), overwrite = TRUE)
+  plot(probbin, png(paste0("../output/maxent/predictions/nov/binned_3_avgprob_", ascname, ".png")), overwrite = TRUE)
+  dev.off() # stops automatic saving of the plot to a png
+}
+
+
+binprob <- function(x){
+  ifelse(x >= 0.3 & x < 0.4, 0.4,
+  ifelse(x <= 0, 0, NA))
+}
+
+
+
+for (cum in 1:length(clogasc_list)){
+  cumasc <- raster(clogasc_list[cum])
+  ascname <- names(cumasc)
+  cumasc <- mask(cumasc, outsidemcp, inverse = TRUE)
+  probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
+  writeRaster(probbin, paste0("../output/maxent/predictions/nov/binned_4_avgprob_", ascname, ".asc"), overwrite = TRUE)
+  plot(probbin, png(paste0("../output/maxent/predictions/nov/binned_4_avgprob_", ascname, ".png")), overwrite = TRUE)
+  dev.off() # stops automatic saving of the plot to a png
+}
+
+
+
+binprob <- function(x){
+  ifelse(x >= 0.4 & x < 0.5, 0.5,
+  ifelse(x <= 0, 0, NA))
+}
+
+
+
+for (cum in 1:length(clogasc_list)){
+  cumasc <- raster(clogasc_list[cum])
+  ascname <- names(cumasc)
+  cumasc <- mask(cumasc, outsidemcp, inverse = TRUE)
+  probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
+  writeRaster(probbin, paste0("../output/maxent/predictions/nov/binned_5_avgprob_", ascname, ".asc"), overwrite = TRUE)
+  plot(probbin, png(paste0("../output/maxent/predictions/nov/binned_5_avgprob_", ascname, ".png")), overwrite = TRUE)
+  dev.off() # stops automatic saving of the plot to a png
+}
+ 
+
+binprob <- function(x){
+  ifelse(x >= 0.5 & x < 0.6, 0.6,
+  ifelse(x <= 0, 0, NA))
+}
+
+
+
+for (cum in 1:length(clogasc_list)){
+  cumasc <- raster(clogasc_list[cum])
+  ascname <- names(cumasc)
+  cumasc <- mask(cumasc, outsidemcp, inverse = TRUE)
+  probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
+  writeRaster(probbin, paste0("../output/maxent/predictions/nov/binned_6_avgprob_", ascname, ".asc"), overwrite = TRUE)
+  plot(probbin, png(paste0("../output/maxent/predictions/nov/binned_6_avgprob_", ascname, ".png")), overwrite = TRUE)
+  dev.off() # stops automatic saving of the plot to a png
+} 
+
+
+
+binprob <- function(x){
+  ifelse(x >= 0.6 & x < 0.7, 0.7,
+  ifelse(x <= 0, 0, NA))
+}
+
+
+
+for (cum in 1:length(clogasc_list)){
+  cumasc <- raster(clogasc_list[cum])
+  ascname <- names(cumasc)
+  cumasc <- mask(cumasc, outsidemcp, inverse = TRUE)
+  probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
+  writeRaster(probbin, paste0("../output/maxent/predictions/nov/binned_7_avgprob_", ascname, ".asc"), overwrite = TRUE)
+  plot(probbin, png(paste0("../output/maxent/predictions/nov/binned_7_avgprob_", ascname, ".png")), overwrite = TRUE)
+  dev.off() # stops automatic saving of the plot to a png
+}
+
+
+binprob <- function(x){
+  ifelse(x >= 0.7 & x < 0.8, 0.8,
+  ifelse(x <= 0, 0, NA))
+}
+
+
+
+for (cum in 1:length(clogasc_list)){
+  cumasc <- raster(clogasc_list[cum])
+  ascname <- names(cumasc)
+  cumasc <- mask(cumasc, outsidemcp, inverse = TRUE)
+  probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
+  writeRaster(probbin, paste0("../output/maxent/predictions/nov/binned_8_avgprob_", ascname, ".asc"), overwrite = TRUE)
+  plot(probbin, png(paste0("../output/maxent/predictions/nov/binned_8_avgprob_", ascname, ".png")), overwrite = TRUE)
+  dev.off() # stops automatic saving of the plot to a png
+}
+
+
+binprob <- function(x){
+  ifelse(x >= 0.8 & x < 0.9, 0.9,
+  ifelse(x <= 0, 0, NA))
+}
+
+
+
+for (cum in 1:length(clogasc_list)){
+  cumasc <- raster(clogasc_list[cum])
+  ascname <- names(cumasc)
+  cumasc <- mask(cumasc, outsidemcp, inverse = TRUE)
+  probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
+  writeRaster(probbin, paste0("../output/maxent/predictions/nov/binned_9_avgprob_", ascname, ".asc"), overwrite = TRUE)
+  plot(probbin, png(paste0("../output/maxent/predictions/nov/binned_9_avgprob_", ascname, ".png")), overwrite = TRUE)
+  dev.off() # stops automatic saving of the plot to a png
+}
+
+
+
+binprob <- function(x){
+  ifelse(x >= 0.9 & x <= 1, 1,
+  ifelse(x <= 0, 0, NA))
+}
+
+
+
+for (cum in 1:length(clogasc_list)){
+  cumasc <- raster(clogasc_list[cum])
+  ascname <- names(cumasc)
+  cumasc <- mask(cumasc, outsidemcp, inverse = TRUE)
+  probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
+  writeRaster(probbin, paste0("../output/maxent/predictions/nov/binned_10_avgprob_", ascname, ".asc"), overwrite = TRUE)
+  plot(probbin, png(paste0("../output/maxent/predictions/nov/binned_10_avgprob_", ascname, ".png")), overwrite = TRUE)
+  dev.off() # stops automatic saving of the plot to a png
+}
+
+
+```
+
+
+get data to plot probability by depth... need to do manually 1-10
+```{r}
+ascdepth_list_high <- list.files(paste0("../output/maxent/predictions/nov/"), pattern = "^binned_1_avgprob_.*asc", full.names = TRUE)
+
+binprob <- function(x){
+  ifelse(x >0,  1,
+  ifelse(x == -9999, 0, NA))
+}
+
+binaryavgstack <- stack(ascdepth_list_high)
+stackstathigh <- data.frame(matrix(ncol = 2, nrow = nlayers(binaryavgstack)))
+stackstathigh[ ,1] <- c(1:49)
+colnames(stackstathigh) <- c("asclayer", "prob_bin")
+
+for (lyr in 1:nlayers(binaryavgstack)){
+  ascname <-  str_sub(ascdepth_list_high[lyr], 63, -5)
+  dlay <- binaryavgstack[[lyr]]
+  dlay <- calc(dlay, fun = binprob) #creates raster layer with cell values based on the binprob function
+  lyrsum <- cellStats(dlay, sum)
+  stackstathigh$prob_bin[lyr] <- lyrsum
+  stackstathigh$asclayer[lyr] <- ascname
+
+}
+write.csv(stackstathigh, paste0("../output/maxent/predictions/nov/probbin_1_cellcount_bydepth_avg.csv"), row.names = FALSE)
+
+```
+
+
+```{r}
+
+probblst <- list.files(paste0("../output/maxent/predictions/nov"), pattern = "^probbin_.*.csv", full.names = TRUE)
+a <- read.csv(probblst[1])
+b <- read.csv(probblst[2])
+c <- read.csv(probblst[3])
+d <- read.csv(probblst[4])
+e <- read.csv(probblst[5])
+f <- read.csv(probblst[6])
+g <- read.csv(probblst[7])
+h <- read.csv(probblst[8])
+i <- read.csv(probblst[9])
+j <- read.csv(probblst[10])
+
+stackstat <- cbind(a, b[ ,2], c[ ,2], d[ ,2], e[ , 2], f[ ,2], g[ ,2], h[ ,2], i[ ,2], j[ ,2])
+colnames(stackstat) <- c("depth", "0 - 0.09", "0.1 - 0.19", "0.2 - 0.29", "0.3 - 0.39", "0.4 - 0.49", "0.5 - 0.59", "0.6 - 0.69", "0.7 - 0.79", "0.8 - 0.89", ">0.9")
+stackstat <- melt(stackstat, id = "depth")
+stackstat <- stackstat[!(stackstat$depth == "1151.99"), ]
+stackstat <- stackstat[!(stackstat$depth == "1265.86"), ]
+stackstat <- stackstat[!(stackstat$depth == "1387.38"), ]
+
+colnames(stackstat) <- c("Depth", "Probability", "Cells")
+
+write.csv(stackstat, paste0("../output/maxent/predictions/nov/allprobbin_cellcount_bydepth_avg.csv"), row.names = FALSE)
+
+
+```
+
+
+
+
+count number of cells that are not NA in each raster layer that are inside the mcp
+
+```{r}
+outsidemcp <- shapefile("../data/env/landp/mcpout.shp") #made in arcgis
+clogasc_list <- list.files(paste0("../output/maxent/predictions/nov/"), pattern = "^avg_cloglog_.*.asc", full.names = TRUE)
+cumst <- data.frame(0, 0)
+colnames(cumst) <- c("depth", "no_cells")
+
+for (cum in 1:length(clogasc_list)){
+  cumasc <- raster(clogasc_list[cum])
+  ascname <- names(cumasc)
+  cumst[cum, 1] <- str_sub(ascname, 13)
+  cumasc <- mask(cumasc, outsidemcp, inverse = TRUE)
+  ccnt <- freq(cumasc, useNA='no')
+  ccnt <- sum(ccnt[ ,2])
+  cumst[cum, 2] <- ccnt
+}
+
+cumst$depth <- as.numeric(cumst$depth)
+cumst1 <- cumst[order(cumst$no_cells), ]
+
+write.csv(cumst1, "../output/maxent/predictions/nov/cellsperlayer.csv", row.names = FALSE)
+
+```
+
+
+
+think about how to get proportions... 
+
+```{r}
+pr <- read.csv("../output/maxent/predictions/nov/allprobbin_cellcount_bydepth_avg.csv", header = TRUE)
+cumst1 <- read.csv("../output/maxent/predictions/nov/cellsperlayer.csv", header = TRUE)
+
+#order both filed from high to low depth
+pr <- pr[order(pr$Depth), ]
+cumst1 <- cumst[order(cumst$depth), ]
+
+#so there are some differences in the depth numbers... use partial matching to get the number of cells on each layer
+
+a <- pr
+for (r in 1:nrow(pr)){
+  d1 <- str_sub(pr$Depth[r], end = 4)
+  for (ro in 1:nrow(cumst1)){
+    d2 <- str_sub(cumst1$depth[ro], end = 4)
+    if (d1 == d2){
+        a$total_cells[r] <- cumst1$no_cells[ro]
+    }
+  }
+}
+
+# now work out percentage of cells for each probability
+
+for (r in 1:nrow(a)){
+  a$p_cells[r] <- (a$Cells[r]/a$total_cells[r])*100
+}
+
+write.csv(a, "../output/maxent/predictions/nov/dis_prob_cells.csv", row.names = FALSE)
+
+```
+
+
+histogram of probability by depth (straight count)
+
+```{r}
+mthna = "nov"
+bydepth <- ggplot(data = a, aes(x = Depth, y = Cells, fill = Probability)) + geom_bar(stat = "identity") +   scale_x_reverse() + coord_flip()
+png(paste0("../output/maxent/predictions/", mthna, "/depthplot_probavg.png"))
+print(bydepth)
+dev.off()
+```
+
+histogram of probability by depth - by proportion
+
+```{r}
+
+bydepth <- ggplot(a, aes(Depth, p_cells, fill = Probability)) + geom_col() + scale_x_reverse() + coord_flip() #XXXXXcareful - the deeper layers aren't being displayed correctly here
+plot(bydepth)
+png(paste0("../output/maxent/predictions/", mthna, "/depthplot_probavg_prop.png"))
+print(bydepth)
+dev.off()
+```
+
+
+ok lets try get an probability for the whole month
+
+```{r}
+a <- read.csv("../output/maxent/predictions/jul/dis_prob_cells.csv", header = TRUE)
+
+#subset the probability ranges
+p1 <- subset(a, Probability == "0 - 0.09")
+p2 <- subset(a, Probability == "0.1 - 0.19")
+p3 <- subset(a, Probability == "0.2 - 0.29")
+p4 <- subset(a, Probability == "0.3 - 0.39")
+p5 <- subset(a, Probability == "0.4 - 0.49")
+p6 <- subset(a, Probability == "0.5 - 0.59")
+p7 <- subset(a, Probability == "0.6 - 0.69")
+p8 <- subset(a, Probability == "0.7 - 0.79")
+p9 <- subset(a, Probability == "0.8 - 0.89")
+p10 <- subset(a, Probability == ">0.9")
+
+#count the number of cells per probability. 
+
+
+cp1 <- sum(p1$Cells)
+cp2 <- sum(p2$Cells)
+cp3 <- sum(p3$Cells)
+cp4 <- sum(p4$Cells)
+cp5 <- sum(p5$Cells)
+cp6 <- sum(p6$Cells)
+cp7 <- sum(p7$Cells)
+cp8 <- sum(p8$Cells)
+cp9 <- sum(p9$Cells)
+cp10 <- sum(p10$Cells)
+
+tc2 <- sum(cp1, cp2, cp3, cp4, cp5, cp6, cp7, cp8, cp9, cp10) #how many cells in total for novy have a value
+tcell <- sum(p1$total_cells) # how many cells are available to have a value...
+#tc2 and tcell should match
+
+#create datbase of total cells per probability bin for the month
+
+b <- unique(a$Probability) #get the unique probability bins
+c <- as.data.frame(rbind(cp1, cp2,  cp3, cp4, cp5, cp6, cp7, cp8, cp9, cp10))
+c$probability <- b
+colnames(c) <- c("cells", "prob_bin")
+rownames(c) <- c()
+c$month <- "jul"
+```
+
+make plot of probability over the month
+```{r}
+pmth <- ggplot(d, aes(month, cells, fill = prob_bin)) + geom_bar(stat='identity') 
+plot(pmth)
+png(paste0("../output/maxent/predictions/", mthna, "/prob_avg_mth.png"))
+print(pmth)
+dev.off()
+```
+
+merge two months of data together into one file then plot
+
+```{r}
+f <- rbind(c, d)
+pmth <- ggplot(f, aes(month, cells, fill = prob_bin)) + geom_bar(stat='identity') 
+plot(pmth)
+png(paste0("../output/maxent/predictions/prob_avg_mth_test.png"))
+print(pmth)
+dev.off()
+```
+
+
+boxplot of test auc scores test
+
+```{r}
+dec <- read.csv("../output/maxent/models/decavgAIC.csv", header = TRUE)
+mar <- read.csv("../output/maxent/models/maravgAIC.csv", header = TRUE)
+apr <- read.csv("../output/maxent/models/apravgAIC.csv", header = TRUE)
+may <- read.csv("../output/maxent/models/mayavgAIC.csv", header = TRUE)
+jun <- read.csv("../output/maxent/models/junavgAIC.csv", header = TRUE)
+jul <- read.csv("../output/maxent/models/julavgAIC.csv", header = TRUE)
+aug <- read.csv("../output/maxent/models/augavgAIC.csv", header = TRUE)
+sep <- read.csv("../output/maxent/models/sepavgAIC.csv", header = TRUE)
+oct <- read.csv("../output/maxent/models/octavgAIC.csv", header = TRUE)
+nov <- read.csv("../output/maxent/models/novavgAIC.csv", header = TRUE)
+
+mar <- mar$test_AUC
+mar <- head(mar, -1)
+apr <- apr$test_AUC
+apr <- head(apr, -1)
+may <- may$test_AUC
+may <- head(may, -1)
+jun <- jun$test_AUC
+jun <- head(jun, -1)
+jul <- jul$test_AUC
+jul <- head(jul, -1)
+aug <- aug$test_AUC
+aug <- head(aug, -1)
+sep <- sep$test_AUC
+sep <- head(sep, -1)
+oct <- oct$test_AUC
+oct <- head(oct, -1)
+nov <- nov$test_AUC
+nov <- head(nov, -1)
+dec <- dec$test_AUC
+dec <- head(dec, -1)
+
+n <- max(length(mar), length(apr), length(may), length(jun), length(jul), length(aug), length(sep), length(oct), length(nov), length(dec))
+length(mar) <- n                      
+length(apr) <- n
+length(may) <- n
+length(jun) <- n
+length(jul) <- n
+length(aug) <- n
+length(sep) <- n
+length(oct) <- n
+length(nov) <- n
+length(dec) <- n
+
+testauc <- cbind(mar, apr, may, jun, jul, aug, sep, oct, nov, dec)
+colnames(c) <-c("Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+
+
+```
+
+
+boxplot of train auc scores test
+
+```{r}
+dec <- read.csv("../output/maxent/models/decavgAIC.csv", header = TRUE)
+mar <- read.csv("../output/maxent/models/maravgAIC.csv", header = TRUE)
+apr <- read.csv("../output/maxent/models/apravgAIC.csv", header = TRUE)
+may <- read.csv("../output/maxent/models/mayavgAIC.csv", header = TRUE)
+jun <- read.csv("../output/maxent/models/junavgAIC.csv", header = TRUE)
+jul <- read.csv("../output/maxent/models/julavgAIC.csv", header = TRUE)
+aug <- read.csv("../output/maxent/models/augavgAIC.csv", header = TRUE)
+sep <- read.csv("../output/maxent/models/sepavgAIC.csv", header = TRUE)
+oct <- read.csv("../output/maxent/models/octavgAIC.csv", header = TRUE)
+nov <- read.csv("../output/maxent/models/novavgAIC.csv", header = TRUE)
+
+mar <- mar$train_AUC
+mar <- head(mar, -1)
+apr <- apr$train_AUC
+apr <- head(apr, -1)
+may <- may$train_AUC
+may <- head(may, -1)
+jun <- jun$train_AUC
+jun <- head(jun, -1)
+jul <- jul$train_AUC
+jul <- head(jul, -1)
+aug <- aug$train_AUC
+aug <- head(aug, -1)
+sep <- sep$train_AUC
+sep <- head(sep, -1)
+oct <- oct$train_AUC
+oct <- head(oct, -1)
+nov <- nov$train_AUC
+nov <- head(nov, -1)
+dec <- dec$train_AUC
+dec <- head(dec, -1)
+
+n <- max(length(mar), length(apr), length(may), length(jun), length(jul), length(aug), length(sep), length(oct), length(nov), length(dec))
+length(mar) <- n                      
+length(apr) <- n
+length(may) <- n
+length(jun) <- n
+length(jul) <- n
+length(aug) <- n
+length(sep) <- n
+length(oct) <- n
+length(nov) <- n
+length(dec) <- n
+
+trainauc <- cbind(mar, apr, may, jun, jul, aug, sep, oct, nov, dec)
+colnames(c) <-c("Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+```
+
+boxplot of cbi
+
+```{r}
+dec <- read.csv("../output/maxent/models/decavgAIC.csv", header = TRUE)
+mar <- read.csv("../output/maxent/models/maravgAIC.csv", header = TRUE)
+apr <- read.csv("../output/maxent/models/apravgAIC.csv", header = TRUE)
+may <- read.csv("../output/maxent/models/mayavgAIC.csv", header = TRUE)
+jun <- read.csv("../output/maxent/models/junavgAIC.csv", header = TRUE)
+jul <- read.csv("../output/maxent/models/julavgAIC.csv", header = TRUE)
+aug <- read.csv("../output/maxent/models/augavgAIC.csv", header = TRUE)
+sep <- read.csv("../output/maxent/models/sepavgAIC.csv", header = TRUE)
+oct <- read.csv("../output/maxent/models/octavgAIC.csv", header = TRUE)
+nov <- read.csv("../output/maxent/models/novavgAIC.csv", header = TRUE)
+
+mar <- mar$cbi
+mar <- head(mar, -1)
+apr <- apr$cbi
+apr <- head(apr, -1)
+may <- may$cbi
+may <- head(may, -1)
+jun <- jun$cbi
+jun <- head(jun, -1)
+jul <- jul$cbi
+jul <- head(jul, -1)
+aug <- aug$cbi
+aug <- head(aug, -1)
+sep <- sep$cbi
+sep <- head(sep, -1)
+oct <- oct$cbi
+oct <- head(oct, -1)
+nov <- nov$cbi
+nov <- head(nov, -1)
+dec <- dec$cbi
+dec <- head(dec, -1)
+
+n <- max(length(mar), length(apr), length(may), length(jun), length(jul), length(aug), length(sep), length(oct), length(nov), length(dec))
+length(mar) <- n                      
+length(apr) <- n
+length(may) <- n
+length(jun) <- n
+length(jul) <- n
+length(aug) <- n
+length(sep) <- n
+length(oct) <- n
+length(nov) <- n
+length(dec) <- n
+
+cbi <- cbind(mar, apr, may, jun, jul, aug, sep, oct, nov, dec)
+colnames(c) <-c("Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+```
+
+boxplots of tss scores
+```{r}
+dec <- read.csv("../output/maxent/models/decavgAIC.csv", header = TRUE)
+mar <- read.csv("../output/maxent/models/maravgAIC.csv", header = TRUE)
+apr <- read.csv("../output/maxent/models/apravgAIC.csv", header = TRUE)
+may <- read.csv("../output/maxent/models/mayavgAIC.csv", header = TRUE)
+jun <- read.csv("../output/maxent/models/junavgAIC.csv", header = TRUE)
+jul <- read.csv("../output/maxent/models/julavgAIC.csv", header = TRUE)
+aug <- read.csv("../output/maxent/models/augavgAIC.csv", header = TRUE)
+sep <- read.csv("../output/maxent/models/sepavgAIC.csv", header = TRUE)
+oct <- read.csv("../output/maxent/models/octavgAIC.csv", header = TRUE)
+nov <- read.csv("../output/maxent/models/novavgAIC.csv", header = TRUE)
+
+mar <- mar$tss
+mar <- head(mar, -1)
+apr <- apr$tss
+apr <- head(apr, -1)
+may <- may$tss
+may <- head(may, -1)
+jun <- jun$tss
+jun <- head(jun, -1)
+jul <- jul$tss
+jul <- head(jul, -1)
+aug <- aug$tss
+aug <- head(aug, -1)
+sep <- sep$tss
+sep <- head(sep, -1)
+oct <- oct$tss
+oct <- head(oct, -1)
+nov <- nov$tss
+nov <- head(nov, -1)
+dec <- dec$tss
+dec <- head(dec, -1)
+
+n <- max(length(mar), length(apr), length(may), length(jun), length(jul), length(aug), length(sep), length(oct), length(nov), length(dec))
+length(mar) <- n                      
+length(apr) <- n
+length(may) <- n
+length(jun) <- n
+length(jul) <- n
+length(aug) <- n
+length(sep) <- n
+length(oct) <- n
+length(nov) <- n
+length(dec) <- n
+
+tss <- cbind(mar, apr, may, jun, jul, aug, sep, oct, nov, dec)
+colnames(c) <-c("Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+```
+
+
+```{r}
+par(mfrow=c(2,2))
+
+boxplot(testauc, xlab = "Month", ylab = "Test AUC Score")
+boxplot(trainauc, xlab = "Month", ylab = "Training AUC Score")
+boxplot(cbi, xlab = "Month", ylab = "CBI Score")
+boxplot(tss, xlab = "Month", ylab = "TSS Score")
+
+
+
+```
+
+
+
+
+
+
+something went wrong with July aug and sep when averaging the rasters.... redo (error due to layer 120 and coconfusion with the year 2012)
+
+      
+
+```{r avg asc layers cloglog}
+
+tlst <- c("sep1998", "sep1999", "sep2000", "sep2001", "sep2002", "sep2003", "sep2004", "sep2005", "sep2006", "sep2007", "sep2008", "sep2009", "sep2010", "sep2011", "sep2012", "sep2013", "sep2014", "sep2015")
+
+
+
+mthna <- "sep"
+
+for(a in length(tlst)){
+clogasc_list <- list.files(paste0("../output/maxent/predictions/", mthna), pattern = "^cloglog_.*.asc", full.names = TRUE)
+timeslice <- tlst[1]
+stdep <- list.files(paste0("../output/maxent/models/", timeslice),  pattern = "^stackdepthlist.*.csv", full.names = TRUE)
+stdep <- read.csv(stdep)
+depthlayers <- data.frame(cbind(unique(stdep$ascdepths)))
+names(depthlayers)[names(depthlayers) == "cbind.unique.stdep.ascdepths.."] <- "depth"
+depthlayers$depth <- as.character(depthlayers$depth)
+
+colno <- 1
+
+
+for (d in 1:nrow(depthlayers)){
+  dep <- depthlayers$depth[d]
+  for (a in 1:length(clogasc_list)){
+    asc <- clogasc_list[a]
+    ascd <- str_sub(asc, 50, -5)
+    if (grepl(dep, ascd)){
+      depthlayers[d , paste0("a", colno)] <- asc
+       colno <- colno+1
+    }
+  }
+}
+write.csv(depthlayers, (paste0("../output/maxent/predictions/", mthna, "/cloglog_asclayerbydepth.csv")), row.names = TRUE)
+
+}
+
+for (x in 1:nrow(depthlayers)){
+  asclay <- depthlayers[x, ]
+  asclay <- asclay[!is.na(asclay)]
+  asclay <- as.data.frame(rbind(asclay))
+  asclay$V1 <- as.character(asclay$V1) #v1 corresponds to depth
+  asclay$V2 <- as.character(asclay$V2) #v2 to end corresponds to year
+  asclay$V3 <- as.character(asclay$V3)
+  asclay$V4 <- as.character(asclay$V4)
+  asclay$V5 <- as.character(asclay$V5)
+  asclay$V6 <- as.character(asclay$V6)
+  asclay$V7 <- as.character(asclay$V7)
+  asclay$V8 <- as.character(asclay$V8)
+  asclay$V9 <- as.character(asclay$V9)
+  asclay$V10 <- as.character(asclay$V10)
+  asclay$V11 <- as.character(asclay$V11)
+  asclay$V12 <- as.character(asclay$V12)
+  asclay$V13 <- as.character(asclay$V13)
+  asclay$V14 <- as.character(asclay$V14)
+  asclay$V15 <- as.character(asclay$V15)  
+  asclay$V16 <- as.character(asclay$V16)  
+  asclay$V17 <- as.character(asclay$V17) 
+  asclay$V18 <- as.character(asclay$V18)  
+  asclay$V19 <- as.character(asclay$V19)  
+
+
+  
+  asclaydep <- asclay$V1
+  
+  asc1998 <- raster(asclay$V2)
+  asc1999 <- raster(asclay$V3)
+  asc2000 <- raster(asclay$V4)
+  asc2001 <- raster(asclay$V5)
+  asc2002 <- raster(asclay$V6)
+  asc2003 <- raster(asclay$V7)
+  asc2004 <- raster(asclay$V8)
+  asc2005 <- raster(asclay$V9)
+  asc2006 <- raster(asclay$V10)
+  asc2007 <- raster(asclay$V11)
+  asc2008 <- raster(asclay$V12)
+  asc2009 <- raster(asclay$V13)
+  asc2010 <- raster(asclay$V14)
+  asc2011 <- raster(asclay$V15)
+  asc2012 <- raster(asclay$V16)
+  asc2013 <- raster(asclay$V17)
+  asc2014 <- raster(asclay$V18)
+  asc2015 <- raster(asclay$V19)
+
+
+
+  stkasc <- stack(asc1998, asc1999, asc2000, asc2001, asc2002, asc2003, asc2004, asc2005, asc2006, asc2007, asc2008, asc2009, asc2010, asc2011, asc2012, asc2013, asc2014, asc2015)
+
+  avg <- mean(stkasc, na.rm = TRUE)
+  
+  writeRaster(avg, paste0("../output/maxent/predictions/", mthna, "/avg_cloglog_", asclaydep, ".asc"), overwrite=TRUE)
+  avgplot <- plot(avg, png(paste0("../output/maxent/predictions/", mthna, "/avg_cloglog_", asclaydep, ".png"))) 
+  dev.off()
+
+}
+
+```
+
+     
+Threshold tables
+```{r}
+thlst1 <- list.files(paste0("../output/maxent/models"), pattern = ".*avgAIC.csv", full.names = TRUE)
+thlst2 <- list.files(paste0("../output/maxent/models"), pattern = ".*avgmaxentresults.csv", full.names = TRUE) 
+
+for (m in 1:length(thlst1)){
+    mth <- thlst1[m]
+    mth <- str_sub(mth, 25, -11) #extract first 3 digit
+    t1 <- read.csv(thlst1[m], header = TRUE)
+    t1 <- t1[-nrow(t1), -1 ]
+    t2 <- read.csv(thlst2[m], header = TRUE)
+    t2 <- t2[-nrow(t2), -1]
+    a <- subset(t1, select = c("test_maxsumsenspec", "test_equal_sens_spec", "mpa_0.9_clog"))
+    b <- subset(t2, select = c("Minimum.training.presence.Cloglog.threshold", "X10.percentile.training.presence.Cloglog.threshold"))
+    c <- cbind(a, b)
+    colnames(c) <- c("MaxSS", "ESS", "MPA", "MTP", "P10TP")
+    d <- summary(c)
+    write.csv(t(as.matrix(d)), file= paste0("../output/maxent/models/summary_test_", mth, ".csv")) 
+}
+
+
+thlst <- list()
+for (m in 1:length(thlst1)){
+    mth <- thlst1[m]
+    mth <- str_sub(mth, 25, -11) #extract first 3 digit
+    t1 <- read.csv(thlst1[m], header = TRUE)
+    t1 <- t1[-nrow(t1), -1 ]
+    t2 <- read.csv(thlst2[m], header = TRUE)
+    t2 <- t2[-nrow(t2), -1]
+    a <- subset(t1, select = c("test_maxsumsenspec", "test_equal_sens_spec", "mpa_0.9_clog"))
+    b <- subset(t2, select = c("Minimum.training.presence.Cloglog.threshold", "X10.percentile.training.presence.Cloglog.threshold"))
+    ca <- cbind(a, b)
+    colnames(ca) <- c("MaxSS", "ESS", "MPA", "MTP", "P10")
+    ca$month <- mth
+
+    thlst[[m]] <- ca
+  }
+
+stdep <- do.call(rbind, thlst)
+stdep <- stdep[!(stdep$month == "jan"), ] #removes jan because you're not doing jan
+
+
+p10p <- ggplot(data=stdep, aes(x=month, y=P10, fill=month)) + geom_boxplot() + stat_summary(fun.y=mean, colour="darkred", geom="point", shape=18, size=3) + theme(legend.position = "none")
+mtpp <- ggplot(data=stdep, aes(x=month, y=MTP, fill=month)) + geom_boxplot() + stat_summary(fun.y=mean, colour="darkred", geom="point", shape=18, size=3) + theme(legend.position = "none")
+plot(l)
+mpap <- ggplot(data=stdep, aes(x=month, y=MPA, fill=month)) + geom_boxplot() + stat_summary(fun.y=mean, colour="darkred", geom="point", shape=18, size=3) + theme(legend.position = "none")
+essp <- ggplot(data=stdep, aes(x=month, y=ESS, fill=month)) + geom_boxplot() + stat_summary(fun.y=mean, colour="darkred", geom="point", shape=18, size=3) + theme(legend.position = "none")
+maxss <- ggplot(data=stdep, aes(x=month, y=MaxSS, fill=month)) + geom_boxplot() + stat_summary(fun.y=mean, colour="darkred", geom="point", shape=18, size=3) + theme(legend.position = "none")
+
+plot_grid(p10p, mtpp, mpap, essp, maxss, labels = "AUTO")
+
+
+
+library(reshape2)
+k <- melt(stdep, id.var = c('month'), variable.name = 'threshold')
+n <- subset(k, month == "aug")
+o <- subset(k, month == "mar")
+
+library(cowplot)
+p <-ggplot(data=n, aes(x=threshold, y=value, fill=threshold)) + geom_boxplot() + stat_summary(fun.y=mean, colour="darkred", geom="point", shape=18, size=3) + theme(legend.position = "none")
+q <-ggplot(data=o, aes(x=threshold, y=value, fill=threshold)) + geom_boxplot() + stat_summary(fun.y=mean, colour="darkred", geom="point", shape=18, size=3) + theme(legend.position = "none")
+plot_grid(p, q, labels = "AUTO")
+
+
+
+
+tsum <- stdep %>% # Start by defining the original dataframe, AND THEN...
+                group_by(month) %>% # Define the grouping variable, AND THEN...
+                summarise( # Now you define your summary variables with a name and a function...
+                          maxss.mean = mean(MaxSS), mtp.mean = mean(MTP), ess.mean = mean(ESS), mpa.mean = mean(MPA), mean.p10 = mean(P10))
+
+tsum
+```
+
+stacked maps
+https://urbandemographics.blogspot.com/2016/04/creating-tilted-and-stacked-maps-in-r.html
+
+
+```{r}
+# load libraries
+  library(rgeos)
+  library(UScensus2000tract)
+  library(ggplot2)
+  library(dplyr)
+  library(RColorBrewer)
+
+# load data
+  data("oregon.tract")
+
+# plot Census Tract map
+  plot(oregon.tract)
+  
+oregon.tract$id=as.character(1:nrow(oregon.tract))
+
+
+
+clogasc_list <- list.files(paste0("../output/maxent/all_data/predictions/july"), pattern = "^avg_.*.asc", full.names = TRUE) # first list the files containing the data
+a <- stack(clogasc_list) #stack the files
+
+```
+ok scrap tilt just do standard
+
+need to add seabed
+
+```{r seabed files}
+slst <- list.files("../data/env/ascii/ascii2010", pattern = "temp", full.names = TRUE)
+sr <- raster(slst[1])
+plot(sr)
+```
+
+
+
+```{r}
+aea <- raster("../output/env/aea.tif") #the correct CRS
+maplst <- list.files("../output/maxent/predictions/may", pattern = "^avg_clog.*.asc", full.names = TRUE)
+s <- shapefile("../data/env/landp/landpro.shp") #made in arcgis
+apr <- aea@crs
+brk <- seq(0.1, 1, 0.1) #for legend
+redtrans <- rgb(218, 215, 216, 90, maxColorValue=255) 
+outsidemcp <- shapefile("../data/env/landp/mcpout.shp") #made in arcgis
+
+#r <- raster(avg_77.6112.asc)
+#plot(pras)
+
+#for (pred in 1:length(maplst)){
+  pras5 <- raster(maplst[33])
+  pras180 <- raster(maplst[14])
+  pras370 <- raster(maplst[28])
+  pras697 <- raster(maplst[41])
+  crs(pras5) <- apr
+  crs(pras180) <- apr
+  crs(pras370) <- apr
+  crs(pras697) <- apr
+  ascname5 <- names(pras5)
+  ascname180 <- names(pras180)
+  ascname370 <- names(pras370)
+  ascname697 <- names(pras697)
+  
+  
+par(mfrow=c(1,2))
+
+
+  #pras[pras >0] <- 1
+  lp5 <- plot(pras5, breaks=brk, col=rev(colorRampPalette(brewer.pal(10, "Spectral"))(10)), axes = FALSE, box = FALSE, legend = TRUE)
+  #lp <- plot(pras5)
+  lp5 <- plot(outsidemcp,  col = redtrans, border = redtrans, add = TRUE)
+  lp5 <- plot(s, col = "#474646", border = "#474646", add = TRUE)
+  
+  l180 <- plot(pras180, breaks=brk, col=rev(colorRampPalette(brewer.pal(10, "Spectral"))(10)), axes = FALSE, box = FALSE, legend = TRUE)
+  #lp <- plot(pras5)
+  lp180 <- plot(outsidemcp,  col = redtrans, border = redtrans, add = TRUE)
+  lp180 <- plot(s, col = "#474646", border = "#474646", add = TRUE)
+  
+  
+  
+  print(lp5)
+  dev.copy(png, (paste0("../output/maxent/all_data/predictions/", ascname5, pred, ".png")), width = 1920,height = 1080)
+  dev.off() # stops automatic saving of the plot to a png))
+#}
+  
+  
+  print(lp5)
+  dev.copy(png, (paste0("../output/maxent/all_data/predictions/", ascname5, pred, ".png")), width = 1920,height = 1080)
+  dev.off() # stops automatic saving of the plot to a png))
+#}
+  
+
+  
+```
+
 
 
