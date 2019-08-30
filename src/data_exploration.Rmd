@@ -2833,3 +2833,124 @@ stack1998_01_86.9294 <- stack(chl_surface, nao_sample, nao_winter, o2_depth, sal
 ```
 
 
+
+## density plot with background and presence env. data by month
+
+What I want to see if if there is a marked difference between the env. correlates of the presence points between NAFO regions. This is also to try deal with sampling bias (b/c the whole region is not uniformly sampled in each month, but rather nafo regions have a strong month bias)
+
+first create NAFO-region datasets
+
+```{r load pres-background dataset}
+presback <- read.csv("../output/bio/presab_nafo_yr.csv", header = TRUE)
+colnames(presback)
+```
+
+this dataset contains a lot of columns you don't need for the maxent models. Remove them here
+
+```{r remove unnecessary columns}
+presback <- subset(presback, select = -c(cell_id, id, decimalLatitude, decimalLongitude, datecollected, institutioncode, individualcount, depth, resname, originalscientificname, collectioncode, day, nafo_zone, gear, longitude_meters, latitude_meters, total_cell_obs_xy, total_cell_obs_xyt, bottom_depth, XXtotal_cell_obs_xyzt, temp_celsius_depth, temp_celsius_surface, longitude_meters.1, latitude_meters.1, bottom_depth_glorys, longitude_meters.2, latitude_meters.2, cell_id_3d, total_cell_obs_xyzt, cell_id_xyzt))
+colnames(presback)
+```
+
+```{r presence by month}
+
+presence <- subset(presback, occurrence == "1")
+m1 <- subset(presence, month == "1")
+m2 <- subset(presence, month == "2")
+m3 <- subset(presence, month == "3")
+m4 <- subset(presence, month == "4")
+m5 <- subset(presence, month == "5")
+m6 <- subset(presence, month == "6")
+m7 <- subset(presence, month == "7")
+m8 <- subset(presence, month == "8")
+m9 <- subset(presence, month == "9")
+m10 <- subset(presence, month == "10")
+m11 <- subset(presence, month == "11")
+m12 <- subset(presence, month == "12")
+
+```
+
+plot by each variable, less 3m (2 Sample) and 5ze (2 samples)
+```{r presence by month by variable}
+ggplot(m1, aes(x = temp_surface, colour = month)) + geom_density(na.rm = TRUE) + geom_density(data=m2, na.rm = TRUE) + geom_density(data=m3, na.rm = TRUE) + geom_density(data=m4, na.rm = TRUE) + geom_density(data=m5, na.rm = TRUE) + geom_density(data=m6, na.rm = TRUE) + geom_density(data=m7, na.rm = TRUE) + geom_density(data=m8, na.rm = TRUE) + geom_density(data=m9, na.rm = TRUE) + geom_density(data=m10, na.rm = TRUE) + geom_density(data=m11, na.rm = TRUE) + geom_density(data=m12, na.rm = TRUE)
+dev.copy(png,"../output/env/env_by_month_plots/temp_surface_month.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+
+ggplot(m1, aes(x = temp_depth, colour = month)) + geom_density(na.rm = TRUE) + geom_density(data=m2, na.rm = TRUE) + geom_density(data=m3, na.rm = TRUE) + geom_density(data=m4, na.rm = TRUE) + geom_density(data=m5, na.rm = TRUE) + geom_density(data=m6, na.rm = TRUE) + geom_density(data=m7, na.rm = TRUE) + geom_density(data=m8, na.rm = TRUE) + geom_density(data=m9, na.rm = TRUE) + geom_density(data=m10, na.rm = TRUE) + geom_density(data=m11, na.rm = TRUE) + geom_density(data=m12, na.rm = TRUE)
+dev.copy(png,"../output/env/env_by_month_plots/temp_depth_month.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+
+ggplot(m1, aes(x = chl_surface, colour = month)) + geom_density(na.rm = TRUE) + geom_density(data=m2, na.rm = TRUE) + geom_density(data=m3, na.rm = TRUE) + geom_density(data=m4, na.rm = TRUE) + geom_density(data=m5, na.rm = TRUE) + geom_density(data=m6, na.rm = TRUE) + geom_density(data=m7, na.rm = TRUE) + geom_density(data=m8, na.rm = TRUE) + geom_density(data=m9, na.rm = TRUE) + geom_density(data=m10, na.rm = TRUE) + geom_density(data=m11, na.rm = TRUE) + geom_density(data=m12, na.rm = TRUE)
+dev.copy(png,"../output/env/env_by_month_plots/chl_surface_month.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+
+ggplot(m1, aes(x = chl_depth, colour = month)) + geom_density(na.rm = TRUE) + geom_density(data=m2, na.rm = TRUE) + geom_density(data=m3, na.rm = TRUE) + geom_density(data=m4, na.rm = TRUE) + geom_density(data=m5, na.rm = TRUE) + geom_density(data=m6, na.rm = TRUE) + geom_density(data=m7, na.rm = TRUE) + geom_density(data=m8, na.rm = TRUE) + geom_density(data=m9, na.rm = TRUE) + geom_density(data=m10, na.rm = TRUE) + geom_density(data=m11, na.rm = TRUE) + geom_density(data=m12, na.rm = TRUE)
+dev.copy(png,"../output/env/env_by_month_plots/chl_depth_month.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+
+ggplot(m1, aes(x = salinity_surface, colour = month)) + geom_density(na.rm = TRUE) + geom_density(data=m2, na.rm = TRUE) + geom_density(data=m3, na.rm = TRUE) + geom_density(data=m4, na.rm = TRUE) + geom_density(data=m5, na.rm = TRUE) + geom_density(data=m6, na.rm = TRUE) + geom_density(data=m7, na.rm = TRUE) + geom_density(data=m8, na.rm = TRUE) + geom_density(data=m9, na.rm = TRUE) + geom_density(data=m10, na.rm = TRUE) + geom_density(data=m11, na.rm = TRUE) + geom_density(data=m12, na.rm = TRUE)
+dev.copy(png,"../output/env/env_by_month_plots/salinity_surface_month.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+
+ggplot(m1, aes(x = salinity_depth, colour = month)) + geom_density(na.rm = TRUE) + geom_density(data=m2, na.rm = TRUE) + geom_density(data=m3, na.rm = TRUE) + geom_density(data=m4, na.rm = TRUE) + geom_density(data=m5, na.rm = TRUE) + geom_density(data=m6, na.rm = TRUE) + geom_density(data=m7, na.rm = TRUE) + geom_density(data=m8, na.rm = TRUE) + geom_density(data=m9, na.rm = TRUE) + geom_density(data=m10, na.rm = TRUE) + geom_density(data=m11, na.rm = TRUE) + geom_density(data=m12, na.rm = TRUE)
+dev.copy(png,"../output/env/env_by_month_plots/salinity_depth_month.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+
+ggplot(m1, aes(x = o2_surface, colour = month)) + geom_density(na.rm = TRUE) + geom_density(data=m2, na.rm = TRUE) + geom_density(data=m3, na.rm = TRUE) + geom_density(data=m4, na.rm = TRUE) + geom_density(data=m5, na.rm = TRUE) + geom_density(data=m6, na.rm = TRUE) + geom_density(data=m7, na.rm = TRUE) + geom_density(data=m8, na.rm = TRUE) + geom_density(data=m9, na.rm = TRUE) + geom_density(data=m10, na.rm = TRUE) + geom_density(data=m11, na.rm = TRUE) + geom_density(data=m12, na.rm = TRUE)
+dev.copy(png,"../output/env/env_by_month_plots/o2_surface_month.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+
+ggplot(m1, aes(x = o2_depth, colour = month)) + geom_density(na.rm = TRUE) + geom_density(data=m2, na.rm = TRUE) + geom_density(data=m3, na.rm = TRUE) + geom_density(data=m4, na.rm = TRUE) + geom_density(data=m5, na.rm = TRUE) + geom_density(data=m6, na.rm = TRUE) + geom_density(data=m7, na.rm = TRUE) + geom_density(data=m8, na.rm = TRUE) + geom_density(data=m9, na.rm = TRUE) + geom_density(data=m10, na.rm = TRUE) + geom_density(data=m11, na.rm = TRUE) + geom_density(data=m12, na.rm = TRUE)
+dev.copy(png,"../output/env/env_by_month_plots/o2_depth_month.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+
+ggplot(m1, aes(x = mlp_surface, colour = month)) + geom_density(na.rm = TRUE) + geom_density(data=m2, na.rm = TRUE) + geom_density(data=m3, na.rm = TRUE) + geom_density(data=m4, na.rm = TRUE) + geom_density(data=m5, na.rm = TRUE) + geom_density(data=m6, na.rm = TRUE) + geom_density(data=m7, na.rm = TRUE) + geom_density(data=m8, na.rm = TRUE) + geom_density(data=m9, na.rm = TRUE) + geom_density(data=m10, na.rm = TRUE) + geom_density(data=m11, na.rm = TRUE) + geom_density(data=m12, na.rm = TRUE)
+dev.copy(png,"../output/env/env_by_month_plots/mlp_month.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+
+ggplot(m1, aes(x = ssh_surface, colour = month)) + geom_density(na.rm = TRUE) + geom_density(data=m2, na.rm = TRUE) + geom_density(data=m3, na.rm = TRUE) + geom_density(data=m4, na.rm = TRUE) + geom_density(data=m5, na.rm = TRUE) + geom_density(data=m6, na.rm = TRUE) + geom_density(data=m7, na.rm = TRUE) + geom_density(data=m8, na.rm = TRUE) + geom_density(data=m9, na.rm = TRUE) + geom_density(data=m10, na.rm = TRUE) + geom_density(data=m11, na.rm = TRUE) + geom_density(data=m12, na.rm = TRUE)
+dev.copy(png,"../output/env/env_by_month_plots/ssh_month.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+```
+
+
+```{r}
+presence$month <- factor(presence$month, order = TRUE, levels = c("1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"))
+
+ggplot(presence, aes(temp_depth, colour = month)) + geom_density()
+dev.copy(png,"../output/env/env_by_month_plots/temp_depth_month.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+
+ggplot(presence, aes(salinity_depth, colour = month)) + geom_density()
+dev.copy(png,"../output/env/env_by_month_plots/salinity_depth_month.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+
+ggplot(presence, aes(o2_depth, colour = month)) + geom_density()
+dev.copy(png,"../output/env/env_by_month_plots/o2_depth_month.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+
+ggplot(presence, aes(chl_surface, colour = month)) + geom_density()
+dev.copy(png,"../output/env/env_by_month_plots/chl_surface_month.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+
+back <- subset(presback, occurrence == "0")
+
+back$month <- factor(back$month, order = TRUE, levels = c("1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"))
+
+ggplot(back, aes(temp_depth, colour = month)) + geom_density()
+dev.copy(png,"../output/env/env_by_month_plots/temp_depth_month_background.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+
+ggplot(back, aes(salinity_depth, colour = month)) + geom_density()
+dev.copy(png,"../output/env/env_by_month_plots/salinity_depth_month_background.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+
+ggplot(back, aes(o2_depth, colour = month)) + geom_density()
+dev.copy(png,"../output/env/env_by_month_plots/o2_depth_month_background.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+
+ggplot(back, aes(chl_surface, colour = month)) + geom_density()
+dev.copy(png,"../output/env/env_by_month_plots/chl_surface_month_background.png") # to automatically save the plot to a png AND show it inline
+dev.off() # stops automatic saving of the plot to a png
+```
+

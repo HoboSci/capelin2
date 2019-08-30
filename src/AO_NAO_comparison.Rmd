@@ -5,13 +5,13 @@
 Dataset mes from [NCAR](https://climatedataguide.ucar.edu/climate-data/hurrell-north-atlantic-oscillation-nao-index-pc-based). Note I am using the monthly principal component (PC)-based indices of the North Atlantic Oscillation [(NAO)](https://climatedataguide.ucar.edu/sites/default/files/nao_pc_monthly.txt). I have already converted this file into a csv and removed unncesessary text. Note there are no headers...
 
 ```{r}
-naoraw <- read.csv("./data/env/nao_pc_monthly.csv", header = FALSE) 
+naoraw <- read.csv("../data/env/nao_pc_monthlyX.csv", header = FALSE) 
 head(naoraw)
 ```
 
 lets give some column names. col 1  year, 2:13 are the months
 ```{r}
-colnames(naoraw) <- c("year","Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+colnames(naoraw) <- c("year","Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "yr_t")
 head(naoraw)
 ```
  
@@ -104,7 +104,9 @@ write.csv(naooctq1, "../output/env/nao_oct_q1.csv")
 naonovq1 <- subset(nao$year, nao$Nov <= naoq1$Nov)
 write.csv(naonovq1, "../output/env/nao_nov_q1.csv")        
 naodecq1 <- subset(nao$year, nao$Dec <= naoq1$Dec)
-write.csv(naodecq1, "../output/env/nao_dec_q1.csv")  
+write.csv(naodecq1, "../output/env/nao_dec_q1.csv")
+naoalltq1 <- subset(nao$year, nao$yr_t <= naoq1$yr_t)
+write.csv(naoalltq1, "../output/env/nao_yrt_q1.csv")  
 
 naoq1_all <- rbind(naojanq1, naofebq1, naomarq1, naoaprq1, naomayq1, naojunq1, naojulq1, naoaugq1, naosepq1, naooctq1, naonovq1, naodecq1)
 write.csv(naoq1_all, "../output/env/nao_q1_all.csv")
@@ -137,7 +139,9 @@ write.csv(naooctq4, "../output/env/nao_oct_q4.csv")
 naonovq4 <- subset(nao$year, nao$Nov >= naoq4$Nov)
 write.csv(naonovq4, "../output/env/nao_nov_q4.csv")        
 naodecq4 <- subset(nao$year, nao$Dec >= naoq4$Dec)
-write.csv(naodecq4, "../output/env/nao_dec_q4.csv")  
+write.csv(naodecq4, "../output/env/nao_dec_q4.csv") 
+naoalltq4 <- subset(nao$year, nao$yr_t >= naoq4$yr_t)
+write.csv(naoalltq4, "../output/env/nao_yrt_q4.csv")
 
 naoq4_all <- rbind(naojanq4, naofebq4, naomarq4, naoaprq4, naomayq4, naojunq4, naojulq4, naoaugq4, naosepq4, naooctq4, naonovq4, naodecq4)
 write.csv(naoq4_all, "../output/env/nao_q4_all.csv")
@@ -175,8 +179,11 @@ aonovq1 <- subset(ao$X, ao$Nov <= aoq1$Nov)
 write.csv(aonovq1, "../output/env/ao_nov_q1.csv")        
 aodecq1 <- subset(ao$X, ao$Dec <= aoq1$Dec)
 write.csv(aodecq1, "../output/env/ao_dec_q1.csv")  
+aoalltq1 <- subset(ao$X, ao$yr_t <= aoq1$yr_t)
+write.csv(aoalltq1, "../output/env/ao_yrt_q1.csv")  
 
-aoq1_all <- rbind(aojanq1, aofebq1, aomarq1, aoaprq1, aomayq1, aojunq1, aojulq1, aoaugq1, aosepq1, aooctq1, aonovq1, aodecq1)
+
+aoq1_all <- rbind.fill(aojanq1, aofebq1, aomarq1, aoaprq1, aomayq1, aojunq1, aojulq1, aoaugq1, aosepq1, aooctq1, aonovq1, aodecq1, aoalltq1)
 write.csv(aoq1_all, "../output/env/ao_q1_all.csv")
 
 
@@ -207,9 +214,11 @@ write.csv(aooctq4, "../output/env/ao_oct_q4.csv")
 aonovq4 <- subset(ao$X, ao$Nov >= aoq4$Nov)
 write.csv(aonovq4, "../output/env/ao_nov_q4.csv")        
 aodecq4 <- subset(ao$X, ao$Dec >= aoq4$Dec)
-write.csv(aodecq4, "../output/env/ao_dec_q4.csv")  
+write.csv(aodecq4, "../output/env/ao_dec_q4.csv") 
+aoalltq4 <- subset(ao$X, ao$yr_t >= aoq4$yr_t)
+write.csv(aoalltq4, "../output/env/ao_yrt_q4.csv")  
 
-aoq4_all <- rbind(aojanq4, aofebq4, aomarq4, aoaprq4, aomayq4, aojunq4, aojulq4, aoaugq4, aosepq4, aooctq4, aonovq4, aodecq4)
+aoq4_all <- rbind.fill(aojanq4, aofebq4, aomarq4, aoaprq4, aomayq4, aojunq4, aojulq4, aoaugq4, aosepq4, aooctq4, aonovq4, aodecq4, aoalltq4)
 write.csv(aoq4_all, "../output/env/ao_q4_all.csv")
 ```
 
