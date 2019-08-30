@@ -472,10 +472,17 @@ dev.off()
 add land to plots with standard legend (working code) THIS WORK!!!
 ```{r}
 aea <- raster("../output/env/aea.tif") #the correct CRS
+<<<<<<< HEAD
 maplst <- list.files("../output/maxent/all_data/predictions/apr", pattern = "binary_avg_2d.*.asc", full.names = TRUE)
 s <- shapefile("../data/env/landp/landpro.shp") #made in arcgis
 apr <- aea@crs
 brk <- seq(0.1, 1, 0.1) #for legend
+=======
+maplst <- list.files("../output/maxent/all_data/predictions/", pattern = "binary_avg_2d.*.asc", full.names = TRUE)
+s <- shapefile("../data/env/landp/landpro.shp") #made in arcgis
+apr <- aea@crs
+#brk <- seq(0.1, 1, 0.1) #for legend
+>>>>>>> 92478b1c7a7358e853cdb53667dd57f7dd1c8c0f
 redtrans <- rgb(218, 215, 216, 90, maxColorValue=255) 
 outsidemcp <- shapefile("../data/env/landp/mcpout.shp") #made in arcgis
 
@@ -483,17 +490,30 @@ r <- raster(maplst[1])
 plot(pras)
 
 for (pred in 1:length(maplst)){
+<<<<<<< HEAD
   pras <- raster("../output/maxent/all_data/predictions/apr/avg_47.2119.asc")
   crs(pras) <- apr
   ascname <- names(pras)
   #pras[pras >0] <- 1
   lp <- plot(pras, breaks=brk, col=rev(colorRampPalette(brewer.pal(10, "Spectral"))(10)), axes = FALSE, box = FALSE, legend = TRUE)
+=======
+  pras <- raster(maplst[pred])
+  crs(pras) <- apr
+  ascname <- names(pras)
+  pras[pras >0] <- 1
+  lp <- plot(pras, breaks=brk, col=rev(colorRampPalette(brewer.pal(10, "Spectral"))(10)), axes = FALSE, box = FALSE, legend = FALSE)
+>>>>>>> 92478b1c7a7358e853cdb53667dd57f7dd1c8c0f
   lp <- plot(pras)
   lp <- plot(outsidemcp,  col = redtrans, border = redtrans, add = TRUE)
   lp <- plot(s, col = "#474646", border = "#474646", add = TRUE)
   print(lp)
+<<<<<<< HEAD
  # dev.copy(png, (paste0("../output/maxent/all_data/predictions/", ascname, pred, ".png")), width = 1920,height = 1080)
   #dev.off() # stops automatic saving of the plot to a png))
+=======
+  dev.copy(png, (paste0("../output/maxent/all_data/predictions/", ascname, pred, ".png")), width = 1920,height = 1080)
+  dev.off() # stops automatic saving of the plot to a png))
+>>>>>>> 92478b1c7a7358e853cdb53667dd57f7dd1c8c0f
 }
 
 ```
