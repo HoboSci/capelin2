@@ -2066,52 +2066,54 @@ aea <- raster("../output/env/aea.tif") #the correct CRS
 maplst <- list.files("../output/maxent/predictions/may", pattern = "^avg_clog.*.asc", full.names = TRUE)
 s <- shapefile("../data/env/landp/landpro.shp") #made in arcgis
 apr <- aea@crs
-brk <- seq(0.1, 1, 0.1) #for legend
-redtrans <- rgb(218, 215, 216, 90, maxColorValue=255) 
+brk <- seq(0, 1, 0.1) #for legend
+lgc <- sequential_hcl(10, palette = "YlOrRd") #colour scheme from colorspace package
+redtrans <- rgb(218, 215, 216, 120, maxColorValue=255) #mcp
 outsidemcp <- shapefile("../data/env/landp/mcpout.shp") #made in arcgis
 
-#r <- raster(avg_77.6112.asc)
-#plot(pras)
 
-#for (pred in 1:length(maplst)){
-  pras5 <- raster(maplst[33])
+
+  pras6 <- raster(maplst[37])
   pras180 <- raster(maplst[14])
   pras370 <- raster(maplst[28])
   pras697 <- raster(maplst[41])
-  crs(pras5) <- apr
+  crs(pras6) <- apr
   crs(pras180) <- apr
   crs(pras370) <- apr
   crs(pras697) <- apr
-  ascname5 <- names(pras5)
+  ascname6 <- names(pras6)
   ascname180 <- names(pras180)
   ascname370 <- names(pras370)
   ascname697 <- names(pras697)
   
   
-par(mfrow=c(1,2))
+par(mfrow=c(1,4))
 
 
-  #pras[pras >0] <- 1
-  lp5 <- plot(pras5, breaks=brk, col=rev(colorRampPalette(brewer.pal(10, "Spectral"))(10)), axes = FALSE, box = FALSE, legend = TRUE)
-  #lp <- plot(pras5)
-  lp5 <- plot(outsidemcp,  col = redtrans, border = redtrans, add = TRUE)
-  lp5 <- plot(s, col = "#474646", border = "#474646", add = TRUE)
+  lp6 <- plot(pras6, breaks=brk,  col=rev(lgc), axes = FALSE, box = FALSE, legend = FALSE)
+  lp6 <- plot(outsidemcp,  col = redtrans, border = redtrans, add = TRUE)
+  lp6 <- plot(s, col = "#474646", border = "#474646", add = TRUE)
   
-  l180 <- plot(pras180, breaks=brk, col=rev(colorRampPalette(brewer.pal(10, "Spectral"))(10)), axes = FALSE, box = FALSE, legend = TRUE)
-  #lp <- plot(pras5)
+  lp180 <- plot(pras180, breaks=brk,  col=rev(lgc), axes = FALSE, box = FALSE, legend = FALSE)
   lp180 <- plot(outsidemcp,  col = redtrans, border = redtrans, add = TRUE)
   lp180 <- plot(s, col = "#474646", border = "#474646", add = TRUE)
   
+  lp370 <- plot(pras370, breaks=brk,  col=rev(lgc), axes = FALSE, box = FALSE, legend = FALSE)
+  lp370 <- plot(outsidemcp,  col = redtrans, border = redtrans, add = TRUE)
+  lp370 <- plot(s, col = "#474646", border = "#474646", add = TRUE)
   
+  lp697 <- plot(pras697, breaks=brk,  col=rev(lgc), axes = FALSE, box = FALSE, legend = TRUE)
+  lp697 <- plot(outsidemcp,  col = redtrans, border = redtrans, add = TRUE)
+  lp697 <- plot(s, col = "#474646", border = "#474646", add = TRUE)
   
-  print(lp5)
-  dev.copy(png, (paste0("../output/maxent/all_data/predictions/", ascname5, pred, ".png")), width = 1920,height = 1080)
+  print(lp6)
+  dev.copy(png, (paste0("../output/maxent/all_data/predictions/testplots/", ascname6, ".png")), width = 1920,height = 1080)
   dev.off() # stops automatic saving of the plot to a png))
 #}
   
   
   print(lp5)
-  dev.copy(png, (paste0("../output/maxent/all_data/predictions/", ascname5, pred, ".png")), width = 1920,height = 1080)
+  dev.copy(png, (paste0("../output/maxent/all_data/predictions/", ascname5, ".png")), width = 1920,height = 1080)
   dev.off() # stops automatic saving of the plot to a png))
 #}
   
@@ -2119,5 +2121,76 @@ par(mfrow=c(1,2))
   
 ```
 
+as above but with rcolorbrewer
+```{r}
+lp6 <- plot(pras6, breaks=brk, col=rev(colorRampPalette(brewer.pal(10, "Spectral"))(10)), axes = FALSE, box = FALSE, legend = TRUE)
+  lp6 <- plot(outsidemcp,  col = redtrans, border = redtrans, add = TRUE)
+  lp6 <- plot(s, col = "#474646", border = "#474646", add = TRUE)
+  
+  lp180 <- plot(pras180, breaks=brk, col=rev(colorRampPalette(brewer.pal(10, "Spectral"))(10)), axes = FALSE, box = FALSE, legend = TRUE)
+  lp180 <- plot(outsidemcp,  col = redtrans, border = redtrans, add = TRUE)
+  lp180 <- plot(s, col = "#474646", border = "#474646", add = TRUE)
+  
+  lp370 <- plot(pras370, breaks=brk, col=rev(colorRampPalette(brewer.pal(10, "Spectral"))(10)), axes = FALSE, box = FALSE, legend = TRUE)
+  lp370 <- plot(outsidemcp,  col = redtrans, border = redtrans, add = TRUE)
+  lp370 <- plot(s, col = "#474646", border = "#474646", add = TRUE)
+  
+  lp697 <- plot(pras697, breaks=brk, col=rev(colorRampPalette(brewer.pal(10, "Spectral"))(10)), axes = FALSE, box = FALSE, legend = TRUE)
+  lp697 <- plot(outsidemcp,  col = redtrans, border = redtrans, add = TRUE)
+  lp697 <- plot(s, col = "#474646", border = "#474646", add = TRUE)
+```
+
+
+with rastervis
+
+```{r}
+aea <- raster("../output/env/aea.tif") #the correct CRS
+maplst <- list.files("../output/maxent/predictions/may", pattern = "^avg_clog.*.asc", full.names = TRUE)
+s <- shapefile("../data/env/landp/landpro.shp") #made in arcgis
+apr <- aea@crs
+brk <- seq(0, 1, 0.1) #for legend
+lgc <- sequential_hcl(10, palette = "YlOrRd") #colour scheme from colorspace package
+redtrans <- rgb(218, 215, 216, 120, maxColorValue=255) #mcp
+outsidemcp <- shapefile("../data/env/landp/mcpout.shp") #made in arcgis
+
+pras6 <- raster(maplst[37])
+pras180 <- raster(maplst[14])
+pras370 <- raster(maplst[28])
+pras697 <- raster(maplst[41])
+crs(pras6) <- apr
+crs(pras180) <- apr
+crs(pras370) <- apr
+crs(pras697) <- apr
+ascname6 <- names(pras6)
+ascname180 <- names(pras180)
+ascname370 <- names(pras370)
+ascname697 <- names(pras697)
+pstack <- stack(pras6, pras180, pras370, pras697) #stack the layers
+
+pras1 <- raster(maplst[1])
+pras2 <- raster(maplst[2])
+pras3 <- raster(maplst[3])
+pras4 <- raster(maplst[4])
+crs(pras1) <- apr
+crs(pras2) <- apr
+crs(pras3) <- apr
+crs(pras4) <- apr
+
+pstack <- stack(pras6, pras180, pras370, pras697, pras1, pras2, pras3, pras4) #stack the layers
+
+cls <- c("6m", "180m", "370m", "697m")
+rws <- c("may", "dummy")
+mapTheme <- rasterTheme(region = rev(brewer.pal(10,"RdYlGn")))
+my.at <- seq(0, 1, by = 0.1)
+
+
+p <- levelplot(pstack, ylab = NULL, xlab = NULL, scales=list(draw=FALSE), colorkey=list(space="bottom", at = my.at), par.settings = mapTheme, layout = c(4, 2), names.attr = c("6m", "180m", "370m", "697m", "", "", "", ""))
+p + layer(sp.polygons(s, fill = "black")) + layer (sp.polygons(outsidemcp, fill = redtrans, col = NA))
+
+png("../output/maxent/predictions/testplots/rasterVis.png", height = 1024 * 0.707, width = 1024)
+p
+dev.off()
+  
+```
 
 
