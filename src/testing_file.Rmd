@@ -2144,6 +2144,11 @@ lp6 <- plot(pras6, breaks=brk, col=rev(colorRampPalette(brewer.pal(10, "Spectral
 with rastervis
 
 ```{r}
+library(raster)
+library(rgdal)
+library(rasterVis)
+library(colorspace)
+
 aea <- raster("../output/env/aea.tif") #the correct CRS
 maplst <- list.files("../output/maxent/predictions/may", pattern = "^avg_clog.*.asc", full.names = TRUE)
 s <- shapefile("../data/env/landp/landpro.shp") #made in arcgis
@@ -2184,13 +2189,85 @@ mapTheme <- rasterTheme(region = rev(brewer.pal(10,"RdYlGn")))
 my.at <- seq(0, 1, by = 0.1)
 
 
-p <- levelplot(pstack, ylab = NULL, xlab = NULL, scales=list(draw=FALSE), colorkey=list(space="bottom", at = my.at), par.settings = mapTheme, layout = c(4, 2), names.attr = c("6m", "180m", "370m", "697m", "", "", "", ""))
+p <- levelplot(pstack, ylab = NULL, xlab = NULL, scales=list(draw=FALSE), colorkey=list(space="bottom", at = my.at), par.settings = mapTheme, layout = c(4, 2), names.attr = c("6m", "180m", "370m", "697m", "", "", "", ""), margin = FALSE)
 p + layer(sp.polygons(s, fill = "black")) + layer (sp.polygons(outsidemcp, fill = redtrans, col = NA))
 
-png("../output/maxent/predictions/testplots/rasterVis.png", height = 1024 * 0.707, width = 1024)
-p
-dev.off()
-  
+
+dev.copy(png, (paste0("../output/maxent/predictions/testplots/rasterVis.png")), width = 1920,height = 1080)
+dev.off() # stops automatic saving of the plot to a png))
+
+
+
 ```
 
+```{r}
+histogram(pstack)
+densityplot(pstack)
+bwplot(pstack)
+```
+
+
+try hovmoller plotting for depth time
+
+```{r}
+#think i need to create a 4d raster with depth and time...
+library(ncdf4)
+
+writeRaster(pstack, "../output/maxent/predictions/testplots/pstack.nc", overwrite = TRUE, format = "CDF", varname = "prob", varunit = "p", longname = "dummy netcdf for hovmollers", xname= "X", yname = "Y", zname = "date", zunit = "date")
+
+```
+
+
+
+```{r}
+pras6 <- raster::setZ(pras6, as.Date("0000-1-1"), name = "time")
+pras180 <- raster::setZ(pras180, as.Date("0000-1-1"), name = "time")
+pras370 <- raster::setZ(pras370, as.Date("0000-1-1"), name = "time")
+pras697 <- raster::setZ(pras697, as.Date("0000-1-1"), name = "time")
+pras1 <- raster::setZ(pras1, as.Date("0000-2-1"), name = "time")
+pras2 <- raster::setZ(pras2, as.Date("0000-2-1"), name = "time")
+pras3 <- raster::setZ(pras3, as.Date("0000-2-1"), name = "time")
+pras4 <- raster::setZ(pras4, as.Date("0000-2-1"), name = "time")
+```
+
+
+
+
+```{r}
+library(zoo)
+
+old <- setwd(tempdir())
+download.file('https://raw.github.com/oscarperpinan/spacetime-vis/master/data/SISmm2008_CMSAF.zip',
+'SISmm2008_CMSAF.zip', method='wget')
+unzip('SISmm2008_CMSAF.zip')
+listFich <- dir(pattern='\\.nc')
+stackSIS <- stack(listFich)
+stackSIS <- stackSIS*24 ##from irradiance (W/m2) to irradiation Wh/m2
+
+
+
+pbrick <- brick(pras6, pras180, pras370, pras697, pras1, pras2, pras3, pras4) #stack the layers
+
+```
+
+ok new play - try creating an individual netcdf for a month...
+```{r}
+plst <- list.files("../output/maxent/predictions/testplots/testrasters", full.names = TRUE)
+
+thlst <- list()
+anlst <- list()
+for (i in 1:length(plst)){
+  r <- raster(plst[i])
+  aname <- names(r)
+  aname <-  str_sub(aname, 13)
+  r <- setZ(r, as.numeric(aname), name = "depth")
+  thlst[[i]] <- r
+  anlst[i] <- aname
+}
+
+nstk <- stack(thlst)
+nstk <- setZ(nstk, anlst, name = "depth")
+
+writeRaster(nstk, "../output/maxent/predictions/testplots/nstk.nc", overwrite = TRUE, format = "CDF", varname = "prob", varunit = "p", longname = "dummy netcdf for hovmollers", xname= "X", yname = "Y", zname = "depth", zunit = "m")
+```
 
