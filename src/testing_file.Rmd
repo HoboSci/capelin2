@@ -2253,6 +2253,10 @@ pbrick <- brick(pras6, pras180, pras370, pras697, pras1, pras2, pras3, pras4) #s
 ok new play - try creating an individual netcdf for a month...
 ```{r}
 plst <- list.files("../output/maxent/predictions/testplots/testrasters", full.names = TRUE)
+aea <- raster("../output/env/aea.tif") #the correct CRS
+apr <- aea@crs
+
+i = 1
 
 thlst <- list()
 anlst <- list()
@@ -2261,6 +2265,7 @@ for (i in 1:length(plst)){
   aname <- names(r)
   aname <-  str_sub(aname, 13)
   r <- setZ(r, as.numeric(aname), name = "depth")
+  crs(r) <- apr
   thlst[[i]] <- r
   anlst[i] <- aname
 }
@@ -2268,6 +2273,53 @@ for (i in 1:length(plst)){
 nstk <- stack(thlst)
 nstk <- setZ(nstk, anlst, name = "depth")
 
-writeRaster(nstk, "../output/maxent/predictions/testplots/nstk.nc", overwrite = TRUE, format = "CDF", varname = "prob", varunit = "p", longname = "dummy netcdf for hovmollers", xname= "X", yname = "Y", zname = "depth", zunit = "m")
+writeRaster(r, "../output/maxent/predictions/testplots/lstk2.nc", overwrite = TRUE, format = "CDF", varname = "prob", varunit = "p", longname = "dummy netcdf for hovmollers", xname= "X", yname = "Y", zname = "depth", zunit = "m")
+
+
+
+dirXY <- xyLayer(r, sqrt(x^2 + y^2))
+library(zoo)
+
+
+hovmoller(nstk,
+          at = seq(0, 1, .1),
+                    interpolate = FALSE,
+          par.settings = BuRdTheme)
+
+hovmoller(nstk, ylab ="depth", interpolate = FALSE)
+
+```
+
+
+try create empty netcdf
+
+
+
+```{r}
+data.time <- 3:12 #months
+
+#get depths
+dep <- read.csv("../output/maxent/models/apr1998/stackdepthlist_1998.csv", header = TRUE)
+dep <- dep$ascdepths
+
+lon <- seq( -999722.7, 1525277, by = 25000)
+lat <- seq ( 3538427, -211573.1, by = -25000)
+
+data.distance <- seq(-65,920, by=5)
+## Add dimensions and variables which accompany the dimensions (avoided by create_dimvar = FALSE)
+dimDepth <- ncdim_def(name='depth', units='m', longname='depth layer', vals=data.distance )
+dimTime <- ncdim_def('time', units='month', longname='measurement month', calendar="standard", vals=data.time)
+
+
+varLat <- ncvar_def(name='lat', units='meters_north', dim=list(lat), missval=NA, longname='lat_m', prec='double')
+varLon <- ncvar_def(name='lon', units='meters_east', dim=list(lon), missval=NA, longname='lon_m', prec='double')
+
+varAlt <- ncvar_def(name='depth', units='m', dim=list(dimDepth, dimTime), missval=-9999, longname='depth layer')
+
+vars <- list(varLat, varLon, varAlt)
+
+outputfile <- 'transect.nc'
+con <- nc_create(outputfile, vars)
+
 ```
 

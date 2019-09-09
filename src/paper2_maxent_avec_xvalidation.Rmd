@@ -32,8 +32,6 @@ presback <- subset(presback, select = -c(cell_id, id, decimalLatitude, decimalLo
 colnames(presback)
 ```
 
-this dataset contains a lot of columns you don't need for the maxent models. Remove them here
-
 
 #monthly model data selection and prep
 For each monthly model, subset the data to the month you want, and the variables you want (Based on spearmans and VIF)
@@ -54,10 +52,10 @@ decvar <- c("occurrence", "year", "temp_depth", "salinity_depth", "o2_depth", "c
 mthnavar_lst <- list(jan = janvar, mar = marvar, apr = aprvar, may = mayvar, jun = junvar, jul = julvar, aug = augvar, sep = sepvar, oct = octvar, nov = novvar, dec = decvar)
 ```
 
-select mont
+select month
 ```{r month of interest -change}
-mthna <- "jan"
-mthno <- "1"
+mthna <- "mar"
+mthno <- "3"
 ```
 
 
@@ -80,7 +78,6 @@ mod12
 
 ```{r train and test inc AIC for reg val}
 modelmonth <- cbind(paste0(mthna ,unique(prback$year)))
-#modelmonth <- "jan2003"
 aicetc <- read.csv("../data/env/AICcCalculations_p2.csv", header = TRUE) #pre-created csv file
 betavallist <- read.csv("../data/env/AICcCalculations.csv", header = TRUE) #pre-created csv file
 betavallist <- cbind(betavallist$regularization)
@@ -89,7 +86,8 @@ nfolds <- cbind(c(1:5))
 for (year in 1:nrow(modelmonth)){
   
   timeslice <- modelmonth[year] #testing timeslice
-  #timeslice <- modelmonth
+  newf <- paste0("../output/maxent/p2/models/", timeslice)
+  dir.create(newf)
   yr <- str_sub(timeslice, -4) #the year being used for testing
   train <- subset(prback, year == yr) #training data is all years but testing
   trainpa <- train$occurrence #creates a vector of presence/background ID (1/0)
@@ -97,7 +95,7 @@ for (year in 1:nrow(modelmonth)){
   
   for (h in 1:nrow(betavallist)){
     betamval <-  betavallist[h]
-    mod <- maxent(x = train, p = trainpa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "addsamplestobackground=TRUE", paste0("replicates=", nrow(nfolds)), "replicatetype=crossvalidate", paste0("betamultiplier=", betamval)), path = paste0("C:/Users/bunny/Documents/GitHub/Chapter_1/output/maxent/p2/models/", timeslice)) #here the full path is needed
+    mod <- maxent(x = train, p = trainpa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "addsamplestobackground=TRUE", paste0("replicates=", nrow(nfolds)), "replicatetype=crossvalidate", paste0("betamultiplier=", betamval)), path = paste0("../output/maxent/p2/models/", timeslice),"overwrite=true") #here the full path is needed
     
       
     #now based on glover-kapfer pdf with excel manual + https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/10-1171.1... + adaptation for        getting testAUC.. horrible code
@@ -201,6 +199,8 @@ nfolds <- cbind(c(1:5))
 
 for (year in 1:nrow(modelmonth)){
   timeslice <- modelmonth[year] #testing timeslice
+  newf <- paste0("../output/maxent/p2/models/", timeslice)
+  dir.create(newf)
   yr <- str_sub(timeslice, -4) #the year being used for testing
   train <- subset(prback, year == yr) #training data is all years but testing
   trainpa <- train$occurrence #creates a vector of presence/background ID (1/0)
@@ -217,7 +217,7 @@ for (year in 1:nrow(modelmonth)){
     betaval <- 2.25
   }
   
-  mod <- maxent(x = train, p = trainpa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "addsamplestobackground=TRUE", paste0("replicates=", nrow(nfolds)), "replicatetype=crossvalidate", paste0("betamultiplier=", betaval)), path = paste0("C:/Users/bunny/Documents/GitHub/Chapter_1/output/maxent/p2/models/", timeslice)) #here the full path is needed
+  mod <- maxent(x = train, p = trainpa, args=c("maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "addsamplestobackground=TRUE", paste0("replicates=", nrow(nfolds)), "replicatetype=crossvalidate", paste0("betamultiplier=", betaval)), path = paste0("../output/maxent/p2/models/", timeslice)) #here the full path is needed
     
 
     #now based on glover-kapfer pdf with excel manual + https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/10-1171.1... + adaptation for        getting testAUC.. horrible code
