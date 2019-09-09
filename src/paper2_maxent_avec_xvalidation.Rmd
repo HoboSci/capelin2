@@ -21,6 +21,104 @@ ipak(packages)
 ```
 
 
+need to create 10k background points weighted to nafo zones (as per mj)
+
+use the exising file "../output/bio/background/correct_random_files/background_point_na_removal_nona.csv" which contains centroid location for every in the mcp....
+
+```{r}
+allbk <- read.csv("../output/bio/background/correct_random_files/background_point_na_removal_nona.csv", header = TRUE)
+
+```
+
+now you need to select 10k points, weighted by nafo region...
+
+0A	2.4	240
+0B	9.6	960
+1B	0.2	20
+1C	0.8	80
+1D	1.5	150
+1E	2	200
+1F	3.8	380
+2G	6.8	680
+2H	7.2	720
+2J	8.5	850
+3K	8.8	880
+3L	7.4	740
+3M	0.5	50
+3N	2.7	270
+3O	3.9	390
+3Pn	0.3	30
+3Ps	4	400
+4R	1.9	190
+4S	3.7	370
+4T	5.1	510
+4Vn	1.1	110
+4Vs	4	400
+4W	4	400
+4X	3.8	380
+5Y	1.5	150
+5Ze	0.5	50
+HudsonStrait	4	400
+
+```{r may 1999}
+may19990a <- subset(nafo_zone == "0A")
+may19990a <- sample_n(may19990a, 14) 
+may19990b <- subset(nafo_zone == "0B")
+may19990b <- sample_n(may19990b, 58) 
+may19991B <- subset(nafo_zone == "1B")
+may19991B <- sample_n(may19991B, 1)
+may19991C <- subset(nafo_zone == "1C")
+may19991C <- sample_n(may19991C, 5) 
+may19991d <- subset(nafo_zone == "1D")
+may19991d <- sample_n(may19991d, 9)
+may19991E <- subset(nafo_zone == "1E")
+may19991E <- sample_n(may19991E, 12)
+may19991F <- subset(nafo_zone == "1F")
+may19991F <- sample_n(may19991F, 23)
+may19992G <- subset(nafo_zone == "2G")
+may19992G <- sample_n(may19992G, 40) 
+may19992H <- subset(nafo_zone == "2H")
+may19992H <- sample_n(may19992H, 43) 
+may19992J <- subset(nafo_zone == "2J")
+may19992J <- sample_n(may19992J, 50) 
+may19993k <- subset(nafo_zone == "3K")
+may19993k <- sample_n(may19993k, 52) 
+may19993L <- subset(nafo_zone == "3L")
+may19993L <- sample_n(may19993L, 44)
+may19993M <- subset(nafo_zone == "3M")
+may19993M <- sample_n(may19993M, 3)
+may19993N <- subset(nafo_zone == "3N")
+may19993N <- sample_n(may19993N, 16) 
+may19993o <- subset(nafo_zone == "3O")
+may19993o <- sample_n(may19993o, 23) 
+may19993pn <- subset(nafo_zone == "3Pn")
+may19993pn <- sample_n(may19993pn, 2) 
+may19993ps <- subset(nafo_zone == "3Ps")
+may19993ps <- sample_n(may19993ps, 24) 
+may19994r <- subset(nafo_zone == "4R")
+may19994r <- sample_n(may19994r, 11) 
+may19994s <- subset(nafo_zone == "4S")
+may19994s <- sample_n(may19994s, 22) 
+may19994t <- subset(nafo_zone == "4T")
+may19994t <- sample_n(may19994t, 30) 
+may19994vn <- subset(nafo_zone == "4Vn")
+may19994vn <- sample_n(may19994vn, 6) 
+may19994vs <- subset(nafo_zone == "4Vs")
+may19994vs <- sample_n(may19994vs, 24) 
+may19994w <- subset(nafo_zone == "4W")
+may19994w <- sample_n(may19994w, 24) 
+may19994x <- subset(nafo_zone == "4X")
+may19994x <- sample_n(may19994x, 23) 
+may19995Y <- subset(nafo_zone == "5Y")
+may19995Y <- sample_n(may19995Y, 9) 
+may19995Ze <- subset(nafo_zone == "5Ze")
+may19995Ze <- sample_n(may19995Ze, 3) 
+may1999hud <- subset(nafo_zone == "HudsonStrait")
+may1999hud <- sample_n(may1999hud, 24) 
+may1999 <- rbind(may19990a, may19990b, may19991B, may19991C, may19991d, may19991E, may19991F,  may19992G, may19992H, may19992J, may19993k, may19993L, may19993M, may19993N, may19993o, may19993pn, may19993ps, may19994r, may19994s, may19994t, may19994vn, may19994vs, may19994w, may19994x, may19995Y, may19995Ze, may1999hud)
+```
+
+
 #load the presence-background dataset 
 ("../output/bio/presab_nafo_yr.csv")
 
@@ -54,8 +152,8 @@ mthnavar_lst <- list(jan = janvar, mar = marvar, apr = aprvar, may = mayvar, jun
 
 select month
 ```{r month of interest -change}
-mthna <- "mar"
-mthno <- "3"
+mthna <- "jan"
+mthno <- "1"
 ```
 
 
@@ -69,6 +167,12 @@ now each month contains NAs - lets remove these (maxent principle doesnt allow f
 
 ```{r remove na vals}
 prback <- na.omit(prback)
+```
+
+just checking for no background points... should be 10k per year...
+```{r delete me}
+prbackb <- subset(prback, occurrence == 0)
+byr <- unique(prbackb$year)
 ```
 
 
