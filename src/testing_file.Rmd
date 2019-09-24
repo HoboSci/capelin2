@@ -1949,7 +1949,7 @@ for (x in 1:nrow(depthlayers)){
 ```
 
      
-Threshold tables
+#Threshold tables
 ```{r}
 thlst1 <- list.files(paste0("../output/maxent/models"), pattern = ".*avgAIC.csv", full.names = TRUE)
 thlst2 <- list.files(paste0("../output/maxent/models"), pattern = ".*avgmaxentresults.csv", full.names = TRUE) 
