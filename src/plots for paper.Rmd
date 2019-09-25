@@ -183,8 +183,9 @@ dev.off()
 ```{r get median probability for each depth}
 mthord <- c("mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec") 
 
-meddf <- data.frame(matrix(ncol = 11, nrow = 49))
-colnames(meddf) <- c("depth", mthord)
+meddf <- data.frame(matrix(ncol = 3, nrow = 490))
+colnames(meddf) <- c("layer", "month", "median")
+r <- 1
 
 for (m in 1:length(mthord)){
   mth <- mthord[m]
@@ -192,17 +193,24 @@ for (m in 1:length(mthord)){
   rstk <- stack(mthlst)
   rsum <- summary(rstk, na.rm = TRUE)
   rsum <- rsum["Median", ]
-  meddf[mth] <- rsum
-  dep <- rstk@names
-  write.csv(meddf, paste0("../output/maxent/paper_plots/med_data/median.csv"), row.names = TRUE)
- # write.csv(rsum, paste0("../output/maxent/paper_plots/med_data/median_", mth, ".csv"), row.names = TRUE)
+  for (l in 1:length(rsum)){
+    meddf$median[r] <- rsum[l]
+    meddf$month[r] <- mth
+    meddf$layer[r] <- names(rstk[[l]])
+    r <- r+1
+  }
 }
 
+#rename the layers to be just the depth
 
-medlst <- list.files(paste0("../output/maxent/paper_plots/med_data"), pattern = "^median.*.csv", full.names = TRUE)
-tables <- lapply(medlst, read.csv, header = TRUE)
-allmed <- do.call(cbind, tables)
+meddf$layer <- gsub("avg_cloglog_", "", x = meddf$layer)
+meddf <- meddf[order(meddf$layer), ]
 
+write.csv(meddf, paste0("../output/maxent/paper_plots/med_data/median.csv"), row.names = FALSE)
 ```
 
+```{r}
+a <- ggplot(data = meddf) + geom_point(aes(y = layer, x = median, colour = month))
+a
+```
 
