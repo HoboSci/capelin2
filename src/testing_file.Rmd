@@ -2151,6 +2151,7 @@ library(colorspace)
 
 aea <- raster("../output/env/aea.tif") #the correct CRS
 maplst <- list.files("../output/maxent/predictions/may", pattern = "^avg_clog.*.asc", full.names = TRUE)
+maplst2 <- list.files("../output/maxent/predictions/sep", pattern = "^avg_clog.*.asc", full.names = TRUE)
 s <- shapefile("../data/env/landp/landpro.shp") #made in arcgis
 apr <- aea@crs
 brk <- seq(0, 1, 0.1) #for legend
@@ -2162,29 +2163,42 @@ pras6 <- raster(maplst[37])
 pras180 <- raster(maplst[14])
 pras370 <- raster(maplst[28])
 pras697 <- raster(maplst[41])
+p2ras6 <- raster(maplst2[37])
+p2ras180 <- raster(maplst2[14])
+p2ras370 <- raster(maplst2[28])
+p2ras697 <- raster(maplst2[41])
 crs(pras6) <- apr
 crs(pras180) <- apr
 crs(pras370) <- apr
 crs(pras697) <- apr
+crs(p2ras6) <- apr
+crs(p2ras180) <- apr
+crs(p2ras370) <- apr
+crs(p2ras697) <- apr
 ascname6 <- names(pras6)
 ascname180 <- names(pras180)
 ascname370 <- names(pras370)
 ascname697 <- names(pras697)
-pstack <- stack(pras6, pras180, pras370, pras697) #stack the layers
+a2scname6 <- names(p2ras6)
+a2scname180 <- names(p2ras180)
+a2scname370 <- names(p2ras370)
+a2scname697 <- names(p2ras697)
 
-pras1 <- raster(maplst[1])
-pras2 <- raster(maplst[2])
-pras3 <- raster(maplst[3])
-pras4 <- raster(maplst[4])
-crs(pras1) <- apr
-crs(pras2) <- apr
-crs(pras3) <- apr
-crs(pras4) <- apr
+# pstack <- stack(pras6, pras180, pras370, pras697) #stack the layers
+# 
+# pras1 <- raster(maplst[1])
+# pras2 <- raster(maplst[2])
+# pras3 <- raster(maplst[3])
+# pras4 <- raster(maplst[4])
+# crs(pras1) <- apr
+# crs(pras2) <- apr
+# crs(pras3) <- apr
+# crs(pras4) <- apr
 
-pstack <- stack(pras6, pras180, pras370, pras697, pras1, pras2, pras3, pras4) #stack the layers
+pstack <- stack(pras6, pras180, pras370, pras697, p2ras6, p2ras180, p2ras370, p2ras697) #stack the layers
 
 cls <- c("6m", "180m", "370m", "697m")
-rws <- c("may", "dummy")
+rws <- c("May", "Sep")
 mapTheme <- rasterTheme(region = rev(brewer.pal(10,"RdYlGn")))
 my.at <- seq(0, 1, by = 0.1)
 
@@ -2193,8 +2207,8 @@ p <- levelplot(pstack, ylab = NULL, xlab = NULL, scales=list(draw=FALSE), colork
 p + layer(sp.polygons(s, fill = "black")) + layer (sp.polygons(outsidemcp, fill = redtrans, col = NA))
 
 
-dev.copy(png, (paste0("../output/maxent/predictions/testplots/rasterVis.png")), width = 1920,height = 1080)
-dev.off() # stops automatic saving of the plot to a png))
+#dev.copy(png, (paste0("../output/maxent/predictions/testplots/rasterVis.png")), width = 1920,height = 1080)
+#dev.off() # stops automatic saving of the plot to a png))
 
 
 

@@ -212,5 +212,643 @@ write.csv(meddf, paste0("../output/maxent/paper_plots/med_data/median.csv"), row
 ```{r}
 a <- ggplot(data = meddf) + geom_point(aes(y = layer, x = median, colour = month))
 a
+
 ```
+
+```{r get max probability for each depth}
+mthord <- c("mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec") 
+
+meddf <- data.frame(matrix(ncol = 3, nrow = 490))
+colnames(meddf) <- c("layer", "month", "max")
+r <- 1
+
+for (m in 1:length(mthord)){
+  mth <- mthord[m]
+  mthlst <- list.files(paste0("../output/maxent/predictions/", mth), pattern = "^avg_cloglog.*.asc", full.names = TRUE)
+  rstk <- stack(mthlst)
+  rsum <- summary(rstk, na.rm = TRUE)
+  rsum <- rsum["Max.", ]
+  for (l in 1:length(rsum)){
+    meddf$max[r] <- rsum[l]
+    meddf$month[r] <- mth
+    meddf$layer[r] <- names(rstk[[l]])
+    r <- r+1
+  }
+}
+
+#rename the layers to be just the depth
+
+meddf$layer <- gsub("avg_cloglog_", "", x = meddf$layer)
+meddf$layer <- as.numeric(meddf$layer)
+meddf <- meddf[order(meddf$layer), ]
+
+write.csv(meddf, paste0("../output/maxent/paper_plots/med_data/max.csv"), row.names = FALSE)
+```
+
+```{r}
+a <- ggplot(data = meddf) + geom_point(aes(y = layer, x = max, colour = month))
+a
+```
+
+#Histograms of probability by depth
+
+count number of cells that are not NA in each raster layer that are inside the mcp
+
+```{r}
+outsidemcp <- shapefile("../data/env/landp/mcpout.shp") #made in arcgis
+
+clogasc_list <- list.files(paste0("../output/maxent/predictions/nov"), pattern = "^avg_cloglog_.*.asc", full.names = TRUE) #just choose a random month to calculate cells
+cumst <- data.frame(0, 0)
+colnames(cumst) <- c("depth", "no_cells")
+for (cum in 1:length(clogasc_list)){
+  cumasc <- raster(clogasc_list[cum])
+  ascname <- names(cumasc)
+  cumst[cum, 1] <- str_sub(ascname, 13)
+  cumasc <- mask(cumasc, outsidemcp, inverse = TRUE)
+  ccnt <- freq(cumasc, useNA='no')
+  ccnt <- sum(ccnt[ ,2])
+  cumst[cum, 2] <- ccnt
+}
+
+cumst$depth <- as.numeric(cumst$depth)
+cumst1 <- cumst[order(cumst$no_cells), ]
+
+write.csv(cumst1, "../output/maxent/paper_plots/prob_by_depth/cellsperlayer.csv", row.names = FALSE)
+
+```
+
+first bin the probabilities for cells inside the mcp
+```{r bin probabilities}
+outsidemcp <- shapefile("../data/env/landp/mcpout.shp") #made in arcgis
+mthord <- c("mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec") 
+
+for (m in 1:length(mthord)){
+  mth <- mthord[m]
+  clogasc_list <- list.files(paste0("../output/maxent/predictions/", mth), pattern = "^avg_cloglog.*.asc", full.names = TRUE)
+  
+  binprob <- function(x){
+    ifelse(x > 0 & x < 0.1, 0.1,
+    ifelse(x <= 0, 0, NA))
+  }
+  
+  for (cum in 1:length(clogasc_list)){
+    cumasc <- raster(clogasc_list[cum])
+    ascname <- names(cumasc)
+    cumasc <- mask(cumasc, outsidemcp, inverse = TRUE)
+    probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
+    writeRaster(probbin, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_1_avgprob_", ascname, ".asc"), overwrite = TRUE)
+    plot(probbin, png(paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_1_avgprob_", ascname, ".png")), overwrite = TRUE)
+    dev.off() # stops automatic saving of the plot to a png
+  }
+  
+  
+  
+  binprob <- function(x){
+    ifelse(x >= 0.1 & x < 0.2, 0.2,
+    ifelse(x <= 0, 0, NA))
+  }
+  
+  for (cum in 1:length(clogasc_list)){
+    cumasc <- raster(clogasc_list[cum])
+    ascname <- names(cumasc)
+    cumasc <- mask(cumasc, outsidemcp, inverse = TRUE)
+    probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
+    writeRaster(probbin, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_2_avgprob_", ascname, ".asc"), overwrite = TRUE)
+    plot(probbin, png(paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_2_avgprob_", ascname, ".png")), overwrite = TRUE)
+    dev.off() # stops automatic saving of the plot to a png
+  }
+  
+  binprob <- function(x){
+    ifelse(x >= 0.2 & x < 0.3, 0.3,
+    ifelse(x <= 0, 0, NA))
+  }
+  
+  for (cum in 1:length(clogasc_list)){
+    cumasc <- raster(clogasc_list[cum])
+    ascname <- names(cumasc)
+    cumasc <- mask(cumasc, outsidemcp, inverse = TRUE)
+    probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
+    writeRaster(probbin, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_3_avgprob_", ascname, ".asc"), overwrite = TRUE)
+    plot(probbin, png(paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_3_avgprob_", ascname, ".png")), overwrite = TRUE)
+    dev.off() # stops automatic saving of the plot to a png
+  }
+  
+  
+  binprob <- function(x){
+    ifelse(x >= 0.3 & x < 0.4, 0.4,
+    ifelse(x <= 0, 0, NA))
+  }
+  
+  for (cum in 1:length(clogasc_list)){
+    cumasc <- raster(clogasc_list[cum])
+    ascname <- names(cumasc)
+    cumasc <- mask(cumasc, outsidemcp, inverse = TRUE)
+    probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
+    writeRaster(probbin, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_4_avgprob_", ascname, ".asc"), overwrite = TRUE)
+    plot(probbin, png(paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_4_avgprob_", ascname, ".png")), overwrite = TRUE)
+    dev.off() # stops automatic saving of the plot to a png
+  }
+  
+  
+  
+  binprob <- function(x){
+    ifelse(x >= 0.4 & x < 0.5, 0.5,
+    ifelse(x <= 0, 0, NA))
+  }
+  
+  for (cum in 1:length(clogasc_list)){
+    cumasc <- raster(clogasc_list[cum])
+    ascname <- names(cumasc)
+    cumasc <- mask(cumasc, outsidemcp, inverse = TRUE)
+    probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
+    writeRaster(probbin, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_5_avgprob_", ascname, ".asc"), overwrite = TRUE)
+    plot(probbin, png(paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_5_avgprob_", ascname, ".png")), overwrite = TRUE)
+    dev.off() # stops automatic saving of the plot to a png
+  }
+   
+  
+  binprob <- function(x){
+    ifelse(x >= 0.5 & x < 0.6, 0.6,
+    ifelse(x <= 0, 0, NA))
+  }
+  
+  for (cum in 1:length(clogasc_list)){
+    cumasc <- raster(clogasc_list[cum])
+    ascname <- names(cumasc)
+    cumasc <- mask(cumasc, outsidemcp, inverse = TRUE)
+    probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
+    writeRaster(probbin, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_6_avgprob_", ascname, ".asc"), overwrite = TRUE)
+    plot(probbin, png(paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_6_avgprob_", ascname, ".png")), overwrite = TRUE)
+    dev.off() # stops automatic saving of the plot to a png
+  } 
+  
+  
+  
+  binprob <- function(x){
+    ifelse(x >= 0.6 & x < 0.7, 0.7,
+    ifelse(x <= 0, 0, NA))
+  }
+  
+  for (cum in 1:length(clogasc_list)){
+    cumasc <- raster(clogasc_list[cum])
+    ascname <- names(cumasc)
+    cumasc <- mask(cumasc, outsidemcp, inverse = TRUE)
+    probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
+    writeRaster(probbin, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_7_avgprob_", ascname, ".asc"), overwrite = TRUE)
+    plot(probbin, png(paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_7_avgprob_", ascname, ".png")), overwrite = TRUE)
+    dev.off() # stops automatic saving of the plot to a png
+  }
+  
+  
+  binprob <- function(x){
+    ifelse(x >= 0.7 & x < 0.8, 0.8,
+    ifelse(x <= 0, 0, NA))
+  }
+  
+  for (cum in 1:length(clogasc_list)){
+    cumasc <- raster(clogasc_list[cum])
+    ascname <- names(cumasc)
+    cumasc <- mask(cumasc, outsidemcp, inverse = TRUE)
+    probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
+    writeRaster(probbin, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_8_avgprob_", ascname, ".asc"), overwrite = TRUE)
+    plot(probbin, png(paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_8_avgprob_", ascname, ".png")), overwrite = TRUE)
+    dev.off() # stops automatic saving of the plot to a png
+  }
+  
+  
+  binprob <- function(x){
+    ifelse(x >= 0.8 & x < 0.9, 0.9,
+    ifelse(x <= 0, 0, NA))
+  }
+  
+  for (cum in 1:length(clogasc_list)){
+    cumasc <- raster(clogasc_list[cum])
+    ascname <- names(cumasc)
+    cumasc <- mask(cumasc, outsidemcp, inverse = TRUE)
+    probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
+    writeRaster(probbin, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_9_avgprob_", ascname, ".asc"), overwrite = TRUE)
+    plot(probbin, png(paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_9_avgprob_", ascname, ".png")), overwrite = TRUE)
+    dev.off() # stops automatic saving of the plot to a png
+  }
+  
+  
+  binprob <- function(x){
+    ifelse(x >= 0.9 & x <= 1, 1,
+    ifelse(x <= 0, 0, NA))
+  }
+  
+  for (cum in 1:length(clogasc_list)){
+    cumasc <- raster(clogasc_list[cum])
+    ascname <- names(cumasc)
+    cumasc <- mask(cumasc, outsidemcp, inverse = TRUE)
+    probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
+    writeRaster(probbin, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_10_avgprob_", ascname, ".asc"), overwrite = TRUE)
+    plot(probbin, png(paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_10_avgprob_", ascname, ".png")), overwrite = TRUE)
+    dev.off() # stops automatic saving of the plot to a png
+  }
+}
+```
+
+
+get data to plot probability by depth... need to do manually 1-10
+```{r}
+mthord <- c("mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec") 
+binlst <- c(1:10)
+
+binprob <- function(x){
+  ifelse(x >0,  1,
+  ifelse(x == -9999, 0, NA))
+}
+
+
+for (m in 1:length(mthord)){
+  for (b in 1:length(binlst)){
+  mth <- mthord[m]
+  bin <- binlst[b]
+  ascdepth <- list.files(paste0("../output/maxent/paper_plots/prob_by_depth"), pattern = paste0("^", mth, "_binned_", bin, "_.*asc"), full.names = TRUE)
+
+  binaryavgstack <- stack(ascdepth)
+  stackstathigh <- data.frame(matrix(ncol = 2, nrow = nlayers(binaryavgstack)))
+  stackstathigh[ ,1] <- c(1:49)
+  colnames(stackstathigh) <- c("asclayer", "prob_bin")
+  
+  for (lyr in 1:nlayers(binaryavgstack)){
+    ascname <-  str_sub(ascdepth[lyr], 63, -5)
+    dlay <- binaryavgstack[[lyr]]
+    dlay <- calc(dlay, fun = binprob) #creates raster layer with cell values based on the binprob function
+    lyrsum <- cellStats(dlay, sum)
+    stackstathigh$prob_bin[lyr] <- lyrsum
+    stackstathigh$asclayer[lyr] <- ascname
+  
+  }
+  write.csv(stackstathigh, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_probbin_", bin, "_cellcount_bydepth_avg.csv"), row.names = FALSE)
+  }
+}
+
+```
+
+
+```{r}
+mthord <- c("mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec") 
+
+for (m in 1:length(mthord)){
+  mth <- mthord[m]
+  probblst <- list.files(paste0("../output/maxent/paper_plots/prob_by_depth"), pattern = paste0("^", mth, ".*probbin_.*.csv"), full.names = TRUE)
+  a <- read.csv(probblst[1])
+  b <- read.csv(probblst[2])
+  c <- read.csv(probblst[3])
+  d <- read.csv(probblst[4])
+  e <- read.csv(probblst[5])
+  f <- read.csv(probblst[6])
+  g <- read.csv(probblst[7])
+  h <- read.csv(probblst[8])
+  i <- read.csv(probblst[9])
+  j <- read.csv(probblst[10])
+  
+  stackstat <- cbind(a, b[ ,2], c[ ,2], d[ ,2], e[ , 2], f[ ,2], g[ ,2], h[ ,2], i[ ,2], j[ ,2])
+  colnames(stackstat) <- c("depth", "0 - 0.09", "0.1 - 0.19", "0.2 - 0.29", "0.3 - 0.39", "0.4 - 0.49", "0.5 - 0.59", "0.6 - 0.69", "0.7 - 0.79", "0.8 - 0.89", ">0.9")
+  stackstat <- melt(stackstat, id = "depth")
+  stackstat <- stackstat[!(stackstat$depth == "1151.99"), ]
+  stackstat <- stackstat[!(stackstat$depth == "1265.86"), ]
+  stackstat <- stackstat[!(stackstat$depth == "1387.38"), ]
+  
+  colnames(stackstat) <- c("Depth", "Probability", "Cells")
+  
+  write.csv(stackstat, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_allprobbin_cellcount_bydepth_avg.csv"), row.names = FALSE)
+}
+
+```
+
+think about how to get proportions... 
+
+```{r}
+mthord <- c("mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
+cumst1 <- read.csv("../output/maxent/paper_plots/prob_by_depth/cellsperlayer.csv", header = TRUE)
+
+for (m in 1:length(mthord)){
+  mth <- mthord[m]
+  a <- read.csv(paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_allprobbin_cellcount_bydepth_avg.csv"), header = TRUE, stringsAsFactors=FALSE)
+  for (r in 1:nrow(a)){
+    a$Depth[r] <- gsub("b_avg_cloglog_", "", x = a$Depth[r])
+    d1 <- str_sub(a$Depth[r], end = 4)
+	  for (ro in 1:nrow(cumst1)){
+      d2 <- str_sub(cumst1$depth[ro], end = 4)
+      if (d1 == d2){
+          a$total_cells[r] <- cumst1$no_cells[ro]
+      }
+	  }
+    a$p_cells[r] <- (a$Cells[r]/a$total_cells[r])*100
+  }
+    a$Depth <- as.numeric(a$Depth)
+
+  write.csv(a, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_dis_prob_cells.csv"), row.names = FALSE)
+}
+
+```
+
+histogram of probability by depth - by proportion
+
+```{r}
+
+bydepth <- ggplot(a, aes(Depth, p_cells, fill = Probability)) + geom_col() + scale_x_reverse() + coord_flip() #XXXXXcareful - the deeper layers aren't being displayed correctly here
+plot(bydepth)
+#png(paste0("../output/maxent/predictions/", mthna, "/depthplot_probavg_prop.png"))
+#print(bydepth)
+#dev.off()
+```
+
+ok lets try colour the probabilites to match the maps...
+
+```{r}
+probcol <- rev(brewer.pal(10,"RdYlGn"))
+bydepth <- ggplot(a, aes(Depth, p_cells, fill = Probability)) + geom_col() + scale_x_reverse() + coord_flip() + scale_fill_manual(values = probcol) #XXXXXcareful - the deeper layers aren't being displayed correctly here
+plot(bydepth)
+```
+
+ok now lets lump all the 0.39 and under together...
+
+```{r}
+outsidemcp <- shapefile("../data/env/landp/mcpout.shp") #made in arcgis
+mthord <- c("mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec") 
+
+binprob <- function(x){
+    ifelse(x > 0 & x <0.4, 1,
+    ifelse(x <= 0, 0, NA))
+}
+
+for (m in 1:length(mthord)){
+  mth <- "dec"
+  clogasc_list <- list.files(paste0("../output/maxent/predictions/", mth), pattern = "^avg_cloglog.*.asc", full.names = TRUE)
+
+  
+  for (cum in 1:length(clogasc_list)){
+    cumasc <- raster(clogasc_list[cum])
+    ascname <- names(cumasc)
+    cumasc <- raster::mask(x = cumasc, mask = outsidemcp, inverse = TRUE)
+    probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
+    writeRaster(probbin, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_u0.4_binned_avgprob_", ascname, ".asc"), overwrite = TRUE)
+    #plot(probbin, png(paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_u0.4_binned_avgprob_", ascname, ".png")), overwrite = TRUE)
+    #dev.off() # stops automatic saving of the plot to a png
+  }
+}
+```
+
+get data to plot probability by depth... 
+```{r}
+mthord <- c("mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec") 
+
+for (m in 1:length(mthord)){
+  mth <- mthord[m]
+  ascdepth <- list.files(paste0("../output/maxent/paper_plots/prob_by_depth"), pattern = paste0("^", mth, "_u0.4_binned_avgprob_", ".*asc"), full.names = TRUE)
+
+  binaryavgstack <- stack(ascdepth)
+  stackstathigh <- data.frame(matrix(ncol = 2, nrow = nlayers(binaryavgstack)))
+  stackstathigh[ ,1] <- c(1:49)
+  colnames(stackstathigh) <- c("asclayer", "prob_bin")
+  
+  for (lyr in 1:nlayers(binaryavgstack)){
+    ascname <-  str_sub(ascdepth[lyr], 63, -5)
+    dlay <- binaryavgstack[[lyr]]
+    lyrsum <- cellStats(dlay, sum)
+    stackstathigh$prob_bin[lyr] <- lyrsum
+    stackstathigh$asclayer[lyr] <- ascname
+  
+  }
+  write.csv(stackstathigh, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_u0.4_probbin_cellcount_bydepth_avg.csv"), row.names = FALSE)
+}
+
+
+```
+
+```{r}
+mthord <- c("mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec") 
+
+for (m in 1:length(mthord)){
+  mth <- mthord[m]
+  probblst <- list.files(paste0("../output/maxent/paper_plots/prob_by_depth"), pattern = paste0("^", mth, "_u0.4_probbin_cellcount_bydepth_avg.csv"), full.names = TRUE)
+  stackstat <- read.csv(probblst[1])
+
+  
+  colnames(stackstat) <- c("depth", "0 - 0.39")
+  stackstat <- melt(stackstat, id = "depth")
+  stackstat <- stackstat[!(stackstat$depth == "1151.99"), ]
+  stackstat <- stackstat[!(stackstat$depth == "1265.86"), ]
+  stackstat <- stackstat[!(stackstat$depth == "1387.38"), ]
+  
+  colnames(stackstat) <- c("Depth", "Probability", "Cells")
+  
+  write.csv(stackstat, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_u0.4_allprobbin_cellcount_bydepth_avg.csv"), row.names = FALSE)
+}
+
+```
+
+
+
+get proportions... 
+
+```{r}
+mthord <- c("mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
+cumst1 <- read.csv("../output/maxent/paper_plots/prob_by_depth/cellsperlayer.csv", header = TRUE)
+
+for (m in 1:length(mthord)){
+  mth <- mthord[m]
+  a <- read.csv(paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_u0.4_allprobbin_cellcount_bydepth_avg.csv"), header = TRUE, stringsAsFactors=FALSE)
+  for (r in 1:nrow(a)){
+    a$Depth[r] <- gsub("prob_avg_cloglog_", "", x = a$Depth[r])
+    d1 <- str_sub(a$Depth[r], end = 4)
+	  for (ro in 1:nrow(cumst1)){
+      d2 <- str_sub(cumst1$depth[ro], end = 4)
+      if (d1 == d2){
+          a$total_cells[r] <- cumst1$no_cells[ro]
+      }
+	  }
+    a$p_cells[r] <- (a$Cells[r]/a$total_cells[r])*100
+  }
+   a$Depth <- as.numeric(a$Depth)
+
+  write.csv(a, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_u0.4_dis_prob_cells.csv"), row.names = FALSE)
+}
+
+```
+
+merge the u0.4 dataset with the original
+```{r}
+mthord <- c("mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
+for (m in 1:length(mthord)){
+  mth <- mthord[m]
+  a <- read.csv(paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_u0.4_dis_prob_cells.csv"), header = TRUE, stringsAsFactors=FALSE)
+  b <- read.csv(paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_dis_prob_cells.csv"), header = TRUE, stringsAsFactors=FALSE)
+  c <- rbind(a, b)
+  c <- c[!(c$Probability == "0 - 0.09"), ]
+  c <- c[!(c$Probability == "0.1 - 0.19"), ]
+  c <- c[!(c$Probability == "0.2 - 0.29"), ]
+  c <- c[!(c$Probability == "0.3 - 0.39"), ]
+  write.csv(c, paste0("../output//maxent/paper_plots/prob_by_depth/", mth, "_u0.4plus_dis_prob_cells.csv"))
+}
+```
+
+ok no try plot
+
+```{r}
+probcol <- rev(brewer.pal(7,"RdYlGn"))
+bydepth <- ggplot(c, aes(Depth, p_cells, fill = Probability)) + geom_col() + scale_x_reverse() + coord_flip() + scale_fill_manual(values = probcol) #XXXXXcareful - the deeper layers aren't being displayed correctly here
+plot(bydepth)
+```
+
+
+
+```{r}
+mthord <- c("mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
+cumst1 <- read.csv("../output/maxent/paper_plots/prob_by_depth/cellsperlayer.csv", header = TRUE)
+for (m in 1:length(mthord)){
+  mth <- mthord[m]
+  a <- read.csv(paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_dis_prob_cells.csv"), header = TRUE)
+  head(a)
+  d <- unique(a$Depth)
+  x <- data.frame(matrix(nrow = length(d)))
+  for (s in 1:length(d)){
+    dep <- d[s]
+    sd <- subset(a, Depth == dep)
+    sd <- subset(sd, Probability == "0 - 0.09"| Probability == "0.1 - 0.19"| Probability == "0.2 - 0.29"| Probability == "0.3 - 0.39")
+    c <- sum(sd$Cells)
+    x$Depth[s] <- dep
+    x$Probability[s] <- "0 - 0.39"
+    x$cells[s] <- c
+    x$p_cells[s] <- 1
+  }
+  x <- subset(x, select = -c(matrix.nrow...length.d..))
+  x$cells[is.na(x$cells)] <- 0
+  # for (r in 1:nrow(x)){
+  #   d1 <- str_sub(x$Depth[r], end = 4)
+  #   for (ro in 1:nrow(cumst1)){
+  #     d2 <- str_sub(cumst1$depth[ro], end = 4)
+  #     if (d1 == d2){
+  #         x$total_cells[r] <- cumst1$no_cells[ro]
+  #     }
+  #   }
+  # }
+  # for (r in 1:nrow(x)){
+  #    x$p_cells[r] <- (x$Cells[r]/x$total_cells[r])*100
+
+ # }
+
+
+  write.csv(x, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_u0.4plus_dis_prob_cells.csv"))
+}
+```
+
+merge the u0.4 dataset with the original
+```{r}
+mthord <- c("mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
+for (m in 1:length(mthord)){
+  mth <- mthord[m]
+  a <- read.csv(paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_u0.4plus_dis_prob_cells.csv"), header = TRUE, stringsAsFactors=FALSE)
+  b <- read.csv(paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_dis_prob_cells.csv"), header = TRUE, stringsAsFactors=FALSE)
+  c <- rbind(a, b)
+  c <- c[!(c$Probability == "0 - 0.09"), ]
+  c <- c[!(c$Probability == "0.1 - 0.19"), ]
+  c <- c[!(c$Probability == "0.2 - 0.29"), ]
+  c <- c[!(c$Probability == "0.3 - 0.39"), ]
+  write.csv(c, paste0("../output//maxent/paper_plots/prob_by_depth/", mth, "_u0.4s_dis_prob_cells.csv"))
+}
+```
+
+
+
+```{r}
+probcol <- rev(brewer.pal(7,"RdYlGn"))
+bydepth <- ggplot(c, aes(Depth, p_cells, fill = Probability)) + geom_col() + scale_x_reverse() + coord_flip() + scale_fill_manual(values = probcol) #XXXXXcareful - the deeper layers aren't being displayed correctly here
+plot(bydepth)
+```
+
+ok dont forget the colours will need to match the maps so you may need to manually create your own list for whatever scheme you choose...
+
+
+now MJ suggested to only show some depths (the most commonly predicted ones)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ok lets try get an probability for the whole month
+
+```{r}
+a <- read.csv("../output/maxent/predictions/jul/dis_prob_cells.csv", header = TRUE)
+
+#subset the probability ranges
+p1 <- subset(a, Probability == "0 - 0.09")
+p2 <- subset(a, Probability == "0.1 - 0.19")
+p3 <- subset(a, Probability == "0.2 - 0.29")
+p4 <- subset(a, Probability == "0.3 - 0.39")
+p5 <- subset(a, Probability == "0.4 - 0.49")
+p6 <- subset(a, Probability == "0.5 - 0.59")
+p7 <- subset(a, Probability == "0.6 - 0.69")
+p8 <- subset(a, Probability == "0.7 - 0.79")
+p9 <- subset(a, Probability == "0.8 - 0.89")
+p10 <- subset(a, Probability == ">0.9")
+
+#count the number of cells per probability. 
+
+
+cp1 <- sum(p1$Cells)
+cp2 <- sum(p2$Cells)
+cp3 <- sum(p3$Cells)
+cp4 <- sum(p4$Cells)
+cp5 <- sum(p5$Cells)
+cp6 <- sum(p6$Cells)
+cp7 <- sum(p7$Cells)
+cp8 <- sum(p8$Cells)
+cp9 <- sum(p9$Cells)
+cp10 <- sum(p10$Cells)
+
+tc2 <- sum(cp1, cp2, cp3, cp4, cp5, cp6, cp7, cp8, cp9, cp10) #how many cells in total for novy have a value
+tcell <- sum(p1$total_cells) # how many cells are available to have a value...
+#tc2 and tcell should match
+
+#create datbase of total cells per probability bin for the month
+
+b <- unique(a$Probability) #get the unique probability bins
+c <- as.data.frame(rbind(cp1, cp2,  cp3, cp4, cp5, cp6, cp7, cp8, cp9, cp10))
+c$probability <- b
+colnames(c) <- c("cells", "prob_bin")
+rownames(c) <- c()
+c$month <- "jul"
+```
+
+make plot of probability over the month
+```{r}
+pmth <- ggplot(d, aes(month, cells, fill = prob_bin)) + geom_bar(stat='identity') 
+plot(pmth)
+png(paste0("../output/maxent/predictions/", mthna, "/prob_avg_mth.png"))
+print(pmth)
+dev.off()
+```
+
+merge two months of data together into one file then plot
+
+```{r}
+f <- rbind(c, d)
+pmth <- ggplot(f, aes(month, cells, fill = prob_bin)) + geom_bar(stat='identity') 
+plot(pmth)
+png(paste0("../output/maxent/predictions/prob_avg_mth_test.png"))
+print(pmth)
+dev.off()
+```
+
+
+
+
+
+
 
