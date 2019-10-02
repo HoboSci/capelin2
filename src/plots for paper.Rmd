@@ -489,7 +489,7 @@ for (m in 1:length(mthord)){
 
 
 ```{r}
-mthord <- c("mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec") 
+mthord <- c("mar") #, "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"
 
 for (m in 1:length(mthord)){
   mth <- mthord[m]
@@ -522,7 +522,7 @@ for (m in 1:length(mthord)){
 think about how to get proportions... 
 
 ```{r}
-mthord <- c("mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
+mthord <- c("mar") #,  "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"
 cumst1 <- read.csv("../output/maxent/paper_plots/prob_by_depth/cellsperlayer.csv", header = TRUE)
 
 for (m in 1:length(mthord)){
@@ -567,135 +567,6 @@ plot(bydepth)
 
 ok now lets lump all the 0.39 and under together...
 
-```{r}
-outsidemcp <- shapefile("../data/env/landp/mcpout.shp") #made in arcgis
-mthord <- c("mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec") 
-
-binprob <- function(x){
-    ifelse(x > 0 & x <0.4, 1,
-    ifelse(x <= 0, 0, NA))
-}
-
-for (m in 1:length(mthord)){
-  mth <- "dec"
-  clogasc_list <- list.files(paste0("../output/maxent/predictions/", mth), pattern = "^avg_cloglog.*.asc", full.names = TRUE)
-
-  
-  for (cum in 1:length(clogasc_list)){
-    cumasc <- raster(clogasc_list[cum])
-    ascname <- names(cumasc)
-    cumasc <- raster::mask(x = cumasc, mask = outsidemcp, inverse = TRUE)
-    probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
-    writeRaster(probbin, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_u0.4_binned_avgprob_", ascname, ".asc"), overwrite = TRUE)
-    #plot(probbin, png(paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_u0.4_binned_avgprob_", ascname, ".png")), overwrite = TRUE)
-    #dev.off() # stops automatic saving of the plot to a png
-  }
-}
-```
-
-get data to plot probability by depth... 
-```{r}
-mthord <- c("mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec") 
-
-for (m in 1:length(mthord)){
-  mth <- mthord[m]
-  ascdepth <- list.files(paste0("../output/maxent/paper_plots/prob_by_depth"), pattern = paste0("^", mth, "_u0.4_binned_avgprob_", ".*asc"), full.names = TRUE)
-
-  binaryavgstack <- stack(ascdepth)
-  stackstathigh <- data.frame(matrix(ncol = 2, nrow = nlayers(binaryavgstack)))
-  stackstathigh[ ,1] <- c(1:49)
-  colnames(stackstathigh) <- c("asclayer", "prob_bin")
-  
-  for (lyr in 1:nlayers(binaryavgstack)){
-    ascname <-  str_sub(ascdepth[lyr], 63, -5)
-    dlay <- binaryavgstack[[lyr]]
-    lyrsum <- cellStats(dlay, sum)
-    stackstathigh$prob_bin[lyr] <- lyrsum
-    stackstathigh$asclayer[lyr] <- ascname
-  
-  }
-  write.csv(stackstathigh, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_u0.4_probbin_cellcount_bydepth_avg.csv"), row.names = FALSE)
-}
-
-
-```
-
-```{r}
-mthord <- c("mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec") 
-
-for (m in 1:length(mthord)){
-  mth <- mthord[m]
-  probblst <- list.files(paste0("../output/maxent/paper_plots/prob_by_depth"), pattern = paste0("^", mth, "_u0.4_probbin_cellcount_bydepth_avg.csv"), full.names = TRUE)
-  stackstat <- read.csv(probblst[1])
-
-  
-  colnames(stackstat) <- c("depth", "0 - 0.39")
-  stackstat <- melt(stackstat, id = "depth")
-  stackstat <- stackstat[!(stackstat$depth == "1151.99"), ]
-  stackstat <- stackstat[!(stackstat$depth == "1265.86"), ]
-  stackstat <- stackstat[!(stackstat$depth == "1387.38"), ]
-  
-  colnames(stackstat) <- c("Depth", "Probability", "Cells")
-  
-  write.csv(stackstat, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_u0.4_allprobbin_cellcount_bydepth_avg.csv"), row.names = FALSE)
-}
-
-```
-
-
-
-get proportions... 
-
-```{r}
-mthord <- c("mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
-cumst1 <- read.csv("../output/maxent/paper_plots/prob_by_depth/cellsperlayer.csv", header = TRUE)
-
-for (m in 1:length(mthord)){
-  mth <- mthord[m]
-  a <- read.csv(paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_u0.4_allprobbin_cellcount_bydepth_avg.csv"), header = TRUE, stringsAsFactors=FALSE)
-  for (r in 1:nrow(a)){
-    a$Depth[r] <- gsub("prob_avg_cloglog_", "", x = a$Depth[r])
-    d1 <- str_sub(a$Depth[r], end = 4)
-	  for (ro in 1:nrow(cumst1)){
-      d2 <- str_sub(cumst1$depth[ro], end = 4)
-      if (d1 == d2){
-          a$total_cells[r] <- cumst1$no_cells[ro]
-      }
-	  }
-    a$p_cells[r] <- (a$Cells[r]/a$total_cells[r])*100
-  }
-   a$Depth <- as.numeric(a$Depth)
-
-  write.csv(a, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_u0.4_dis_prob_cells.csv"), row.names = FALSE)
-}
-
-```
-
-merge the u0.4 dataset with the original
-```{r}
-mthord <- c("mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
-for (m in 1:length(mthord)){
-  mth <- mthord[m]
-  a <- read.csv(paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_u0.4_dis_prob_cells.csv"), header = TRUE, stringsAsFactors=FALSE)
-  b <- read.csv(paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_dis_prob_cells.csv"), header = TRUE, stringsAsFactors=FALSE)
-  c <- rbind(a, b)
-  c <- c[!(c$Probability == "0 - 0.09"), ]
-  c <- c[!(c$Probability == "0.1 - 0.19"), ]
-  c <- c[!(c$Probability == "0.2 - 0.29"), ]
-  c <- c[!(c$Probability == "0.3 - 0.39"), ]
-  write.csv(c, paste0("../output//maxent/paper_plots/prob_by_depth/", mth, "_u0.4plus_dis_prob_cells.csv"))
-}
-```
-
-ok no try plot
-
-```{r}
-probcol <- rev(brewer.pal(7,"RdYlGn"))
-bydepth <- ggplot(c, aes(Depth, p_cells, fill = Probability)) + geom_col() + scale_x_reverse() + coord_flip() + scale_fill_manual(values = probcol) #XXXXXcareful - the deeper layers aren't being displayed correctly here
-plot(bydepth)
-```
-
-
 
 ```{r}
 mthord <- c("mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
@@ -704,7 +575,7 @@ for (m in 1:length(mthord)){
   mth <- mthord[m]
   a <- read.csv(paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_dis_prob_cells.csv"), header = TRUE)
   head(a)
-  d <- unique(a$Depth)
+  d <- unique(cumst1$depth)
   x <- data.frame(matrix(nrow = length(d)))
   for (s in 1:length(d)){
     dep <- d[s]
@@ -713,26 +584,24 @@ for (m in 1:length(mthord)){
     c <- sum(sd$Cells)
     x$Depth[s] <- dep
     x$Probability[s] <- "0 - 0.39"
-    x$cells[s] <- c
+    x$Cells[s] <- c
     x$p_cells[s] <- 1
+    x$total_cells[s] <- 1
   }
-  x <- subset(x, select = -c(matrix.nrow...length.d..))
-  x$cells[is.na(x$cells)] <- 0
-  # for (r in 1:nrow(x)){
-  #   d1 <- str_sub(x$Depth[r], end = 4)
-  #   for (ro in 1:nrow(cumst1)){
-  #     d2 <- str_sub(cumst1$depth[ro], end = 4)
-  #     if (d1 == d2){
-  #         x$total_cells[r] <- cumst1$no_cells[ro]
-  #     }
-  #   }
-  # }
-  # for (r in 1:nrow(x)){
-  #    x$p_cells[r] <- (x$Cells[r]/x$total_cells[r])*100
-
- # }
-
-
+  x$Cells[is.na(x$Cells)] <- 0
+   for (r in 1:nrow(x)){
+     d1 <- str_sub(x$Depth[r], end = 4)
+     for (ro in 1:nrow(cumst1)){
+       d2 <- str_sub(cumst1$depth[ro], end = 4)
+       if (d1 == d2){
+           x$total_cells[r] <- cumst1$no_cells[ro]
+       }
+     }
+   }
+  for (r in 1:nrow(x)){
+    x$p_cells[r] <- (x$Cells[r]/x$total_cells[r])*100
+  }
+x <- subset(x, select = -c(matrix.nrow...length.d..))
   write.csv(x, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_u0.4plus_dis_prob_cells.csv"))
 }
 ```
@@ -743,6 +612,7 @@ mthord <- c("mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"
 for (m in 1:length(mthord)){
   mth <- mthord[m]
   a <- read.csv(paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_u0.4plus_dis_prob_cells.csv"), header = TRUE, stringsAsFactors=FALSE)
+  a <- subset(a, select = -c(X))
   b <- read.csv(paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_dis_prob_cells.csv"), header = TRUE, stringsAsFactors=FALSE)
   c <- rbind(a, b)
   c <- c[!(c$Probability == "0 - 0.09"), ]
@@ -767,88 +637,50 @@ ok dont forget the colours will need to match the maps so you may need to manual
 now MJ suggested to only show some depths (the most commonly predicted ones)
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-ok lets try get an probability for the whole month
-
 ```{r}
-a <- read.csv("../output/maxent/predictions/jul/dis_prob_cells.csv", header = TRUE)
+probblst <- list.files("../output/maxent/paper_plots/prob_by_depth/", pattern = "_u0.4s_dis_prob_cells.csv", full.names = TRUE)
+a <- read.csv(probblst[1])
+b <- read.csv(probblst[2])
+c <- read.csv(probblst[3])
+d <- read.csv(probblst[4])
+e <- read.csv(probblst[5])
+f <- read.csv(probblst[6])
+g <- read.csv(probblst[7])
+h <- read.csv(probblst[8])
+i <- read.csv(probblst[9])
+j <- read.csv(probblst[10])
+  
+stackstat <- cbind(a, b[ ,4], c[ ,4], d[ ,4], e[ ,4], f[ ,4], g[ ,4], h[ ,4], i[ ,4], j[ ,4])
 
-#subset the probability ranges
-p1 <- subset(a, Probability == "0 - 0.09")
-p2 <- subset(a, Probability == "0.1 - 0.19")
-p3 <- subset(a, Probability == "0.2 - 0.29")
-p4 <- subset(a, Probability == "0.3 - 0.39")
-p5 <- subset(a, Probability == "0.4 - 0.49")
-p6 <- subset(a, Probability == "0.5 - 0.59")
-p7 <- subset(a, Probability == "0.6 - 0.69")
-p8 <- subset(a, Probability == "0.7 - 0.79")
-p9 <- subset(a, Probability == "0.8 - 0.89")
-p10 <- subset(a, Probability == ">0.9")
+colnames(stackstat)
 
-#count the number of cells per probability. 
+x <- subset(stackstat, select = -c(X, p_cells))
+x <- x[ , c(1, 2, 4, 3, 5:13)]
+for (r in 1:nrow(x)){
+x$totalm[r] <- rowSums(x[r, 4:13])
+x$totala[r] <- x$total_cells[r]*10
+x$p_cells[r] <- (x$totalm[r]/x$totala[r])*100
+}
+y <- subset(x, select = c(Depth, Probability, p_cells))
+y$Probability <- gsub(">0.9", "0.9 - 1", y$Probability)
 
+probcol <- rev(brewer.pal(7,"RdYlGn"))
+bydepth <- ggplot(y, aes(Depth, p_cells, fill = Probability)) + geom_col() + scale_x_reverse() + coord_flip() + scale_fill_manual(values = probcol) 
+plot(bydepth)
 
-cp1 <- sum(p1$Cells)
-cp2 <- sum(p2$Cells)
-cp3 <- sum(p3$Cells)
-cp4 <- sum(p4$Cells)
-cp5 <- sum(p5$Cells)
-cp6 <- sum(p6$Cells)
-cp7 <- sum(p7$Cells)
-cp8 <- sum(p8$Cells)
-cp9 <- sum(p9$Cells)
-cp10 <- sum(p10$Cells)
+z <- subset(y, Depth <510)
 
-tc2 <- sum(cp1, cp2, cp3, cp4, cp5, cp6, cp7, cp8, cp9, cp10) #how many cells in total for novy have a value
-tcell <- sum(p1$total_cells) # how many cells are available to have a value...
-#tc2 and tcell should match
+bydepth <- ggplot(z, aes(Depth, p_cells, fill = Probability)) + geom_bar(stat = "identity") + coord_flip() + scale_x_reverse() + scale_fill_manual(values = probcol) + theme_minimal() #still missing data...
+plot(bydepth)
 
-#create datbase of total cells per probability bin for the month
-
-b <- unique(a$Probability) #get the unique probability bins
-c <- as.data.frame(rbind(cp1, cp2,  cp3, cp4, cp5, cp6, cp7, cp8, cp9, cp10))
-c$probability <- b
-colnames(c) <- c("cells", "prob_bin")
-rownames(c) <- c()
-c$month <- "jul"
 ```
 
-make plot of probability over the month
 ```{r}
-pmth <- ggplot(d, aes(month, cells, fill = prob_bin)) + geom_bar(stat='identity') 
-plot(pmth)
-png(paste0("../output/maxent/predictions/", mthna, "/prob_avg_mth.png"))
-print(pmth)
-dev.off()
+z <- subset(y, Depth <510)
+
+bydepth <- ggplot(z, aes(Depth, p_cells, fill = Probability)) + geom_col() + coord_flip() + scale_fill_manual(values = probcol) 
+plot(bydepth)
 ```
-
-merge two months of data together into one file then plot
-
-```{r}
-f <- rbind(c, d)
-pmth <- ggplot(f, aes(month, cells, fill = prob_bin)) + geom_bar(stat='identity') 
-plot(pmth)
-png(paste0("../output/maxent/predictions/prob_avg_mth_test.png"))
-print(pmth)
-dev.off()
-```
-
-
-
-
 
 
 
