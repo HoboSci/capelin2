@@ -14,7 +14,7 @@ You can install and load them using the following code which uses a function cal
 
 
 ```{r pre-install & load packages, include=FALSE}
-packages <- c("stringr", "reshape2", "ggplot2", "Hmisc", "viridis", "raster")
+packages <- c("stringr", "reshape2", "ggplot2", "Hmisc", "viridis", "raster", "RColorBrewer")
 source("../src/ipak.R")
 ipak(packages)
 ```
@@ -489,7 +489,7 @@ for (m in 1:length(mthord)){
 
 
 ```{r}
-mthord <- c("mar") #, "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"
+mthord <- c("mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
 
 for (m in 1:length(mthord)){
   mth <- mthord[m]
@@ -522,7 +522,7 @@ for (m in 1:length(mthord)){
 think about how to get proportions... 
 
 ```{r}
-mthord <- c("mar") #,  "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"
+mthord <- c("mar",  "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
 cumst1 <- read.csv("../output/maxent/paper_plots/prob_by_depth/cellsperlayer.csv", header = TRUE)
 
 for (m in 1:length(mthord)){
@@ -677,10 +677,16 @@ plot(bydepth)
 
 ```{r}
 z <- subset(y, Depth <510)
+z <- z[order(z$Depth), ]
 
-bydepth <- ggplot(z, aes(Depth, p_cells, fill = Probability)) + geom_col() + coord_flip() + scale_fill_manual(values = probcol) 
-plot(bydepth)
+y$Depth <- as.factor(y$Depth)
+flevels <- levels(y$Depth)
+flevels <- rev(flevels)
+
+ggplot(y, aes(Depth, p_cells, fill = Probability)) + geom_col() + coord_flip() +  scale_fill_manual(values = probcol) + scale_x_discrete(limits = flevels, breaks=flevels[seq(1,length(flevels), by = 2)]) + coord_flip()
+
+
 ```
 
-
+fuck december
 
