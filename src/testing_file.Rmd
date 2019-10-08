@@ -2337,3 +2337,147 @@ con <- nc_create(outputfile, vars)
 
 ```
 
+
+#argh
+```{r}
+outsidemcp <- shapefile("../data/env/landp/mcpout.shp") #made in arcgis
+
+clogasc_list <- list.files(paste0("../output/maxent/predictions/dec"), pattern = "^avg_cloglog_.*.asc", full.names = TRUE) #just choose a random month to calculate cells
+cumst <- data.frame(0, 0)
+colnames(cumst) <- c("depth", "no_cells")
+for (cum in 1:length(clogasc_list)){
+  cumasc <- raster(clogasc_list[6])
+  ascname <- names(cumasc)
+  cumst[cum, 1] <- str_sub(ascname, 13)
+  cumasc2 <- raster::mask(cumasc, outsidemcp, inverse = TRUE)
+  ccnt <- freq(cumasc2, useNA='no')
+  ccnt <- sum(ccnt[ ,2])
+  cumst[cum, 2] <- ccnt
+}
+
+
+clogasc_listm <- list.files(paste0("../output/maxent/predictions/mar"), pattern = "^avg_cloglog_.*.asc", full.names = TRUE) #just choose a random month to calculate cells
+cumstm <- data.frame(0, 0)
+colnames(cumstm) <- c("depth", "no_cells")
+for (cum in 1:length(clogasc_listm)){
+  cumascm <- raster(clogasc_listm[6])
+  ascnamem <- names(cumascm)
+  cumstm[cum, 1] <- str_sub(ascnamem, 13)
+  cumasc2m <- raster::mask(cumascm, outsidemcp, inverse = TRUE)
+  ccntm <- freq(cumasc2, useNA='no')
+  ccntm <- sum(ccntm[ ,2])
+  cumstm[cum, 2] <- ccntm
+}
+
+
+
+
+
+cumst$depth <- as.numeric(cumst$depth)
+cumst1 <- cumst[order(cumst$no_cells), ]
+
+write.csv(cumst1, "../output/maxent/paper_plots/prob_by_depth/cellsperlayermar.csv", row.names = FALSE)
+
+```
+
+
+
+
+```{r avg asc layers cloglog xx}
+#p <- read.csv("../output/bio/presab_nafo_yr.csv", header= TRUE)
+mthna <- "nov"
+mthno <- "11"
+prback <- subset(p, month == mthno)
+modelmonth <- cbind(paste0(mthna, unique(prback$year)))
+timeslice <- modelmonth[1]
+
+clogasc_list <- list.files(paste0("../output/maxent/predictions/", mthna), pattern = "^cloglog_.*.asc", full.names = TRUE)
+stlst <- list.files(paste0("../output/maxent/models/", timeslice), pattern = "stackdepth.*.csv", full.names = TRUE)
+stdep <- read.csv(stlst[1])
+stdep$ascdepths <- str_sub(stdep$stackname, 9)
+depthlayers <- data.frame(cbind(unique(stdep$ascdepths)))
+names(depthlayers)[names(depthlayers) == "cbind.unique.stdep.ascdepths.."] <- "depth"
+depthlayers$depth <- as.character(depthlayers$depth)
+
+colno <- 1
+
+
+for (d in 1:nrow(depthlayers)){
+  dep <- depthlayers$depth[d]
+  for (a in 1:length(clogasc_list)){
+    asc <- clogasc_list[a]
+    ascd <- str_sub(asc, 50, -5)
+    if (grepl(dep, ascd)){
+      depthlayers[d , paste0("a", colno)] <- asc
+       colno <- colno+1
+    }
+  }
+}
+write.csv(depthlayers, (paste0("../output/maxent/predictions/", mthna, "/cloglog_asclayerbydepth.csv")), row.names = TRUE)
+
+
+
+for (x in 1:nrow(depthlayers)){
+  asclay <- depthlayers[x, ]
+  asclay <- asclay[!is.na(asclay)]
+  asclay <- as.data.frame(rbind(asclay))
+  asclay$V1 <- as.character(asclay$V1) #v1 corresponds to depth
+  asclay$V2 <- as.character(asclay$V2) #v2 to end corresponds to year
+  asclay$V3 <- as.character(asclay$V3)
+  asclay$V4 <- as.character(asclay$V4)
+  asclay$V5 <- as.character(asclay$V5)
+  asclay$V6 <- as.character(asclay$V6)
+  asclay$V7 <- as.character(asclay$V7)
+  asclay$V8 <- as.character(asclay$V8)
+  asclay$V9 <- as.character(asclay$V9)
+  asclay$V10 <- as.character(asclay$V10)
+  asclay$V11 <- as.character(asclay$V11)
+  asclay$V12 <- as.character(asclay$V12)
+  asclay$V13 <- as.character(asclay$V13)
+  asclay$V14 <- as.character(asclay$V14)
+  asclay$V15 <- as.character(asclay$V15)
+  asclay$V16 <- as.character(asclay$V16)
+  asclay$V17<- as.character(asclay$V17)
+  # asclay$V18 <- as.character(asclay$V18)
+  # asclay$V19<- as.character(asclay$V19)
+
+  
+  asclaydep <- asclay$V1
+  
+  asc1998 <- raster(asclay$V2)
+  asc1999 <- raster(asclay$V3)
+  asc2000 <- raster(asclay$V4)
+  asc2001 <- raster(asclay$V5)
+  asc2002 <- raster(asclay$V6)
+  asc2003 <- raster(asclay$V7)
+  asc2004 <- raster(asclay$V8)
+  asc2005 <- raster(asclay$V9)
+  asc2006 <- raster(asclay$V10)
+  asc2007 <- raster(asclay$V11)
+  asc2008 <- raster(asclay$V12)
+  asc2009 <- raster(asclay$V13)
+  asc2010 <- raster(asclay$V14)
+  asc2011 <- raster(asclay$V15)
+  asc2012 <- raster(asclay$V16)
+  asc2013 <- raster(asclay$V17)
+  # asc2014 <- raster(asclay$V18)
+  # asc2015 <- raster(asclay$V19)
+
+
+  stkasc <- stack(asc1998, asc1999, asc2000, asc2001, asc2002, asc2003, asc2004, asc2005, asc2006, asc2007, asc2008, asc2009, asc2010, asc2011, asc2012, asc2013) #, asc2014, asc2015)
+
+  avg <- mean(stkasc, na.rm = TRUE)
+  
+  writeRaster(avg, paste0("../output/maxent/predictions/", mthna, "/avg_cloglog_", asclaydep, ".asc"), overwrite=TRUE)
+  avgplot <- plot(avg, png(paste0("../output/maxent/predictions/", mthna, "/avg_cloglog_", asclaydep, ".png"))) 
+  dev.off()
+  
+file.rename(paste0("../output/maxent/predictions/", mthna, "/avg_cloglog_000120.asc"), paste0("../output/maxent/predictions/", mthna, "/avg_cloglog_120.asc"))
+file.rename(paste0("../output/maxent/predictions/", mthna, "/avg_cloglog_000120.png"), paste0("../output/maxent/predictions/", mthna, "/avg_cloglog_120.png"))
+file.rename(paste0("../output/maxent/predictions/", mthna, "/avg_cloglog_041.18.asc"), paste0("../output/maxent/predictions/", mthna, "/avg_cloglog_41.18.asc"))
+file.rename(paste0("../output/maxent/predictions/", mthna, "/avg_cloglog_041.18.png"), paste0("../output/maxent/predictions/", mthna, "/avg_cloglog_41.18.png"))
+}
+
+
+
+```

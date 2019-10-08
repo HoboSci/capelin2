@@ -257,15 +257,15 @@ count number of cells that are not NA in each raster layer that are inside the m
 ```{r}
 outsidemcp <- shapefile("../data/env/landp/mcpout.shp") #made in arcgis
 
-clogasc_list <- list.files(paste0("../output/maxent/predictions/nov"), pattern = "^avg_cloglog_.*.asc", full.names = TRUE) #just choose a random month to calculate cells
+clogasc_list <- list.files(paste0("../output/maxent/predictions/dec"), pattern = "^avg_cloglog_.*.asc", full.names = TRUE) #just choose a random month to calculate cells
 cumst <- data.frame(0, 0)
 colnames(cumst) <- c("depth", "no_cells")
 for (cum in 1:length(clogasc_list)){
-  cumasc <- raster(clogasc_list[cum])
+  cumasc <- raster(clogasc_list[6])
   ascname <- names(cumasc)
   cumst[cum, 1] <- str_sub(ascname, 13)
-  cumasc <- mask(cumasc, outsidemcp, inverse = TRUE)
-  ccnt <- freq(cumasc, useNA='no')
+  cumasc2 <- raster::mask(cumasc, outsidemcp, inverse = TRUE)
+  ccnt <- freq(cumasc2, useNA='no')
   ccnt <- sum(ccnt[ ,2])
   cumst[cum, 2] <- ccnt
 }
@@ -273,11 +273,13 @@ for (cum in 1:length(clogasc_list)){
 cumst$depth <- as.numeric(cumst$depth)
 cumst1 <- cumst[order(cumst$no_cells), ]
 
-write.csv(cumst1, "../output/maxent/paper_plots/prob_by_depth/cellsperlayer.csv", row.names = FALSE)
+write.csv(cumst1, "../output/maxent/paper_plots/prob_by_depth/cellsperlayermar.csv", row.names = FALSE)
 
 ```
 
 first bin the probabilities for cells inside the mcp
+
+XXXXFROM HERE XXXXX
 ```{r bin probabilities}
 outsidemcp <- shapefile("../data/env/landp/mcpout.shp") #made in arcgis
 mthord <- c("mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec") 
@@ -450,9 +452,9 @@ for (m in 1:length(mthord)){
 ```
 
 
-get data to plot probability by depth... need to do manually 1-10
+get data to plot probability by depth... 
 ```{r}
-mthord <- c("mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec") 
+mthord <- c("mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
 binlst <- c(1:10)
 
 binprob <- function(x){
@@ -465,7 +467,7 @@ for (m in 1:length(mthord)){
   for (b in 1:length(binlst)){
   mth <- mthord[m]
   bin <- binlst[b]
-  ascdepth <- list.files(paste0("../output/maxent/paper_plots/prob_by_depth"), pattern = paste0("^", mth, "_binned_", bin, "_.*asc"), full.names = TRUE)
+  ascdepth <- list.files(paste0("../output/maxent/paper_plots/prob_by_depth"), pattern = paste0("^", mth, "_binned_", bin, ".*asc"), full.names = TRUE)
 
   binaryavgstack <- stack(ascdepth)
   stackstathigh <- data.frame(matrix(ncol = 2, nrow = nlayers(binaryavgstack)))
@@ -569,10 +571,10 @@ ok now lets lump all the 0.39 and under together...
 
 
 ```{r}
-mthord <- c("mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
+mthord <- c("dec") #"mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", 
 cumst1 <- read.csv("../output/maxent/paper_plots/prob_by_depth/cellsperlayer.csv", header = TRUE)
 for (m in 1:length(mthord)){
-  mth <- mthord[m]
+  mth <- "dec" #mthord[m]
   a <- read.csv(paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_dis_prob_cells.csv"), header = TRUE)
   head(a)
   d <- unique(cumst1$depth)
@@ -632,6 +634,44 @@ plot(bydepth)
 ```
 
 ok dont forget the colours will need to match the maps so you may need to manually create your own list for whatever scheme you choose...
+
+
+```{r}
+mar <- read.csv("../output//maxent/paper_plots/prob_by_depth/mar_u0.4s_dis_prob_cells.csv", header = TRUE)
+mar$Probability <- gsub(">0.9", "0.9 - 1", mar$Probability)
+mar$Depth <- as.factor(mar$Depth)
+flevelsm <- levels(mar$Depth)
+flevelsm <- rev(flevelsm)
+
+jun <- read.csv("../output//maxent/paper_plots/prob_by_depth/jun_u0.4s_dis_prob_cells.csv", header = TRUE)
+jun$Probability <- gsub(">0.9", "0.9 - 1", jun$Probability)
+jun$Depth <- as.factor(jun$Depth)
+flevelsj <- levels(jun$Depth)
+flevelsj <- rev(flevelsj)
+
+sep <- read.csv("../output//maxent/paper_plots/prob_by_depth/sep_u0.4s_dis_prob_cells.csv", header = TRUE)
+sep$Probability <- gsub(">0.9", "0.9 - 1", sep$Probability)
+sep$Depth <- as.factor(sep$Depth)
+flevelss <- levels(sep$Depth)
+flevelss <- rev(flevelss)
+
+dec <- read.csv("../output//maxent/paper_plots/prob_by_depth/dec_u0.4s_dis_prob_cells.csv", header = TRUE)
+dec$Probability <- gsub(">0.9", "0.9 - 1", dec$Probability)
+dec$Depth <- as.factor(dec$Depth)
+flevelsd <- levels(dec$Depth)
+flevelsd <- rev(flevelsd)
+
+probcol <- rev(brewer.pal(7,"RdYlGn"))
+
+ggplot(mar, aes(Depth, p_cells, fill = Probability)) + geom_col() + coord_flip() +  scale_fill_manual(values = probcol) + scale_x_discrete(limits = flevelsm, breaks=flevelsm[seq(1,length(flevelsm), by = 2)]) + coord_flip()
+
+ggplot(jun, aes(Depth, p_cells, fill = Probability)) + geom_col() + coord_flip() +  scale_fill_manual(values = probcol) + scale_x_discrete(limits = flevelsj, breaks=flevelsj[seq(1,length(flevelsj), by = 2)]) + coord_flip()
+
+ggplot(sep, aes(Depth, p_cells, fill = Probability)) + geom_col() + coord_flip() +  scale_fill_manual(values = probcol) + scale_x_discrete(limits = flevelss, breaks=flevelss[seq(1,length(flevelss), by = 2)]) + coord_flip()
+
+ggplot(dec, aes(Depth, p_cells, fill = Probability)) + geom_col() + coord_flip() +  scale_fill_manual(values = probcol) + scale_x_discrete(limits = flevelsd, breaks=flevelsd[seq(1,length(flevelsd), by = 2)]) + coord_flip()
+```
+
 
 
 now MJ suggested to only show some depths (the most commonly predicted ones)

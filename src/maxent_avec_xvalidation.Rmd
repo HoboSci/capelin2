@@ -781,10 +781,17 @@ ignore the first X characters in the filename (yr_mthna_) and stack based on the
 then do something probably with raster package
 
 ```{r avg asc layers cloglog}
-mthna <- jul
-timeslice <- jul
+#p <- read.csv("../output/bio/presab_nafo_yr.csv", header= TRUE)
+mthna <- "nov"
+mthno <- "11"
+prback <- subset(p, month == mthno)
+modelmonth <- cbind(paste0(mthna, unique(prback$year)))
+timeslice <- modelmonth[1]
+
 clogasc_list <- list.files(paste0("../output/maxent/predictions/", mthna), pattern = "^cloglog_.*.asc", full.names = TRUE)
-stdep <- read.csv(paste0("../output/maxent/models/", timeslice, "/stack_depth.csv"), header = TRUE)
+stlst <- list.files(paste0("../output/maxent/models/", timeslice), pattern = "stackdepth.*.csv", full.names = TRUE)
+stdep <- read.csv(stlst[1])
+stdep$ascdepths <- str_sub(stdep$stackname, 9)
 depthlayers <- data.frame(cbind(unique(stdep$ascdepths)))
 names(depthlayers)[names(depthlayers) == "cbind.unique.stdep.ascdepths.."] <- "depth"
 depthlayers$depth <- as.character(depthlayers$depth)
@@ -825,8 +832,11 @@ for (x in 1:nrow(depthlayers)){
   asclay$V12 <- as.character(asclay$V12)
   asclay$V13 <- as.character(asclay$V13)
   asclay$V14 <- as.character(asclay$V14)
-  asclay$V15 <- as.character(asclay$V15)  
-
+  asclay$V15 <- as.character(asclay$V15)
+  asclay$V16 <- as.character(asclay$V16)
+  asclay$V17<- as.character(asclay$V17)
+  # asclay$V18 <- as.character(asclay$V18)
+  # asclay$V19<- as.character(asclay$V19)
 
   
   asclaydep <- asclay$V1
@@ -845,15 +855,24 @@ for (x in 1:nrow(depthlayers)){
   asc2009 <- raster(asclay$V13)
   asc2010 <- raster(asclay$V14)
   asc2011 <- raster(asclay$V15)
+  asc2012 <- raster(asclay$V16)
+  asc2013 <- raster(asclay$V17)
+  # asc2014 <- raster(asclay$V18)
+  # asc2015 <- raster(asclay$V19)
 
 
-  stkasc <- stack(asc1998, asc1999, asc2000, asc2001, asc2002, asc2003, asc2004, asc2005, asc2006, asc2007, asc2008, asc2009, asc2010, asc2011)
+  stkasc <- stack(asc1998, asc1999, asc2000, asc2001, asc2002, asc2003, asc2004, asc2005, asc2006, asc2007, asc2008, asc2009, asc2010, asc2011, asc2012, asc2013) #, asc2014, asc2015)
 
   avg <- mean(stkasc, na.rm = TRUE)
   
   writeRaster(avg, paste0("../output/maxent/predictions/", mthna, "/avg_cloglog_", asclaydep, ".asc"), overwrite=TRUE)
   avgplot <- plot(avg, png(paste0("../output/maxent/predictions/", mthna, "/avg_cloglog_", asclaydep, ".png"))) 
   dev.off()
+  
+file.rename(paste0("../output/maxent/predictions/", mthna, "/avg_cloglog_000120.asc"), paste0("../output/maxent/predictions/", mthna, "/avg_cloglog_120.asc"))
+file.rename(paste0("../output/maxent/predictions/", mthna, "/avg_cloglog_000120.png"), paste0("../output/maxent/predictions/", mthna, "/avg_cloglog_120.png"))
+file.rename(paste0("../output/maxent/predictions/", mthna, "/avg_cloglog_041.18.asc"), paste0("../output/maxent/predictions/", mthna, "/avg_cloglog_41.18.asc"))
+file.rename(paste0("../output/maxent/predictions/", mthna, "/avg_cloglog_041.18.png"), paste0("../output/maxent/predictions/", mthna, "/avg_cloglog_41.18.png"))
 }
 ```
 
