@@ -2478,6 +2478,82 @@ file.rename(paste0("../output/maxent/predictions/", mthna, "/avg_cloglog_041.18.
 file.rename(paste0("../output/maxent/predictions/", mthna, "/avg_cloglog_041.18.png"), paste0("../output/maxent/predictions/", mthna, "/avg_cloglog_41.18.png"))
 }
 
+```
+
+
+
+#2d hotspot maps
+
+first create layers that are 0.5 and above
+
+```{r habitat classification on probability - >0.5}
+
+binprob <- function(x){
+  ifelse(x >= 0.5, 1,
+  ifelse(x < 0.5, 0, NA)) 
+}
+
+mthord <- c("mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
+
+for (m in 1:length(mthord)){
+  mthna <- mthord[m]
+  clogasc_list <- list.files(paste0("../output/maxent/predictions/", mthna), pattern = "^avg_cloglog_.*asc", full.names = TRUE)
+  for (cum in 1:length(clogasc_list)){
+    cumasc <- raster(clogasc_list[cum])
+    ascname <- names(cumasc)
+    ascname <- gsub("avg_cloglog_", "", ascname)
+    probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
+    writeRaster(probbin, paste0("../output/maxent/paper_plots/hotspot_mapping/", mthna,  "_binary_0.5_", ascname, ".asc"), overwrite = TRUE)
+     plot(probbin, png(paste0("../output/maxent/paper_plots/hotspot_mapping/", mthna, "_binary_0.5_", ascname, ".png")), overwrite = TRUE)
+       dev.off() # stops automatic saving of the plot to a png
+  }
+}
+
+```
+
+then create an summary map....
+```{r high probability map per year 2D representation}
+mthord <- c("mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
+
+for (m in 1:length(mthord)){
+  mthna <- mthord[m]
+  binaryprob_list <- list.files(paste0("../output/maxent/paper_plots/hotspot_mapping/"), pattern = paste0(mthna, "*_binary_0.5_.*.asc$"), full.names = TRUE)
+  binstack <- stack(binaryprob_list)
+  stacksum <- sum(binstack, na.rm = TRUE)
+  writeRaster(stacksum, paste0("../output/maxent/paper_plots/hotspot_mapping/", mthna, "_bin_0.5_2d.asc"), overwrite=TRUE)
+  plot(stacksum, png(paste0("../output/maxent/paper_plots/hotspot_mapping/", mthna, "_bin_0.5_2d.png")))
+  dev.off()
+}
+
+```
+
+the maps need to be layered with the land etc, trimmed, and coloured to whatever is agreed
+
+```{r}
+aea <- raster("../output/env/aea.tif") #the correct CRS
+maplst <- list.files("../output/maxent/paper_plots/hotspot_mapping/", pattern = "_bin_0.5_2d.*.asc", full.names = TRUE)
+s <- shapefile("../data/env/landp/landpro.shp") #made in arcgis
+apr <- aea@crs
+outsidemcp <- shapefile("../data/env/landp/mcpout.shp") #made in arcgis
+
+cumasc <- raster(maplst[1])
+cumasc2 <- raster(maplst[2])
+cumasc <- raster::mask(cumasc, outsidemcp, inverse = TRUE)
+cumasc2 <- raster::mask(cumasc2, outsidemcp, inverse = TRUE)
+ss <- raster::mask(s, outsidemcp, inverse = TRUE) #HERE NEED TO WORK OUT HOW TO CLIP LAND
+
+
+pstack <- stack(cumasc, cumasc2)
+
+my.at <- seq(0, 1, by = 0.1)
+mapTheme <- viridisTheme(region = viridis(10))
+
+
+
+p <- levelplot(pstack, ylab = NULL, xlab = NULL, scales=list(draw=FALSE), colorkey=list(space="bottom", at = my.at), par.settings = mapTheme, layout = c(2, 1), names.attr = c("6m", "180m"), margin = FALSE)
+p + layer(sp.polygons(s, fill = "black")) 
+cumasc <- raster::mask(p, outsidemcp, inverse = TRUE)
+
 
 
 ```

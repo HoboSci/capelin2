@@ -14,7 +14,7 @@ You can install and load them using the following code which uses a function cal
 
 
 ```{r pre-install & load packages, include=FALSE}
-packages <- c("stringr", "reshape2", "ggplot2", "Hmisc", "viridis", "raster", "RColorBrewer")
+packages <- c("stringr", "reshape2", "ggplot2", "Hmisc", "viridis", "raster", "RColorBrewer", "cowplot")
 source("../src/ipak.R")
 ipak(packages)
 ```
@@ -279,10 +279,9 @@ write.csv(cumst1, "../output/maxent/paper_plots/prob_by_depth/cellsperlayermar.c
 
 first bin the probabilities for cells inside the mcp
 
-XXXXFROM HERE XXXXX
 ```{r bin probabilities}
 outsidemcp <- shapefile("../data/env/landp/mcpout.shp") #made in arcgis
-mthord <- c("mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec") 
+mthord <- c("dec") #"mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", 
 
 for (m in 1:length(mthord)){
   mth <- mthord[m]
@@ -465,9 +464,11 @@ binprob <- function(x){
 
 for (m in 1:length(mthord)){
   for (b in 1:length(binlst)){
-  mth <- mthord[m]
-  bin <- binlst[b]
-  ascdepth <- list.files(paste0("../output/maxent/paper_plots/prob_by_depth"), pattern = paste0("^", mth, "_binned_", bin, ".*asc"), full.names = TRUE)
+    mth <- mthord[m]
+    bin <- binlst[b]
+    # mth <- "dec"
+    # bin <- 1
+  ascdepth <- list.files(paste0("../output/maxent/paper_plots/prob_by_depth"), pattern = paste0("^", mth, "_binned_", bin, "_avg.*asc"), full.names = TRUE)
 
   binaryavgstack <- stack(ascdepth)
   stackstathigh <- data.frame(matrix(ncol = 2, nrow = nlayers(binaryavgstack)))
@@ -475,7 +476,7 @@ for (m in 1:length(mthord)){
   colnames(stackstathigh) <- c("asclayer", "prob_bin")
   
   for (lyr in 1:nlayers(binaryavgstack)){
-    ascname <-  str_sub(ascdepth[lyr], 63, -5)
+    ascname <-  str_sub(ascdepth[lyr], 77, -5)
     dlay <- binaryavgstack[[lyr]]
     dlay <- calc(dlay, fun = binprob) #creates raster layer with cell values based on the binprob function
     lyrsum <- cellStats(dlay, sum)
@@ -495,7 +496,7 @@ mthord <- c("mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"
 
 for (m in 1:length(mthord)){
   mth <- mthord[m]
-  probblst <- list.files(paste0("../output/maxent/paper_plots/prob_by_depth"), pattern = paste0("^", mth, ".*probbin_.*.csv"), full.names = TRUE)
+  probblst <- list.files(paste0("../output/maxent/paper_plots/prob_by_depth"), pattern = paste0("^", mth, "_probbin_.*.csv"), full.names = TRUE)
   a <- read.csv(probblst[1])
   b <- read.csv(probblst[2])
   c <- read.csv(probblst[3])
@@ -531,10 +532,12 @@ for (m in 1:length(mthord)){
   mth <- mthord[m]
   a <- read.csv(paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_allprobbin_cellcount_bydepth_avg.csv"), header = TRUE, stringsAsFactors=FALSE)
   for (r in 1:nrow(a)){
-    a$Depth[r] <- gsub("b_avg_cloglog_", "", x = a$Depth[r])
-    d1 <- str_sub(a$Depth[r], end = 4)
+    # a$Depth[r] <- gsub("b_avg_cloglog_", "", x = a$Depth[r])
+    # d1 <- str_sub(a$Depth[r], end = 4)
+    d1 <- a$Depth[r]
 	  for (ro in 1:nrow(cumst1)){
-      d2 <- str_sub(cumst1$depth[ro], end = 4)
+      #d2 <- str_sub(cumst1$depth[ro], end = 4)
+	    d2 <- cumst1$depth[ro]
       if (d1 == d2){
           a$total_cells[r] <- cumst1$no_cells[ro]
       }
@@ -571,10 +574,10 @@ ok now lets lump all the 0.39 and under together...
 
 
 ```{r}
-mthord <- c("dec") #"mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", 
+mthord <- c("mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
 cumst1 <- read.csv("../output/maxent/paper_plots/prob_by_depth/cellsperlayer.csv", header = TRUE)
 for (m in 1:length(mthord)){
-  mth <- "dec" #mthord[m]
+  mth <- mthord[m]
   a <- read.csv(paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_dis_prob_cells.csv"), header = TRUE)
   head(a)
   d <- unique(cumst1$depth)
@@ -635,27 +638,36 @@ plot(bydepth)
 
 ok dont forget the colours will need to match the maps so you may need to manually create your own list for whatever scheme you choose...
 
+"1151.99"), ]
+  stackstat <- stackstat[!(stackstat$depth == "1265.86"), ]
+  stackstat <- stackstat[!(stackstat$depth == "1387.38"), ]
+  
+
 
 ```{r}
 mar <- read.csv("../output//maxent/paper_plots/prob_by_depth/mar_u0.4s_dis_prob_cells.csv", header = TRUE)
+mar <- mar[!(mar$Depth =="1151.99" | mar$Depth =="1265.86" | mar$Depth =="1387.38"), ]
 mar$Probability <- gsub(">0.9", "0.9 - 1", mar$Probability)
 mar$Depth <- as.factor(mar$Depth)
 flevelsm <- levels(mar$Depth)
 flevelsm <- rev(flevelsm)
 
 jun <- read.csv("../output//maxent/paper_plots/prob_by_depth/jun_u0.4s_dis_prob_cells.csv", header = TRUE)
+jun <- jun[!(jun$Depth =="1151.99" | jun$Depth =="1265.86" | jun$Depth =="1387.38"), ]
 jun$Probability <- gsub(">0.9", "0.9 - 1", jun$Probability)
 jun$Depth <- as.factor(jun$Depth)
 flevelsj <- levels(jun$Depth)
 flevelsj <- rev(flevelsj)
 
 sep <- read.csv("../output//maxent/paper_plots/prob_by_depth/sep_u0.4s_dis_prob_cells.csv", header = TRUE)
+sep <- sep[!(sep$Depth =="1151.99" | sep$Depth =="1265.86" | sep$Depth =="1387.38"), ]
 sep$Probability <- gsub(">0.9", "0.9 - 1", sep$Probability)
 sep$Depth <- as.factor(sep$Depth)
 flevelss <- levels(sep$Depth)
 flevelss <- rev(flevelss)
 
 dec <- read.csv("../output//maxent/paper_plots/prob_by_depth/dec_u0.4s_dis_prob_cells.csv", header = TRUE)
+dec <- dec[!(dec$Depth =="1151.99" | dec$Depth =="1265.86" | dec$Depth =="1387.38"), ]
 dec$Probability <- gsub(">0.9", "0.9 - 1", dec$Probability)
 dec$Depth <- as.factor(dec$Depth)
 flevelsd <- levels(dec$Depth)
@@ -663,13 +675,41 @@ flevelsd <- rev(flevelsd)
 
 probcol <- rev(brewer.pal(7,"RdYlGn"))
 
-ggplot(mar, aes(Depth, p_cells, fill = Probability)) + geom_col() + coord_flip() +  scale_fill_manual(values = probcol) + scale_x_discrete(limits = flevelsm, breaks=flevelsm[seq(1,length(flevelsm), by = 2)]) + coord_flip()
 
-ggplot(jun, aes(Depth, p_cells, fill = Probability)) + geom_col() + coord_flip() +  scale_fill_manual(values = probcol) + scale_x_discrete(limits = flevelsj, breaks=flevelsj[seq(1,length(flevelsj), by = 2)]) + coord_flip()
+pm <- ggplot(mar, aes(Depth, p_cells, fill = Probability)) + geom_col() + coord_flip() + scale_fill_viridis(option="viridis", discrete = TRUE, direction = -1) + scale_x_discrete(limits = flevelsm, breaks=flevelsm[seq(1,length(flevelsm), by = 2)], ) + coord_flip() + labs(y = "% Ocean at Depth", title = "March") + theme_half_open(12) + theme(plot.margin = margin(6, 0, 6, 0)) 
 
-ggplot(sep, aes(Depth, p_cells, fill = Probability)) + geom_col() + coord_flip() +  scale_fill_manual(values = probcol) + scale_x_discrete(limits = flevelss, breaks=flevelss[seq(1,length(flevelss), by = 2)]) + coord_flip()
+pj <- ggplot(jun, aes(Depth, p_cells, fill = Probability)) + geom_col() + coord_flip() +  scale_fill_manual(values = probcol) + scale_x_discrete(limits = flevelsj, breaks=flevelsj[seq(1,length(flevelsj), by = 2)]) + coord_flip() +labs(y = "% Ocean at Depth", title = "June") + theme_half_open(12) + theme(plot.margin = margin(6, 0, 6, 0))
 
-ggplot(dec, aes(Depth, p_cells, fill = Probability)) + geom_col() + coord_flip() +  scale_fill_manual(values = probcol) + scale_x_discrete(limits = flevelsd, breaks=flevelsd[seq(1,length(flevelsd), by = 2)]) + coord_flip()
+ps <- ggplot(sep, aes(Depth, p_cells, fill = Probability)) + geom_col() + coord_flip() +  scale_fill_manual(values = probcol) + scale_x_discrete(limits = flevelss, breaks=flevelss[seq(1,length(flevelss), by = 2)]) + coord_flip() +labs(y = "% Ocean at Depth", title = "September") + theme_half_open(12) + theme(plot.margin = margin(6, 0, 6, 0))
+
+pd <- ggplot(dec, aes(Depth, p_cells, fill = Probability)) + geom_col() + coord_flip() +  scale_fill_manual(values = probcol) + scale_x_discrete(limits = flevelsd, breaks=flevelsd[seq(1,length(flevelsd), by = 2)]) + coord_flip() +labs(y = "% Ocean at Depth", title = "December") + theme_half_open(12) + theme(plot.margin = margin(6, 0, 6, 0))
+
+
+# # arrange the four plots in a single row
+# prow <- plot_grid(
+#   pm + theme(legend.position="none"),
+#   pj + theme(legend.position="none"),
+#  # ps + theme(legend.position="none"),
+# #  pd + theme(legend.position="none"),
+#   align = 'vh',
+#   #labels = c("A", "B") #, "C", "D"),
+#   hjust = -1,
+#   nrow = 1
+# )
+# 
+# legend <- get_legend(
+#   # create some space to the left of the legend
+#   pm + theme(legend.box.margin = margin(0, 0, 0, 12))
+# )
+# 
+# # add the legend to the row we made earlier. Give it one-third of 
+# # the width of one plot (via rel_widths).
+# t <- plot_grid(prow, legend, rel_widths = c(3, .4))
+# 
+# t
+pm
+
+
 ```
 
 
@@ -728,5 +768,52 @@ ggplot(y, aes(Depth, p_cells, fill = Probability)) + geom_col() + coord_flip() +
 
 ```
 
-fuck december
+#2d hotspot maps
+
+first create layers that are 0.5 and above
+
+```{r habitat classification on probability - >0.5}
+
+binprob <- function(x){
+  ifelse(x >= 0.5, 1,
+  ifelse(x < 0.5, 0, NA)) 
+}
+
+mthord <- c("mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
+
+for (m in 1:length(mthord)){
+  mthna <- mthord[m]
+  clogasc_list <- list.files(paste0("../output/maxent/predictions/", mthna), pattern = "^avg_cloglog_.*asc", full.names = TRUE)
+  for (cum in 1:length(clogasc_list)){
+    cumasc <- raster(clogasc_list[cum])
+    ascname <- names(cumasc)
+    ascname <- gsub("avg_cloglog_", "", ascname)
+    probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
+    writeRaster(probbin, paste0("../output/maxent/paper_plots/hotspot_mapping/", mthna,  "_binary_0.5_", ascname, ".asc"), overwrite = TRUE)
+     plot(probbin, png(paste0("../output/maxent/paper_plots/hotspot_mapping/", mthna, "_binary_0.5_", ascname, ".png")), overwrite = TRUE)
+       dev.off() # stops automatic saving of the plot to a png
+  }
+}
+
+```
+
+then create an summary map....
+```{r high probability map per year 2D representation}
+mthord <- c("mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
+
+for (m in 1:length(mthord)){
+  mthna <- mthord[m]
+  binaryprob_list <- list.files(paste0("../output/maxent/paper_plots/hotspot_mapping/"), pattern = paste0(mthna, "*_binary_0.5_.*.asc$"), full.names = TRUE)
+  binstack <- stack(binaryprob_list)
+  stacksum <- sum(binstack, na.rm = TRUE)
+  writeRaster(stacksum, paste0("../output/maxent/paper_plots/hotspot_mapping/", mthna, "_bin_0.5_2d.asc"), overwrite=TRUE)
+  plot(stacksum, png(paste0("../output/maxent/paper_plots/hotspot_mapping/", mthna, "_bin_0.5_2d.png")))
+  dev.off()
+}
+
+```
+
+the maps need to be layered with the land etc, trimmed, and coloured to whatever is agreed
+
+with rastervis
 
