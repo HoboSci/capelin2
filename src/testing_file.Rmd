@@ -2051,13 +2051,7 @@ a <- stack(clogasc_list) #stack the files
 ```
 ok scrap tilt just do standard
 
-need to add seabed
 
-```{r seabed files}
-slst <- list.files("../data/env/ascii/ascii2010", pattern = "temp", full.names = TRUE)
-sr <- raster(slst[1])
-plot(sr)
-```
 
 
 
@@ -2556,6 +2550,21 @@ mapTheme <- infernoTheme(region = rev(inferno(10)))
 p <- levelplot(pstack, ylab = NULL, xlab = NULL, scales=list(draw=FALSE), colorkey=list(space="bottom", at = my.at), par.settings = mapTheme, layout = c(5, 2), names.attr = c("Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"), margin = FALSE) + latticeExtra::layer(sp.polygons(ss, fill = "dark grey", col = "transparent"))
 plot(p)
 
+
+
+```
+
+
+
+# add seabed?
+need to add seabed
+
+```{r seabed files}
+contwgs <- shapefile("../data/env/contours_50m.shp") #created in arcgis from glorys bottomdepth using 3d licence contour tool
+plot(contwgs)
+aea <- raster("../output/env/aea.tif") #the correct CRS
+corcrs <- aea@crs
+contaea <- raster::reproject(contwgs, aea) 
 
 
 ```
