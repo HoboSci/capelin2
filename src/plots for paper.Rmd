@@ -14,7 +14,7 @@ You can install and load them using the following code which uses a function cal
 
 
 ```{r pre-install & load packages, include=FALSE}
-packages <- c("stringr", "reshape2", "ggplot2", "Hmisc", "viridis", "raster", "RColorBrewer", "cowplot")
+packages <- c("stringr", "reshape2", "ggplot2", "Hmisc", "viridis", "raster", "RColorBrewer", "cowplot", "rasterVis")
 source("../src/ipak.R")
 ipak(packages)
 ```
@@ -713,7 +713,6 @@ pm
 ```
 
 
-
 now MJ suggested to only show some depths (the most commonly predicted ones)
 
 
@@ -813,9 +812,126 @@ for (m in 1:length(mthord)){
 
 ```
 
-the maps need to be layered with the land etc, trimmed, and coloured to whatever is agreed
+now create summary maps where values are binary - not counts of cells
+```{r}
+binprob <- function(x){
+  ifelse(x > 0, 1,
+  ifelse(x <= 0, 0, NA))
+}
 
-with rastervis
+  clogasc_list <- list.files("../output/maxent/paper_plots/hotspot_mapping", pattern = "*_bin_0.5_2d.asc", full.names = TRUE)
+  for (cum in 1:length(clogasc_list)){
+    cumasc <- raster(clogasc_list[cum])
+    ascname <- names(cumasc)
+    probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
+    writeRaster(probbin, paste0("../output/maxent/paper_plots/hotspot_mapping/", ascname, "_single.asc"), overwrite = TRUE)
+    plot(probbin, png(paste0("../output/maxent/paper_plots/hotspot_mapping/", ascname, "_single.png")), overwrite = TRUE)
+    dev.off() # stops automatic saving of the plot to a png
+  }
+```
+
+
+
+then plot the maps
+
+```{r}
+
+s <- shapefile("../data/env/landp/landpro.shp") #made in arcgis
+acrs <- aea@crs
+mcp <- shapefile("../output/bio/minimum_convex_poly/mcp_capelin_100_poly.shp")
+ss <- raster::intersect(s, mcp)  #trim to mcp
+
+
+mar2d <- raster("../output/maxent/paper_plots/hotspot_mapping/mar_bin_0.5_2d_single.asc")
+apr2d <- raster("../output/maxent/paper_plots/hotspot_mapping/apr_bin_0.5_2d_single.asc")
+may2d <- raster("../output/maxent/paper_plots/hotspot_mapping/may_bin_0.5_2d_single.asc")
+jun2d <- raster("../output/maxent/paper_plots/hotspot_mapping/jun_bin_0.5_2d_single.asc")
+jul2d <- raster("../output/maxent/paper_plots/hotspot_mapping/jul_bin_0.5_2d_single.asc")
+aug2d <- raster("../output/maxent/paper_plots/hotspot_mapping/aug_bin_0.5_2d_single.asc")
+sep2d <- raster("../output/maxent/paper_plots/hotspot_mapping/sep_bin_0.5_2d_single.asc")
+oct2d <- raster("../output/maxent/paper_plots/hotspot_mapping/oct_bin_0.5_2d_single.asc")
+nov2d <- raster("../output/maxent/paper_plots/hotspot_mapping/nov_bin_0.5_2d_single.asc")
+dec2d <- raster("../output/maxent/paper_plots/hotspot_mapping/dec_bin_0.5_2d_single.asc")
+
+#trim to mcp
+mar2d <- raster::mask(mar2d, mcp)
+apr2d <- raster::mask(apr2d, mcp)
+may2d <- raster::mask(may2d, mcp)
+jun2d <- raster::mask(jun2d, mcp)
+jul2d <- raster::mask(jul2d, mcp)
+aug2d <- raster::mask(aug2d, mcp)
+sep2d <- raster::mask(sep2d, mcp)
+oct2d <- raster::mask(oct2d, mcp)
+nov2d <- raster::mask(nov2d, mcp)
+dec2d <- raster::mask(dec2d, mcp)
+
+#add crs
+mar2d@crs <- acrs
+apr2d@crs <- acrs
+may2d@crs <- acrs
+jun2d@crs <- acrs
+jul2d@crs <- acrs
+aug2d@crs <- acrs
+sep2d@crs <- acrs
+oct2d@crs <- acrs
+nov2d@crs <- acrs
+dec2d@crs <- acrs
+
+#ratify to categorical
+mar2d <- ratify(mar2d)
+rat <- levels(mar2d)[[1]]
+rat$suitability <- c("< 0.5", "> 0.5")
+levels(mar2d) <- rat
+apr2d <- ratify(apr2d)
+rat <- levels(apr2d)[[1]]
+rat$suitability <- c("< 0.5", "> 0.5")
+levels(apr2d) <- rat
+may2d <- ratify(may2d)
+rat <- levels(may2d)[[1]]
+rat$suitability <- c("< 0.5", "> 0.5")
+levels(may2d) <- rat
+jun2d <- ratify(jun2d)
+rat <- levels(jun2d)[[1]]
+rat$suitability <- c("< 0.5", "> 0.5")
+levels(jun2d) <- rat
+jul2d <- ratify(jul2d)
+rat <- levels(jul2d)[[1]]
+rat$suitability <- c("< 0.5", "> 0.5")
+levels(jul2d) <- rat
+aug2d <- ratify(aug2d)
+rat <- levels(aug2d)[[1]]
+rat$suitability <- c("< 0.5", "> 0.5")
+levels(aug2d) <- rat
+sep2d <- ratify(sep2d)
+rat <- levels(sep2d)[[1]]
+rat$suitability <- c("< 0.5", "> 0.5")
+levels(sep2d) <- rat
+oct2d <- ratify(oct2d)
+rat <- levels(oct2d)[[1]]
+rat$suitability <- c("< 0.5", "> 0.5")
+levels(oct2d) <- rat
+nov2d <- ratify(nov2d)
+rat <- levels(nov2d)[[1]]
+rat$suitability <- c("< 0.5", "> 0.5")
+levels(nov2d) <- rat
+dec2d <- ratify(dec2d)
+rat <- levels(dec2d)[[1]]
+rat$suitability <- c("< 0.5", "> 0.5")
+levels(dec2d) <- rat
+
+maplst <- list(mar2d, apr2d, may2d, jun2d, jul2d, aug2d, sep2d, oct2d, nov2d, dec2d)
+
+pstack <- stack(maplst)
+
+# my.at <- seq(0, 1, by = 0.1)
+# mapTheme <- infernoTheme(region = rev(inferno(10)))
+
+
+p <- levelplot(pstack, col.regions=c('white', 'red'), ylab = NULL, xlab = NULL, scales=list(draw=FALSE), layout = c(5, 2), names.attr = c("Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"), margin = FALSE) + latticeExtra::layer(sp.polygons(ss, fill = "dark grey", col = "transparent"))+ latticeExtra::layer(sp.polygons(mcp, col = "dark grey"))
+plot(p)
+```
+
+#probabilty maps (selected)
 
 
 

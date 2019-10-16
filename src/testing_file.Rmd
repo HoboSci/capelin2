@@ -2551,15 +2551,11 @@ ss <- raster::intersect(s, mcp)
 pstack <- stack(cumasc, cumasc2)
 
 my.at <- seq(0, 1, by = 0.1)
-mapTheme <- viridisTheme(region = viridis(10), direction = -1)
+mapTheme <- infernoTheme(region = rev(inferno(10)))
 
-
-
-p <- levelplot(pstack, ylab = NULL, xlab = NULL, scales=list(draw=FALSE), colorkey=list(space="bottom", at = my.at), par.settings = mapTheme, layout = c(2, 1), names.attr = c("6m", "180m"), margin = FALSE) + layer(sp.polygons(ss, fill = "red")) 
+p <- levelplot(pstack, ylab = NULL, xlab = NULL, scales=list(draw=FALSE), colorkey=list(space="bottom", at = my.at), par.settings = mapTheme, layout = c(5, 2), names.attr = c("Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"), margin = FALSE) + latticeExtra::layer(sp.polygons(ss, fill = "dark grey", col = "transparent"))
 plot(p)
 
-
-pm <- ggplot(mar, aes(Depth, p_cells, fill = Probability)) + geom_col(width = 1) + coord_flip() + scale_fill_viridis(option="viridis", discrete = TRUE, direction = -1) + scale_x_discrete(limits = flevelsm, breaks=flevelsm[seq(1,length(flevelsm), by = 2)], ) + coord_flip() + labs(y = "% Ocean at Depth", title = "March") + theme_half_open(12) + theme(plot.margin = margin(6, 0, 6, 0)) 
 
 
 ```
