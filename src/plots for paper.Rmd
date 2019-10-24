@@ -170,8 +170,10 @@ for (p in 1:length(plotlst)){
 ```
 
 ```{r permulation plot}
+permu <- read.csv("../output/maxent/models/permutation_avg.csv")
+
 permelt <- melt(permu, id = "Month") #need to melt the data into this format for ggplot
-perpl <- ggplot(data = permelt, aes(x = Month, y = value, fill = variable)) + geom_bar(stat = "identity") +  scale_fill_viridis_d(direction = -1)
+perpl <- ggplot(data = permelt, aes(x = Month, y = value, fill = variable)) + geom_bar(stat = "identity") +  scale_fill_viridis_d(direction = 1) + theme_half_open(12) + 
 png("../output/maxent/paper_plots/permutation_plot.png")
 print(perpl)
 dev.off()
@@ -1076,6 +1078,9 @@ pstack <- stack(maplst)
 p <- levelplot(pstack, col.regions=c('white', 'red'), ylab = NULL, xlab = NULL, scales=list(draw=FALSE), layout = c(5, 2), names.attr = c("Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"), margin = FALSE) + latticeExtra::layer(sp.polygons(ss, fill = "dark grey", col = "transparent"))+ latticeExtra::layer(sp.polygons(mcp, col = "dark grey"))
 plot(p)
 ```
+
+now just mak
+
 
 #probabilty maps (selected)
 

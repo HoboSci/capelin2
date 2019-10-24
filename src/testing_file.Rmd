@@ -2817,9 +2817,14 @@ splom(scbr)
 
 #2d plots - part 2
 
-the ggplot experiment....
+the cowplot experiment
 
 ```{r}
+library(raster)
+library(rgdal)
+library(ggplot2)
+
+aea <- raster("../output/env/aea.tif") #the correct CRS
 s <- shapefile("../data/env/landp/landpro.shp") #made in arcgis
 acrs <- aea@crs
 mcp <- shapefile("../output/bio/minimum_convex_poly/mcp_capelin_100_poly.shp")
@@ -2861,5 +2866,204 @@ oct2d@crs <- acrs
 nov2d@crs <- acrs
 dec2d@crs <- acrs
 
-ggplot() +  ggspatial::geom_spraster_rgb(mar2d) + coord_fixed()
+#ratify to categorical
+mar2d <- ratify(mar2d)
+rat <- levels(mar2d)[[1]]
+rat$suitability <- c("< 0.5", "> 0.5")
+levels(mar2d) <- rat
+apr2d <- ratify(apr2d)
+rat <- levels(apr2d)[[1]]
+rat$suitability <- c("< 0.5", "> 0.5")
+levels(apr2d) <- rat
+may2d <- ratify(may2d)
+rat <- levels(may2d)[[1]]
+rat$suitability <- c("< 0.5", "> 0.5")
+levels(may2d) <- rat
+jun2d <- ratify(jun2d)
+rat <- levels(jun2d)[[1]]
+rat$suitability <- c("< 0.5", "> 0.5")
+levels(jun2d) <- rat
+jul2d <- ratify(jul2d)
+rat <- levels(jul2d)[[1]]
+rat$suitability <- c("< 0.5", "> 0.5")
+levels(jul2d) <- rat
+aug2d <- ratify(aug2d)
+rat <- levels(aug2d)[[1]]
+rat$suitability <- c("< 0.5", "> 0.5")
+levels(aug2d) <- rat
+sep2d <- ratify(sep2d)
+rat <- levels(sep2d)[[1]]
+rat$suitability <- c("< 0.5", "> 0.5")
+levels(sep2d) <- rat
+oct2d <- ratify(oct2d)
+rat <- levels(oct2d)[[1]]
+rat$suitability <- c("< 0.5", "> 0.5")
+levels(oct2d) <- rat
+nov2d <- ratify(nov2d)
+rat <- levels(nov2d)[[1]]
+rat$suitability <- c("< 0.5", "> 0.5")
+levels(nov2d) <- rat
+dec2d <- ratify(dec2d)
+rat <- levels(dec2d)[[1]]
+rat$suitability <- c("< 0.5", "> 0.5")
+levels(dec2d) <- rat
+
 ```
+
+now the histograms
+
+```{r}
+mar <- read.csv("../output/maxent/paper_plots/prob_by_depth/mar_dis_prob_cells.csv", header = TRUE)
+mar <- mar[!(mar$Depth =="1151.99" | mar$Depth =="1265.86" | mar$Depth =="1387.38"), ]
+mar$Probability <- gsub(">0.9", "0.9 - 1", mar$Probability)
+mar$Depth <- as.factor(mar$Depth)
+flevelsmar <- levels(mar$Depth)
+flevelsmar <- rev(flevelsmar)
+
+apr <- read.csv("../output/maxent/paper_plots/prob_by_depth/apr_dis_prob_cells.csv", header = TRUE)
+apr <- apr[!(apr$Depth =="1151.99" | apr$Depth =="1265.86" | apr$Depth =="1387.38"), ]
+apr$Probability <- gsub(">0.9", "0.9 - 1", apr$Probability)
+apr$Depth <- as.factor(apr$Depth)
+flevelsapr <- levels(apr$Depth)
+flevelsapr <- rev(flevelsapr)
+
+may <- read.csv("../output/maxent/paper_plots/prob_by_depth/may_dis_prob_cells.csv", header = TRUE)
+may <- may[!(may$Depth =="1151.99" | may$Depth =="1265.86" | may$Depth =="1387.38"), ]
+may$Probability <- gsub(">0.9", "0.9 - 1", may$Probability)
+may$Depth <- as.factor(may$Depth)
+flevelsmay <- levels(may$Depth)
+flevelsmay <- rev(flevelsmay)
+
+jun <- read.csv("../output/maxent/paper_plots/prob_by_depth/jun_dis_prob_cells.csv", header = TRUE)
+jun <- jun[!(jun$Depth =="1151.99" | jun$Depth =="1265.86" | jun$Depth =="1387.38"), ]
+jun$Probability <- gsub(">0.9", "0.9 - 1", jun$Probability)
+jun$Depth <- as.factor(jun$Depth)
+flevelsjun <- levels(jun$Depth)
+flevelsjun <- rev(flevelsjun)
+
+jul <- read.csv("../output/maxent/paper_plots/prob_by_depth/jul_dis_prob_cells.csv", header = TRUE)
+jul <- jul[!(jul$Depth =="1151.99" | jul$Depth =="1265.86" | jul$Depth =="1387.38"), ]
+jul$Probability <- gsub(">0.9", "0.9 - 1", jul$Probability)
+jul$Depth <- as.factor(jul$Depth)
+flevelsjul <- levels(jul$Depth)
+flevelsjul <- rev(flevelsjul)
+
+aug <- read.csv("../output/maxent/paper_plots/prob_by_depth/aug_dis_prob_cells.csv", header = TRUE)
+aug <- aug[!(aug$Depth =="1151.99" | aug$Depth =="1265.86" | aug$Depth =="1387.38"), ]
+aug$Probability <- gsub(">0.9", "0.9 - 1", aug$Probability)
+aug$Depth <- as.factor(aug$Depth)
+flevelsaug <- levels(aug$Depth)
+flevelsaug <- rev(flevelsaug)
+
+sep <- read.csv("../output/maxent/paper_plots/prob_by_depth/sep_dis_prob_cells.csv", header = TRUE)
+sep <- sep[!(sep$Depth =="1151.99" | sep$Depth =="1265.86" | sep$Depth =="1387.38"), ]
+sep$Probability <- gsub(">0.9", "0.9 - 1", sep$Probability)
+sep$Depth <- as.factor(sep$Depth)
+flevelssep <- levels(sep$Depth)
+flevelssep <- rev(flevelssep)
+
+oct <- read.csv("../output/maxent/paper_plots/prob_by_depth/oct_dis_prob_cells.csv", header = TRUE)
+oct <- oct[!(oct$Depth =="1151.99" | oct$Depth =="1265.86" | oct$Depth =="1387.38"), ]
+oct$Probability <- gsub(">0.9", "0.9 - 1", oct$Probability)
+oct$Depth <- as.factor(oct$Depth)
+flevelsoct <- levels(oct$Depth)
+flevelsoct <- rev(flevelsoct)
+
+nov <- read.csv("../output/maxent/paper_plots/prob_by_depth/nov_dis_prob_cells.csv", header = TRUE)
+nov <- nov[!(nov$Depth =="1151.99" | nov$Depth =="1265.86" | nov$Depth =="1387.38"), ]
+nov$Probability <- gsub(">0.9", "0.9 - 1", nov$Probability)
+nov$Depth <- as.factor(nov$Depth)
+flevelsnov <- levels(nov$Depth)
+flevelsnov <- rev(flevelsnov)
+
+dec <- read.csv("../output/maxent/paper_plots/prob_by_depth/dec_dis_prob_cells.csv", header = TRUE)
+dec <- dec[!(dec$Depth =="1151.99" | dec$Depth =="1265.86" | dec$Depth =="1387.38"), ]
+dec$Probability <- gsub(">0.9", "0.9 - 1", dec$Probability)
+dec$Depth <- as.factor(dec$Depth)
+flevelsdec <- levels(dec$Depth)
+flevelsdec <- rev(flevelsdec)
+
+pm <- ggplot(mar, aes(Depth, p_cells, fill = Probability)) + geom_col(width = 1) + coord_flip() + scale_fill_viridis(option="magma", discrete = TRUE, direction = -1) + scale_x_discrete(limits = flevelsmar, breaks=flevelsmar[seq(1,length(flevelsmar), by = 2)], ) + coord_flip() + labs(title = "March") + theme_half_open(12) + theme(plot.margin = margin(6, 0, 6, 0), axis.title.y = element_blank(), axis.title.x = element_blank(), legend.position = "none", axis.text.x = element_blank()) 
+
+pa <- ggplot(apr, aes(Depth, p_cells, fill = Probability)) + geom_col(width = 1) + coord_flip() + scale_fill_viridis(option="magma", discrete = TRUE, direction = -1) + scale_x_discrete(limits = flevelsapr, breaks=flevelsapr[seq(1,length(flevelsapr), by = 2)], ) + coord_flip() + labs(title = "April") + theme_half_open(12) + theme(plot.margin = margin(6, 0, 6, 0), axis.title.y = element_blank(), axis.title.x = element_blank(), legend.position = "none", axis.text.x = element_blank(), axis.text.y = element_blank()) 
+
+pma <- ggplot(may, aes(Depth, p_cells, fill = Probability)) + geom_col(width = 1) + coord_flip() + scale_fill_viridis(option="magma", discrete = TRUE, direction = -1) + scale_x_discrete(limits = flevelsmay, breaks=flevelsmay[seq(1,length(flevelsmay), by = 2)], ) + coord_flip() + labs(y = "% Ocean at Depth", title = "May") + theme_half_open(12) + theme(plot.margin = margin(6, 0, 6, 0), axis.title.y = element_blank(), axis.title.x = element_blank(), legend.position = "none", axis.text.x = element_blank(), axis.text.y = element_blank()) 
+
+pj <- ggplot(jun, aes(Depth, p_cells, fill = Probability)) + geom_col(width = 1) + coord_flip() +  scale_fill_viridis(option="magma", discrete = TRUE, direction = -1) + scale_x_discrete(limits = flevelsjun, breaks=flevelsjun[seq(1,length(flevelsjun), by = 2)]) + coord_flip() +labs(y = "% Ocean at Depth", title = "June") + theme_half_open(12) + theme(plot.margin = margin(6, 0, 6, 0), axis.title.y = element_blank(), axis.title.x = element_blank(), legend.position = "none", axis.text.x = element_blank(), axis.text.y = element_blank())
+
+pju <- ggplot(jul, aes(Depth, p_cells, fill = Probability)) + geom_col(width = 1) + coord_flip() + scale_fill_viridis(option="magma", discrete = TRUE, direction = -1) + scale_x_discrete(limits = flevelsjul, breaks=flevelsjul[seq(1,length(flevelsjul), by = 2)], ) + coord_flip() + labs(y = "% Ocean at Depth", title = "July") + theme_half_open(12) + theme(plot.margin = margin(6, 0, 6, 0), axis.title.y = element_blank(), axis.title.x = element_blank(), legend.position = "none", axis.text.x = element_blank(), axis.text.y = element_blank()) 
+
+pau <- ggplot(aug, aes(Depth, p_cells, fill = Probability)) + geom_col(width = 1) + coord_flip() + scale_fill_viridis(option="magma", discrete = TRUE, direction = -1) + scale_x_discrete(limits = flevelsaug, breaks=flevelsaug[seq(1,length(flevelsaug), by = 2)], ) + coord_flip() + labs(y = "% Ocean at Depth", title = "August") + theme_half_open(12) + theme(plot.margin = margin(6, 0, 6, 0), axis.title.y = element_blank(), axis.title.x = element_blank(), legend.position = "none") 
+
+ps <- ggplot(sep, aes(Depth, p_cells, fill = Probability)) + geom_col(width = 1) + coord_flip() +  scale_fill_viridis(option="magma", discrete = TRUE, direction = -1) + scale_x_discrete(limits = flevelssep, breaks=flevelssep[seq(1,length(flevelssep), by = 2)]) + coord_flip() +labs(y = "% Ocean at Depth", title = "September") + theme_half_open(12) + theme(plot.margin = margin(6, 0, 6, 0), axis.title.y = element_blank(), axis.title.x = element_blank(), legend.position = "none", axis.text.y = element_blank())
+
+po <- ggplot(oct, aes(Depth, p_cells, fill = Probability)) + geom_col(width = 1) + coord_flip() + scale_fill_viridis(option="magma", discrete = TRUE, direction = -1) + scale_x_discrete(limits = flevelsoct, breaks=flevelsoct[seq(1,length(flevelsoct), by = 2)], ) + coord_flip() + labs(y = "% Ocean at Depth", title = "October") + theme_half_open(12) + theme(plot.margin = margin(6, 0, 6, 0), axis.title.y = element_blank(), axis.title.x = element_blank(), legend.position = "none", axis.text.y = element_blank()) 
+
+pn <- ggplot(nov, aes(Depth, p_cells, fill = Probability)) + geom_col(width = 1) + coord_flip() + scale_fill_viridis(option="magma", discrete = TRUE, direction = -1) + scale_x_discrete(limits = flevelsnov, breaks=flevelsnov[seq(1,length(flevelsnov), by = 2)], ) + coord_flip() + labs(y = "% Ocean at Depth", title = "November") + theme_half_open(12) + theme(plot.margin = margin(6, 0, 6, 0), axis.title.y = element_blank(), axis.title.x = element_blank(), legend.position = "none", axis.text.y = element_blank()) 
+
+pd <- ggplot(dec, aes(Depth, p_cells, fill = Probability)) + geom_col(width = 1) + coord_flip() +  scale_fill_viridis(option = "magma", discrete = TRUE, direction = -1) + scale_x_discrete(limits = flevelsdec, breaks=flevelsdec[seq(1,length(flevelsdec), by = 2)]) + coord_flip() +labs(title = "December") + theme_half_open(12) + theme(plot.margin = margin(6, 0, 6, 0), axis.title.y = element_blank(), axis.title.x = element_blank(), legend.position = "none", axis.text.y = element_blank())
+
+
+pm
+pa
+pma
+pj
+pju
+pau
+ps
+po
+pn
+pd
+```
+
+merge the maps and histograms into one giant plot
+
+```{r}
+maplst <- list(mar2d, pm, apr2d, pa, may2d, pma, jun2d, pj, jul2d, pju, aug2d, pa, sep2d, ps, oct2d, po, nov2d, pn, dec2d, pd)
+
+
+marmap <- levelplot(mar2d, col.regions=c('white', 'red'),  colorkey = FALSE, ylab = NULL, xlab = NULL, scales=list(draw=FALSE), margin = FALSE) + latticeExtra::layer(sp.polygons(ss, fill = "dark grey", col = "transparent"))+ latticeExtra::layer(sp.polygons(mcp, col = "dark grey"))
+aprmap <- levelplot(apr2d, col.regions=c('white', 'red'),  colorkey = FALSE, ylab = NULL, xlab = NULL, scales=list(draw=FALSE), margin = FALSE) + latticeExtra::layer(sp.polygons(ss, fill = "dark grey", col = "transparent"))+ latticeExtra::layer(sp.polygons(mcp, col = "dark grey"))
+maymap <- levelplot(may2d, col.regions=c('white', 'red'),  colorkey = FALSE, ylab = NULL, xlab = NULL, scales=list(draw=FALSE), margin = FALSE) + latticeExtra::layer(sp.polygons(ss, fill = "dark grey", col = "transparent"))+ latticeExtra::layer(sp.polygons(mcp, col = "dark grey"))
+junmap <- levelplot(jun2d, col.regions=c('white', 'red'),  colorkey = FALSE, ylab = NULL, xlab = NULL, scales=list(draw=FALSE), margin = FALSE) + latticeExtra::layer(sp.polygons(ss, fill = "dark grey", col = "transparent"))+ latticeExtra::layer(sp.polygons(mcp, col = "dark grey"))
+julmap <- levelplot(jul2d, col.regions=c('white', 'red'),  colorkey = FALSE, ylab = NULL, xlab = NULL, scales=list(draw=FALSE), margin = FALSE) + latticeExtra::layer(sp.polygons(ss, fill = "dark grey", col = "transparent"))+ latticeExtra::layer(sp.polygons(mcp, col = "dark grey"))
+augmap <- levelplot(aug2d, col.regions=c('white', 'red'),  colorkey = FALSE, ylab = NULL, xlab = NULL, scales=list(draw=FALSE), margin = FALSE) + latticeExtra::layer(sp.polygons(ss, fill = "dark grey", col = "transparent"))+ latticeExtra::layer(sp.polygons(mcp, col = "dark grey"))
+sepmap <- levelplot(sep2d, col.regions=c('white', 'red'),  colorkey = FALSE, ylab = NULL, xlab = NULL, scales=list(draw=FALSE), margin = FALSE) + latticeExtra::layer(sp.polygons(ss, fill = "dark grey", col = "transparent"))+ latticeExtra::layer(sp.polygons(mcp, col = "dark grey"))
+octmap <- levelplot(oct2d, col.regions=c('white', 'red'),  colorkey = FALSE, ylab = NULL, xlab = NULL, scales=list(draw=FALSE), margin = FALSE) + latticeExtra::layer(sp.polygons(ss, fill = "dark grey", col = "transparent"))+ latticeExtra::layer(sp.polygons(mcp, col = "dark grey"))
+novmap <- levelplot(nov2d, col.regions=c('white', 'red'),  colorkey = FALSE, ylab = NULL, xlab = NULL, scales=list(draw=FALSE), margin = FALSE) + latticeExtra::layer(sp.polygons(ss, fill = "dark grey", col = "transparent"))+ latticeExtra::layer(sp.polygons(mcp, col = "dark grey"))
+decmap <- levelplot(dec2d, col.regions=c('white', 'red'),  colorkey = FALSE, ylab = NULL, xlab = NULL, scales=list(draw=FALSE), margin = FALSE) + latticeExtra::layer(sp.polygons(ss, fill = "dark grey", col = "transparent"))+ latticeExtra::layer(sp.polygons(mcp, col = "dark grey"))
+
+
+legend <- get_legend(pd +  guides(color = guide_legend(nrow = 1)) + theme(legend.position = "bottom"))
+
+p <- plot_grid(pm, pa, pma, pj, pju, pau, ps, po, pn, pd, ncol = 5, legend)
+png("../output/maxent/paper_plots/jointtest.png", height = 1024, width = 2048) #, bg = "transparent"
+p
+dev.off()
+```
+
+#table for tss scores etc
+
+```{r}
+dec <- read.csv("../output/maxent/models/decavgAIC.csv", header = TRUE)
+colnames(dec)
+
+our_summary1 <- list("Training AUC" = list("min" = ~ min(dec$train_AUC),
+            "max" = ~ max(dec$train_AUC),
+            "mean (sd)" = ~ qwraps2::mean_sd(dec$train_AUC),
+       "Displacement" =
+       list("min" = ~ min(.data$disp),
+            "median" = ~ median(.data$disp),
+            "max" = ~ max(.data$disp),
+            "mean (sd)" = ~ qwraps2::mean_sd(.data$disp)),
+       "Weight (1000 lbs)" =
+       list("min" = ~ min(.data$wt),
+            "max" = ~ max(.data$wt),
+            "mean (sd)" = ~ qwraps2::mean_sd(.data$wt)),
+       "Forward Gears" =
+       list("Three" = ~ qwraps2::n_perc0(.data$gear == 3),
+            "Four"  = ~ qwraps2::n_perc0(.data$gear == 4),
+            "Five"  = ~ qwraps2::n_perc0(.data$gear == 5))
+       )
+```
+
