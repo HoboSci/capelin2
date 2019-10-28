@@ -3044,26 +3044,70 @@ dev.off()
 
 #table for tss scores etc
 
-```{r}
-dec <- read.csv("../output/maxent/models/decavgAIC.csv", header = TRUE)
-colnames(dec)
+forget it... quickly done in excel
 
-our_summary1 <- list("Training AUC" = list("min" = ~ min(dec$train_AUC),
-            "max" = ~ max(dec$train_AUC),
-            "mean (sd)" = ~ qwraps2::mean_sd(dec$train_AUC),
-       "Displacement" =
-       list("min" = ~ min(.data$disp),
-            "median" = ~ median(.data$disp),
-            "max" = ~ max(.data$disp),
-            "mean (sd)" = ~ qwraps2::mean_sd(.data$disp)),
-       "Weight (1000 lbs)" =
-       list("min" = ~ min(.data$wt),
-            "max" = ~ max(.data$wt),
-            "mean (sd)" = ~ qwraps2::mean_sd(.data$wt)),
-       "Forward Gears" =
-       list("Three" = ~ qwraps2::n_perc0(.data$gear == 3),
-            "Four"  = ~ qwraps2::n_perc0(.data$gear == 4),
-            "Five"  = ~ qwraps2::n_perc0(.data$gear == 5))
+```{r}
+library(qwraps2)
+
+dec <- read.csv("../output/maxent/models/decavgAIC.csv", header = TRUE)
+
+our_summary1 <- list("Training AUC" = list("min" = ~ min(.data$train_AUC),
+            "max" = ~ max(.data$train_AUC),
+            "mean (sd)" = ~ qwraps2::mean_sd(.data$train_AUC)),
+       "Test AUC" =
+       list("min" = ~ min(.data$test_AUC),
+            "median" = ~ median(.data$test_AUC),
+            "max" = ~ max(.data$test_AUC),
+            "mean (sd)" = ~ qwraps2::mean_sd(.data$test_AUC))
        )
+
+
+whole <-  summary_table(dec, our_summary1)
+whole
+
+
+dec <- read.csv("../output/maxent/models/decavgAIC.csv", header = TRUE)
+summary(dec)
 ```
 
+#no cells >0.5 per month
+
+```{r}
+
+binaryprob_list <- list.files("../output/maxent/paper_plots/hotspot_mapping/", pattern = ".*_bin_0.5_2d.asc", full.names = TRUE)
+sum2d <- setNames(data.frame(matrix(ncol = 2, nrow = binl)), c("month", "count"))
+
+
+for (r in 1:length(binaryprob_list)){
+  ras <- raster(binaryprob_list[r])
+  rnm <- names(ras)
+  sum2d$month[r] <- gsub("_bin_0.5_2d", "", x = rnm)
+  sum2d$count[r] <- cellStats(ras, sum, asSample = TRUE)
+}
+
+#order table from march to december
+mthord <- c("mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
+sum2d <- sum2d[match(mthord, sum2d$month), ]
+
+#get proportion
+tcs <- read.csv("../output/maxent/paper_plots/prob_by_depth/cellsperlayer.csv", header = TRUE) #file showing how many cells per depth
+tcs <- tcs[-c(1:3), ] #because the top three rows are deeper than the capelin obs...
+totc <- sum(tcs$no_cells)
+
+for (r in 1:nrow(sum2d)){
+  sum2d$proportion[r] <- (sum2d$count[r]/totc)
+}
+
+write.csv(sum2d, "../output/maxent/paper_plots/cell_count_0.5.csv", row.names = FALSE)
+
+```
+
+# and get it as a proportion of habitat maybe....
+
+```{r}
+
+```
+
+
+       
+       
