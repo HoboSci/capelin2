@@ -172,8 +172,10 @@ for (p in 1:length(plotlst)){
 ```{r permulation plot}
 permu <- read.csv("../output/maxent/models/permutation_avg.csv")
 
+mthna <- c("Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+
 permelt <- melt(permu, id = "Month") #need to melt the data into this format for ggplot
-perpl <- ggplot(data = permelt, aes(x = Month, y = value, fill = variable)) + geom_bar(stat = "identity") +  scale_fill_viridis_d(direction = 1) + theme_half_open(12) + 
+perpl <- ggplot(data = permelt, aes(x = Month, y = value, fill = variable)) + geom_bar(stat = "identity") +  scale_fill_viridis_d(direction = 1) + theme_half_open(12) + scale_x_discrete(limits = mthna) + labs(y = "Permutation Importance (%)")
 png("../output/maxent/paper_plots/permutation_plot.png")
 print(perpl)
 dev.off()

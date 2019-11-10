@@ -3102,12 +3102,62 @@ write.csv(sum2d, "../output/maxent/paper_plots/cell_count_0.5.csv", row.names = 
 
 ```
 
-# and get it as a proportion of habitat maybe....
+# map with nafo zons and mcp 
 
 ```{r}
+library(ggplot2)
+library(raster)
+
+
+outsidemcp <- shapefile("../data/env/landp/mcpout.shp") #made in arcgis - aea proj
+nafo <- shapefile("../data/bio/nafo_zones/nafo_zones_wgs84.shp") #in wgs proj
+aea <- raster("../output/env/aea.tif") #the correct projections
+nafoa <- spTransform(nafo, crs(aea)) # nafo to aea
+labels <- layer(sp.text(coo))
+land <- shapefile("../data/env/landp/landpro.shp") #made in arcgis - aea proj
+
+nafoaf <- fortify(nafoa, regions = "ZONE")
+
+ggplot(nafoa) + aes() + geom_polygon()
 
 ```
 
 
-       
+#env plots - variable over depth by month
+
+```{r}
+library(ggplot2)
+library(reshape2)
+
+presab <- read.csv("../output/bio/presab_nafo_yr.csv", header = TRUE)
+background <- subset(presab, occurrence == "0")
+background$month <- as.factor(background$month)
+background <- subset(background, select = c(month, temp_depth, depth_layer, decimalLongitude, decimalLatitude))
+dl <- unique(background$depth_layer)
+dl <- sort(dl)
+test <- subset(background, month == "3")
+
+ggplot(test, aes(x = temp_depth, y = decimalLatitude)) + geom_point() # aes(color = month, group = month)
+plot(background)
+
+```
+
+#amo boxplots?
+
+```{r}
+amoraw <- read.csv("../data/env/amon.us.data.csv", header = TRUE) 
+colnames(amoraw) <- c("year", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12")
+amo <- amoraw[amoraw$year >= 1996, ]
+amo <- subset(amo, select = -c(year))
+amo2 <- melt(amo, value.name = "value")
+amo2$variable <- as.integer(amo2$variable)
+
+
+
+
+
+boxplot(amo2$value ~ amo2$variable)
+
+```
+
        
