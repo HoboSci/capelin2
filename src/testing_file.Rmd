@@ -3160,4 +3160,235 @@ boxplot(amo2$value ~ amo2$variable)
 
 ```
 
+
+
+
+# binned prob maps with land etc for cmeet
+
+
+```{r bin probabilities}
+outsidemcp <- shapefile("../data/env/landp/mcpout.shp") #made in arcgis
+mthord <- c("jun") #"mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", 
+
+for (m in 1:length(mthord)){
+  mth <- mthord[m]
+  clogasc_list <- list.files(paste0("../output/maxent/predictions/", mth), pattern = "^avg_cloglog.*.asc", full.names = TRUE)
+
+
+binprob <- function(x){
+  ifelse(x > 0.1, 0.1,
+  ifelse(x <= 0, 0, NA))
+}
+
+for (cum in 1:length(clogasc_list)){
+  cumasc <- raster(clogasc_list[cum])
+  ascname <- names(cumasc)
+  cumasc <- mask(cumasc, outsidemcp, inverse = TRUE)
+  probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
+  writeRaster(probbin, paste0("../output/maxent/paper_plots/prob_by_depth/comm_", mth, "_binned_1_avgprob_", ascname, ".asc"), overwrite = TRUE)
+  plot(probbin, png(paste0("../output/maxent/paper_plots/prob_by_depth/comm_", mth, "_binned_1_avgprob_", ascname, ".png")), overwrite = TRUE)
+  dev.off() # stops automatic saving of the plot to a png
+}
+
+
+
+binprob <- function(x){
+  ifelse(x >= 0.2, 0.2,
+  ifelse(x <= 0, 0, NA))
+}
+
+
+
+for (cum in 1:length(clogasc_list)){
+  cumasc <- raster(clogasc_list[cum])
+  ascname <- names(cumasc)
+  cumasc <- mask(cumasc, outsidemcp, inverse = TRUE)
+  probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
+  writeRaster(probbin, paste0("../output/maxent/paper_plots/prob_by_depth/comm_", mth, "_binned_2_avgprob_", ascname, ".asc"), overwrite = TRUE)
+  plot(probbin, png(paste0("../output/maxent/paper_plots/prob_by_depth/comm_", mth, "_binned_2_avgprob_", ascname, ".png")), overwrite = TRUE)
+  dev.off() # stops automatic saving of the plot to a png
+}
+
+binprob <- function(x){
+  ifelse(x >= 0.3, 0.3,
+  ifelse(x <= 0, 0, NA))
+}
+
+
+
+for (cum in 1:length(clogasc_list)){
+  cumasc <- raster(clogasc_list[cum])
+  ascname <- names(cumasc)
+  cumasc <- mask(cumasc, outsidemcp, inverse = TRUE)
+  probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
+ writeRaster(probbin, paste0("../output/maxent/paper_plots/prob_by_depth/comm_", mth, "_binned_3_avgprob_", ascname, ".asc"), overwrite = TRUE)
+  plot(probbin, png(paste0("../output/maxent/paper_plots/prob_by_depth/comm_", mth, "_binned_3_avgprob_", ascname, ".png")), overwrite = TRUE)
+  dev.off() # stops automatic saving of the plot to a png
+}
+
+
+binprob <- function(x){
+  ifelse(x >= 0.4, 0.4,
+  ifelse(x <= 0, 0, NA))
+}
+
+
+
+for (cum in 1:length(clogasc_list)){
+  cumasc <- raster(clogasc_list[cum])
+  ascname <- names(cumasc)
+  cumasc <- mask(cumasc, outsidemcp, inverse = TRUE)
+  probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
+  writeRaster(probbin, paste0("../output/maxent/paper_plots/prob_by_depth/comm_", mth, "_binned_4_avgprob_", ascname, ".asc"), overwrite = TRUE)
+  plot(probbin, png(paste0("../output/maxent/paper_plots/prob_by_depth/comm_", mth, "_binned_4_avgprob_", ascname, ".png")), overwrite = TRUE)
+  dev.off() # stops automatic saving of the plot to a png
+}
+
+
+
+binprob <- function(x){
+  ifelse(x >= 0.5, 0.5,
+  ifelse(x <= 0, 0, NA))
+}
+
+
+
+for (cum in 1:length(clogasc_list)){
+  cumasc <- raster(clogasc_list[cum])
+  ascname <- names(cumasc)
+  cumasc <- mask(cumasc, outsidemcp, inverse = TRUE)
+  probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
+  writeRaster(probbin, paste0("../output/maxent/paper_plots/prob_by_depth/comm_", mth, "_binned_5_avgprob_", ascname, ".asc"), overwrite = TRUE)
+  plot(probbin, png(paste0("../output/maxent/paper_plots/prob_by_depth/comm_", mth, "_binned_5_avgprob_", ascname, ".png")), overwrite = TRUE)
+  dev.off() # stops automatic saving of the plot to a png
+}
+ 
+
+binprob <- function(x){
+  ifelse(x >= 0.6, 0.6,
+  ifelse(x <= 0, 0, NA))
+}
+
+
+
+for (cum in 1:length(clogasc_list)){
+  cumasc <- raster(clogasc_list[cum])
+  ascname <- names(cumasc)
+  cumasc <- mask(cumasc, outsidemcp, inverse = TRUE)
+  probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
+  writeRaster(probbin, paste0("../output/maxent/paper_plots/prob_by_depth/comm_", mth, "_binned_6_avgprob_", ascname, ".asc"), overwrite = TRUE)
+  plot(probbin, png(paste0("../output/maxent/paper_plots/prob_by_depth/comm_", mth, "_binned_6_avgprob_", ascname, ".png")), overwrite = TRUE)
+  dev.off() # stops automatic saving of the plot to a png
+} 
+
+
+
+binprob <- function(x){
+  ifelse(x >= 0.7, 0.7,
+  ifelse(x <= 0, 0, NA))
+}
+
+
+
+for (cum in 1:length(clogasc_list)){
+  cumasc <- raster(clogasc_list[cum])
+  ascname <- names(cumasc)
+  cumasc <- mask(cumasc, outsidemcp, inverse = TRUE)
+  probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
+  writeRaster(probbin, paste0("../output/maxent/paper_plots/prob_by_depth/comm_", mth, "_binned_7_avgprob_", ascname, ".asc"), overwrite = TRUE)
+  plot(probbin, png(paste0("../output/maxent/paper_plots/prob_by_depth/comm_", mth, "_binned_7_avgprob_", ascname, ".png")), overwrite = TRUE)
+  dev.off() # stops automatic saving of the plot to a png
+}
+
+
+binprob <- function(x){
+  ifelse(x >= 0.8, 0.8,
+  ifelse(x <= 0, 0, NA))
+}
+
+
+
+for (cum in 1:length(clogasc_list)){
+  cumasc <- raster(clogasc_list[cum])
+  ascname <- names(cumasc)
+  cumasc <- mask(cumasc, outsidemcp, inverse = TRUE)
+  probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
+  writeRaster(probbin, paste0("../output/maxent/paper_plots/prob_by_depth/comm_", mth, "_binned_8_avgprob_", ascname, ".asc"), overwrite = TRUE)
+  plot(probbin, png(paste0("../output/maxent/paper_plots/prob_by_depth/comm_", mth, "_binned_8_avgprob_", ascname, ".png")), overwrite = TRUE)
+  dev.off() # stops automatic saving of the plot to a png
+}
+
+
+binprob <- function(x){
+  ifelse(x >= 0.9, 0.9,
+  ifelse(x <= 0, 0, NA))
+}
+
+
+
+for (cum in 1:length(clogasc_list)){
+  cumasc <- raster(clogasc_list[cum])
+  ascname <- names(cumasc)
+  cumasc <- mask(cumasc, outsidemcp, inverse = TRUE)
+  probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
+  writeRaster(probbin, paste0("../output/maxent/paper_plots/prob_by_depth/comm_", mth, "_binned_9_avgprob_", ascname, ".asc"), overwrite = TRUE)
+  plot(probbin, png(paste0("../output/maxent/paper_plots/prob_by_depth/comm_", mth, "_binned_9_avgprob_", ascname, ".png")), overwrite = TRUE)
+  dev.off() # stops automatic saving of the plot to a png
+}
+
+}
+
+```
+
+```{r}
+library(raster)
+library(rasterVis)
+
+
+
+s <- shapefile("../data/env/landp/landpro.shp") #made in arcgis
+aea <- raster("../output/env/aea.tif") 
+acrs <- aea@crs
+mcp <- shapefile("../output/bio/minimum_convex_poly/mcp_capelin_100_poly.shp")
+ss <- raster::intersect(s, mcp)  #trim to mcp
+
+binlst <- list.files("../output/maxent/paper_plots/prob_by_depth", pattern = "^comm_jun_binned.*avgprob_avg_cloglog_97.0413.asc", full.names = TRUE)
+#binlst <- binlst[-2]
+
+
+
+mstack <- stack()
+
+for(m in 1:length(binlst)){
+  map <- raster(binlst[m])
+  map <- raster::mask(map, mcp)
+  map@crs <- acrs
+  mn <- names(map)
+  
+  # map <- ratify(map)
+  # rat <- levels(map)[[1]]
+  # rat$suitability <- c("val")
+  # levels(map) <- rat
+  png(paste0("../output/maxent/paper_plots/prob_by_depth/comm_", mn, ".png")) #this prints a png of the plot
+  p <- levelplot(map, ylab = NULL, xlab = NULL, scales=list(draw=FALSE), margin = FALSE, colorkey = FALSE) + latticeExtra::layer(sp.polygons(ss, fill = "dark grey", col = "transparent"))+ latticeExtra::layer(sp.polygons(mcp, col = "dark grey"))
+  print(p)
+  dev.off() #this turns off the print command
+  mstack <- stack(mstack, map)
+}
+
+
+  
+  
+#levelplot(mstack, ylab = NULL, xlab = NULL, scales=list(draw=FALSE), layout = c(5, 2), names.attr = c("< 0.1", "0.1 - 0.2", "0.2 - 0.3", "0.3 - 0.4", "0.4 - 0.5", "0.5 - 0.6", "0.6 - 0.7", "07 - 0.8", "0.8 - 0.9"), margin = FALSE) + latticeExtra::layer(sp.polygons(ss, fill = "dark grey", col = "transparent"))+ latticeExtra::layer(sp.polygons(mcp, col = "dark grey"))
+#plot(p)
+
+
+levelplot(map, ylab = NULL, xlab = NULL, scales=list(draw=FALSE), margin = FALSE, colorkey = FALSE) + latticeExtra::layer(sp.polygons(ss, fill = "dark grey", col = "transparent"))+ latticeExtra::layer(sp.polygons(mcp, col = "dark grey"))
+
+  
+
+
+```
+
+
        
