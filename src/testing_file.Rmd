@@ -3166,7 +3166,7 @@ boxplot(amo2$value ~ amo2$variable)
 # binned prob maps with land etc for cmeet
 
 
-```{r bin probabilities}
+```{r bin probabilities greater than}
 outsidemcp <- shapefile("../data/env/landp/mcpout.shp") #made in arcgis
 mthord <- c("jun") #"mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", 
 
@@ -3390,5 +3390,136 @@ levelplot(map, ylab = NULL, xlab = NULL, scales=list(draw=FALSE), margin = FALSE
 
 ```
 
-
+#calculate area encompassed by mcp
        
+       
+```{r}
+cumst1 <- read.csv("../output/maxent/paper_plots/prob_by_depth/cellsperlayer.csv", header = TRUE) #existing file created
+cumst1 <- cumst1[!cumst1$depth == "1387.38", ] #depth not needed
+cumst1 <- cumst1[!cumst1$depth == "1265.86", ] #depth not needed
+cumst1 <- cumst1[!cumst1$depth == "1151.99", ] #depth not needed
+
+totalcell <- sum(cumst1$no_cells) #136467
+totalcellkm <- totalcell*25 #3,461,675 km2 ?!
+```
+
+#boxplots of env variables - part 2
+
+```{r}
+library(ggplot2)
+library(gridExtra)
+presab <- read.csv("../output/bio/presab_nafo_yr.csv", header = TRUE)
+background <- subset(presab, occurrence == "0")
+
+background$month <- factor(background$month) # converts month to a categorical variable
+
+```
+
+```{r}
+box_temp <- ggplot(data = background, aes(x = month, y = temp_depth)) + geom_boxplot() + xlab("Month") + ylab("Temperature (Kelvin)") + theme_classic()
+
+box_chl <- ggplot(data = background, aes(x = month, y = chl_surface)) + geom_boxplot() + xlab("Month") + ylab("Chlorophyll Concentration (mmol.m-3)") + theme_classic()
+
+box_o2 <- ggplot(data = background, aes(x = month, y = o2_depth)) + geom_boxplot() + xlab("Month") + ylab("Dissolved Oxygen (mmol.m-3)") + theme_classic()
+
+box_sal <- ggplot(data = background, aes(x = month, y = salinity_depth)) + geom_boxplot() + xlab("Month") + ylab("Salinity Concentration (PSU)") + theme_classic()
+
+box_naos <- ggplot(data = background, aes(x = month, y = nao_sample)) + geom_boxplot() + xlab("Month") + ylab("NAO (Sampling Month)") + theme_classic()
+
+box_amos <- ggplot(data = background, aes(x = month, y = amo_sample)) + geom_boxplot() + xlab("Month") + ylab("AMO (Sampling Month)") + theme_classic()
+
+box_naop <- ggplot(data = background, aes(x = month, y = nao_prev)) + geom_boxplot() + xlab("Month") + ylab("NAO (Previous Month)") + theme_classic()
+
+box_naow <- ggplot(data = background, aes(x = month, y = nao_winter)) + geom_boxplot() + xlab("Month") + ylab("NAO (Winter)") + theme_classic()
+
+box_amow <- ggplot(data = background, aes(x = month, y = amo_winter)) + geom_boxplot() + xlab("Month") + ylab("AMO (Winter)") + theme_classic()
+
+
+box_all <- grid.arrange(box_chl, box_o2, box_sal, box_temp, ncol=2)
+ggsave("../output/maxent/paper_plots/env_boxplots.png", plot = box_all, device = png(), dpi = 400)
+
+box_osc <- grid.arrange(box_naos, box_amos, box_naow, box_amow, box_naop, ncol = 2)
+ggsave("../output/maxent/paper_plots/env_boxplots_osc.png", plot = box_osc, device = png(), dpi = 400)
+
+```
+
+
+#make map with mcp eez and all landmass
+
+
+```{r}
+library(ggplot2)
+library(raster)
+library(rasterVis)
+
+mcp <- shapefile("../output/bio/minimum_convex_poly/mcp_capelin_100_poly.shp")
+aea <- raster("../output/env/aea.tif") #the correct projections
+land <- shapefile("../data/env/landp/landpro.shp") #made in arcgis - aea proj
+eez <- shapefile("../data/env/eez/maybethere.shp") # made in arc - aea proj
+
+eezmap <- plot(mcp)
+plot(eez, add = TRUE)
+plot(land, add = TRUE)
+```
+
+#get median of env. data background points
+
+```{r}
+library(psych)
+
+#presab <- read.csv("../output/bio/presab_nafo_yr.csv", header = TRUE)
+#background <- subset(presab, occurrence == "0")
+
+temp_depth <- describeBy(background$temp_depth, background$month, mat = TRUE, digits = 2)
+temp_depth <- subset(temp_depth, select = c(group1, min, max, mean, median, range))
+names(temp_depth)[names(temp_depth)=="group1"] <- "month"
+write.csv(temp_depth, "../output/env/env_sumstats/temp_depth_background_summarystats_month.csv", row.names = FALSE)
+
+salinity_depth <- describeBy(background$salinity_depth, background$month, mat = TRUE, digits = 2)
+salinity_depth <- subset(salinity_depth, select = c(group1, min, max, mean, median, range))
+names(salinity_depth)[names(salinity_depth)=="group1"] <- "month"
+write.csv(salinity_depth, "../output/env/env_sumstats/salinity_depth_background_summarystats_month.csv", row.names = FALSE)
+
+o2_depth <- describeBy(background$o2_depth, background$month, mat = TRUE, digits = 2)
+o2_depth <- subset(o2_depth, select = c(group1, min, max, mean, median, range))
+names(o2_depth)[names(o2_depth)=="group1"] <- "month"
+write.csv(o2_depth, "../output/env/env_sumstats/o2_depth_background_summarystats_month.csv", row.names = FALSE)
+
+chl_surface <- describeBy(background$chl_surface, background$month, mat = TRUE, digits = 2)
+chl_surface <- subset(chl_surface, select = c(group1, min, max, mean, median, range))
+names(chl_surface)[names(chl_surface)=="group1"] <- "month"
+write.csv(chl_surface, "../output/env/env_sumstats/chl_surface_background_summarystats_month.csv", row.names = FALSE)
+
+amo_sample <- describeBy(background$amo_sample, background$month, mat = TRUE, digits = 2)
+amo_sample <- subset(amo_sample, select = c(group1, min, max, mean, median, range))
+names(amo_sample)[names(amo_sample)=="group1"] <- "month"
+write.csv(amo_sample, "../output/env/env_sumstats/amo_sample_background_summarystats_month.csv", row.names = FALSE)
+
+amo_winter <- describeBy(background$amo_winter, background$month, mat = TRUE, digits = 2)
+amo_winter <- subset(amo_winter, select = c(group1, min, max, mean, median, range))
+names(amo_winter)[names(amo_winter)=="group1"] <- "month"
+write.csv(amo_winter, "../output/env/env_sumstats/amo_winter_background_summarystats_month.csv", row.names = FALSE)
+
+nao_sample <- describeBy(background$nao_sample, background$month, mat = TRUE, digits = 2)
+nao_sample <- subset(nao_sample, select = c(group1, min, max, mean, median, range))
+names(nao_sample)[names(nao_sample)=="group1"] <- "month"
+write.csv(nao_sample, "../output/env/env_sumstats/nao_sample_background_summarystats_month.csv", row.names = FALSE)
+
+nao_prev <- describeBy(background$nao_prev, background$month, mat = TRUE, digits = 2)
+nao_prev <- subset(nao_prev, select = c(group1, min, max, mean, median, range))
+names(nao_prev)[names(nao_prev)=="group1"] <- "month"
+write.csv(nao_prev, "../output/env/env_sumstats/nao_prev_background_summarystats_month.csv", row.names = FALSE)
+
+nao_winter <- describeBy(background$nao_winter, background$month, mat = TRUE, digits = 2)
+nao_winter <- subset(nao_winter, select = c(group1, min, max, mean, median, range))
+names(nao_winter)[names(nao_winter)=="group1"] <- "month"
+write.csv(nao_winter, "../output/env/env_sumstats/nao_winter_background_summarystats_month.csv", row.names = FALSE)
+
+```
+
+```{r}
+backaug <- subset(background, month == "8")
+backj <- subset(background, month == "7")
+backa <- subset(background, month = "4")
+```
+

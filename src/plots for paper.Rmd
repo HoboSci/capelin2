@@ -1357,5 +1357,52 @@ for (y in 1:length(yrlst)){
 }
 ```
 
+#boxplots of env variables - part 2
 
+```{r}
+library(ggplot2)
+library(gridExtra)
+library(dplyr)
+
+presab <- read.csv("../output/bio/presab_nafo_yr.csv", header = TRUE)
+background <- subset(presab, occurrence == "0")
+
+background <- filter(background, month !=1) #remove jan
+background <- filter(background, month !=2) #remove feb
+
+
+background$month <- factor(background$month) # converts month to a categorical variable
+
+```
+
+```{r}
+box_temp <- ggplot(data = background, aes(x = month, y = temp_depth)) + geom_boxplot() + xlab("Month") + ylab("Temperature (Kelvin)") + theme_classic()
+
+box_chl <- ggplot(data = background, aes(x = month, y = chl_surface)) + geom_boxplot() + xlab("Month") + ylab("Chlorophyll Concentration (mmol.m-3)") + theme_classic()
+
+box_o2 <- ggplot(data = background, aes(x = month, y = o2_depth)) + geom_boxplot() + xlab("Month") + ylab("Dissolved Oxygen (mmol.m-3)") + theme_classic()
+
+box_sal <- ggplot(data = background, aes(x = month, y = salinity_depth)) + geom_boxplot() + xlab("Month") + ylab("Salinity Concentration (PSU)") + theme_classic()
+
+box_naos <- ggplot(data = background, aes(x = month, y = nao_sample)) + geom_boxplot() + xlab("Month") + ylab("NAO (Sampling Month)") + theme_classic()
+
+box_amos <- ggplot(data = background, aes(x = month, y = amo_sample)) + geom_boxplot() + xlab("Month") + ylab("AMO (Sampling Month)") + theme_classic()
+
+box_naop <- ggplot(data = background, aes(x = month, y = nao_prev)) + geom_boxplot() + xlab("Month") + ylab("NAO (Previous Month)") + theme_classic()
+
+box_naow <- ggplot(data = background, aes(x = month, y = nao_winter)) + geom_boxplot() + xlab("Month") + ylab("NAO (Winter)") + theme_classic()
+
+box_amow <- ggplot(data = background, aes(x = month, y = amo_winter)) + geom_boxplot() + xlab("Month") + ylab("AMO (Winter)") + theme_classic()
+
+
+box_all <- grid.arrange(box_chl, box_o2, box_sal, box_temp, ncol=2)
+ggsave("../output/maxent/paper_plots/env_boxplots.png", plot = box_all, device = png(), dpi = 400)
+
+box_osc <- grid.arrange(box_naos, box_amos, box_naow, box_amow, box_naop, ncol = 3)
+ggsave("../output/maxent/paper_plots/env_boxplots_osc.png", plot = box_osc, device = png(), dpi = 400)
+
+box_aos <- grid.arrange(box_chl, box_o2, box_sal, box_temp,box_naos, box_amos, box_naow, box_amow, box_naop, ncol = 3)
+ggsave("../output/maxent/paper_plots/env_boxplots_allos.png", plot = box_aos, device = png(), dpi = 400)
+
+```
 
