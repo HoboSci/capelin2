@@ -3523,3 +3523,53 @@ backj <- subset(background, month == "7")
 backa <- subset(background, month = "4")
 ```
 
+
+
+#file renaming for the merge and split .csv files
+
+Need csv file of depth and depthlayerno (depth_bin.csv in data/env)
+
+Str sub to split filename…
+	- Year month variable
+	- Depth
+
+clogasc_list <- list.files(paste0("../output/maxent/predictions/", mthna), pattern = "^cloglog_.*.asc", full.names = TRUE)
+
+
+Then use a loop 
+
+for I in length(csv)
+Csv_dep == str_sub
+
+For j in length(list)
+	Dirdep ==
+	If csv == dirdep
+	Xx <- list[j]
+	Yy <- Str_sub Year month variable
+	Layerno <- 
+	
+	File.rename(xx, paste0(YY, "_", layerno, ".asc")
+	
+	
+	    filedep <- str_sub(filen, start = 1, end = 11)
+
+
+
+```{r}
+
+depthlst <- read.csv("../data/env/depth_bin.csv", header = TRUE)
+asclst <- list.files("../data/test/ASCII", full.names = FALSE)
+
+for (d in 1:length(depthlst)){
+  csvdep <- depthlst$depthlayerno[d]
+  for (f in 1:length(asclst)){
+    filen <- asclst[3]
+    filedep <- str_sub(filen, start = 16, end = -5)
+    if csvdep == filedep{
+      
+    }
+    
+  }
+}
+```
+
