@@ -1,5 +1,5 @@
 ﻿#set dir
-Set-Location "C:\Users\bunny\Documents\GitHub\Chapter_1\data\test\ASCII"
+Set-Location "C:\cygwin64\home\bunny\output"
 
 #add yr mth var prefix
 Get-ChildItem -Exclude “1998_01_chl__“* | rename-item -NewName { “1998_01_chl__” + $_.Name }

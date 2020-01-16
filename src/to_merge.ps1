@@ -1,14 +1,15 @@
 ﻿#need to change source folder
 #need to change filter
 
-#chl
+
 #o2
 #temp
 #salinity
 
-$source="C:\Users\bunny\Documents\GitHub\Chapter_1\data\env\ascii\ascii2001" #location of starting directory
+$source="C:\Users\bunny\Documents\GitHub\Chapter_1\data\env\ascii-original\ascii1998" #location of starting directory
 $dest = "C:\cygwin64\home\bunny\ASCII"; #location where files will be copied to
-$filter = "2001_09_o2" # 2001 - 2003 + 2009 all but aug salinity up
+$filter = "1998_11_o2" # 1998 not mar and aug chl down
+
 
 #empty the destimation folder
 Get-ChildItem -Path C:\cygwin64\home\bunny\ASCII -Include *.* -File -Recurse | foreach { $_.Delete()}

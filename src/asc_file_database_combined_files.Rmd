@@ -1,0 +1,149 @@
+---
+title: "asc_file_database"
+author: "Samantha Andrews"
+output: html_notebook
+---
+
+# Overview
+Preperation database to extract and stack asc files 
+
+A note to anyone who might happen to stumble across this... I am a beginner in R and have had no exposure to similar languages. I don't know what I'm doing. The code herein is unlikely to be elegant and there are probably more efficient ways of running the code.
+
+Built with 'r getRversion()'.
+
+# Package dependencies
+You can load them using the following code which uses a function called [ipak](https://gist.github.com/stevenworthington/3178163). 
+Note this function checks to see if the packages are installed first.
+
+```{r pre-install packages, message=FALSE}
+packages <- c("tidyr")
+source("../src/ipak.R")
+ipak(packages)
+suppressMessages(ipak)
+```
+
+
+```{r base list or ascii layers}
+ascyears <- as.character(c("1998", "1999", "2000", "2001", "2002", "2003", "2004", "2005", "2006", "2007", "2008", "2009", "2010", "2011", "2012", "2013", "2014", "2015")) 
+#unyears <- paste0("X", unyears) #this adds an X to each year to match with raster naming
+ascmonths <- c("01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12")
+
+
+asclayerall <- crossing(ascyears, ascmonths)
+asclayerall$stackname <- paste0("st", asclayerall$ascyears, asclayerall$ascmonths) #this creates the name of the stack that will be used
+asclayerall$temp_depth <- NA
+asclayerall$chl_depth <- NA
+asclayerall$o2_depth <- NA
+asclayerall$salinity_depth <- NA
+# asclayerall$nao_sample <- NA
+# asclayerall$nao_prev <- NA
+# asclayerall$nao_winter <- NA
+# asclayerall$amo_sample <- NA
+# asclayerall$amo_prev <- NA
+# asclayerall$amo_winter <- NA
+
+write.csv(asclayerall, "../data/env/test-comb/asc_stacklist_combine.csv", row.names = FALSE)
+```
+
+
+```{r asclist for 1998}
+
+myr <- 2014 #!!!!!!  CHANGE ASCNAME, ASCPATH AND CSV FILE NAME
+
+asclayer <- subset(asclayerall, ascyears == myr)
+
+ascname <- list.files(paste0("../data/env/ascii/ascii", myr, "/") , pattern = "*.asc", full.names = FALSE)    # this folder currently contains other dummy files. its just a test to automate stacks
+ascpath <- list.files(paste0("../data/env/ascii/ascii", myr, "/"), pattern = "*.asc", full.names = TRUE)    # this folder currently contains other dummy files. its just a test to automate stacks
+
+tempvar <- "temp.asc"
+chlvar <- "chl.asc"
+o2var <- "o2.asc"
+salvar <- "salinity.asc"
+# naosamplevar <- "naosample"
+# amosamplevar <- "amosample"
+# naoprevvar <- "naoprev"
+# amoprevvar <- "amoprev"
+# naowintervar <- "naowinter"
+# amowintervar <- "amowinter"
+# surfacevar <- "0.50576"
+
+for (i in 1:nrow(asclayer)){
+    print(asclayer$stackname[i])
+    year <- asclayer$ascyears[i]
+    month <- asclayer$ascmonths[i]
+
+    for (k in 1:length(ascname)){
+        ascyear <- (sapply(strsplit(ascname[k], "_"), "[[", 1))
+        ascmonth <- (sapply(strsplit(ascname[k], "_"), "[[", 2))
+        ascvar <- (sapply(strsplit(ascname[k], "_"), "[[", 3))
+        ascfile <- ascpath[k]
+        
+
+        if (ascyear == year & ascmonth == month & ascvar == tempvar){
+          asclayer$temp_depth[i] <- ascfile
+        } else if(ascyear == year & ascmonth == month & ascvar == salvar){
+          asclayer$salinity_depth[i] <- ascfile
+        } else if(ascyear == year & ascmonth == month & ascvar == chlvar){
+          asclayer$chl_depth[i] <- ascfile
+        } else if(ascyear == year & ascmonth == month & ascvar == o2var){
+          asclayer$o2_depth[i] <- ascfile
+        # } else if(ascyear == year & ascmonth == month & ascvar == naosamplevar){
+        #   asclayer$nao_sample[i] <- ascfile
+        # } else if(ascyear == year & ascmonth == month & ascvar == amosamplevar){
+        #   asclayer$amo_sample[i] <- ascfile
+        # } else if(ascyear == year & ascmonth == month & ascvar == naoprevvar){
+        #   asclayer$nao_prev[i] <- ascfile
+        # } else if(ascyear == year & ascmonth == month & ascvar == amoprevvar){
+        #   asclayer$amo_prev[i] <- ascfile
+        # } else if(ascyear == year & ascvar == naowintervar){
+        #   asclayer$nao_winter[i] <- ascfile
+        # } else if(ascyear == year & ascvar == amowintervar){
+        #   asclayer$amo_winter[i] <- ascfile
+        }
+    }
+  write.csv(asclayer, paste0("../data/env/test-comb/asc_layerlist", myr, ".csv"), row.names = TRUE)
+}
+```
+
+
+
+
+it may be better to have ascii lists per month (since models are per month)
+
+```{r}
+a1998 <- read.csv("../data/env/test-comb/asc_layerlist1998.csv", header = TRUE)
+a1999 <- read.csv("../data/env/test-comb/asc_layerlist1999.csv", header = TRUE)
+a2000 <- read.csv("../data/env/test-comb/asc_layerlist2000.csv", header = TRUE)
+a2001 <- read.csv("../data/env/test-comb/asc_layerlist2001.csv", header = TRUE)
+a2002 <- read.csv("../data/env/test-comb/asc_layerlist2002.csv", header = TRUE)
+a2003 <- read.csv("../data/env/test-comb/asc_layerlist2003.csv", header = TRUE)
+a2004 <- read.csv("../data/env/test-comb/asc_layerlist2004.csv", header = TRUE)
+a2005 <- read.csv("../data/env/test-comb/asc_layerlist2005.csv", header = TRUE)
+a2006 <- read.csv("../data/env/test-comb/asc_layerlist2006.csv", header = TRUE)
+a2007 <- read.csv("../data/env/test-comb/asc_layerlist2007.csv", header = TRUE)
+a2008 <- read.csv("../data/env/test-comb/asc_layerlist2008.csv", header = TRUE)
+a2009 <- read.csv("../data/env/test-comb/asc_layerlist2009.csv", header = TRUE)
+a2010 <- read.csv("../data/env/test-comb/asc_layerlist2010.csv", header = TRUE)
+a2011 <- read.csv("../data/env/test-comb/asc_layerlist2011.csv", header = TRUE)
+a2012 <- read.csv("../data/env/test-comb/asc_layerlist2012.csv", header = TRUE)
+a2013 <- read.csv("../data/env/test-comb/asc_layerlist2013.csv", header = TRUE)
+a2014 <- read.csv("../data/env/test-comb/asc_layerlist2014.csv", header = TRUE)
+
+
+as <- rbind(a1998, a1999, a2000, a2001, a2002, a2003, a2004, a2005, a2006, a2007, a2008, a2009, a2010, a2011, a2012, a2013, a2014)
+
+asm <- split(as, as$ascmonths)
+write.csv(asm$`1`, "../data/env/test-comb/asc_layerlistjan.csv", row.names = TRUE)
+write.csv(asm$`2`, "../data/env/test-comb/asc_layerlistfeb.csv", row.names = TRUE)
+write.csv(asm$`3`, "../data/env/test-comb/asc_layerlistmar.csv", row.names = TRUE)
+write.csv(asm$`4`, "../data/env/test-comb/asc_layerlistapr.csv", row.names = TRUE)
+write.csv(asm$`5`, "../data/env/test-comb/asc_layerlistmay.csv", row.names = TRUE)
+write.csv(asm$`6`, "../data/env/test-comb/asc_layerlistjun.csv", row.names = TRUE)
+write.csv(asm$`7`, "../data/env/test-comb/asc_layerlistjul.csv", row.names = TRUE)
+write.csv(asm$`8`, "../data/env/test-comb/asc_layerlistaug.csv", row.names = TRUE)
+write.csv(asm$`9`, "../data/env/test-comb/asc_layerlistsep.csv", row.names = TRUE)
+write.csv(asm$`10`, "../data/env/test-comb/asc_layerlistoct.csv", row.names = TRUE)
+write.csv(asm$`11`, "../data/env/test-comb/asc_layerlistnov.csv", row.names = TRUE)
+write.csv(asm$`12`, "../data/env/test-comb/asc_layerlistdec.csv", row.names = TRUE)
+```
+
