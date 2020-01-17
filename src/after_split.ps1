@@ -1,8 +1,24 @@
-﻿#set dir
+﻿#this is for after bash... separate.sh file run
+
+#set up for moving below...
+$source="C:\cygwin64\home\bunny" #location of starting directory
+$dest = "C:\cygwin64\home\bunny\output"; #location where files will be copied to
+$filter = ".asc" 
+
+$sourceout="C:\cygwin64\home\bunny\output" #location of starting directory
+$destsplit = "C:\Users\bunny\Documents\GitHub\Chapter_1\output\maxent\predictions\com-split\mar"; #location where files will be copied to #CHANGE HERE
+$filtercom = ".asc" 
+
+
+
+#move files into the output folder for manipulation
+Get-ChildItem -Path $source | Where-Object { $_.Name -match $filter } | Copy-Item  -Destination $dest -Exclude cloglog_*
+
+#set dir for edititng
 Set-Location "C:\cygwin64\home\bunny\output"
 
 #add yr mth var prefix
-Get-ChildItem -Exclude “1998_01_chl__“* | rename-item -NewName { “1998_01_chl__” + $_.Name }
+Get-ChildItem | rename-item -NewName { “2010_03_chl__” + $_.Name } #CHANGE HERE
 
 
 #change layer to m
@@ -53,3 +69,12 @@ get-childitem *.asc -Exclude "773.368.asc"| foreach { rename-item $_ $_.Name.Rep
 get-childitem *.asc -Exclude "856.679.asc"| foreach { rename-item $_ $_.Name.Replace("_45.asc", "856.679.asc")}
 get-childitem *.asc -Exclude "947.448.asc"| foreach { rename-item $_ $_.Name.Replace("_46.asc", "947.448.asc")}
 get-childitem *.asc -Exclude "1045.85.asc"| foreach { rename-item $_ $_.Name.Replace("_47.asc", "1045.85.asc")}
+
+
+#move files
+
+Get-ChildItem -Path $sourceout | Where-Object { $_.Name -match $filtercom } | Copy-Item -Destination $destsplit
+
+#empty the source folder and the home folder (just .asc files)
+Get-ChildItem -Path C:\cygwin64\home\bunny\output\ -Include *.* -File -Recurse | foreach { $_.Delete()}
+Get-ChildItem -Path C:\cygwin64\home\bunny\ -Include *.asc* -File -Recurse | foreach { $_.Delete()}

@@ -1,0 +1,1 @@
+﻿Get-ChildItem "C:\Users\bunny\Documents\GitHub\Chapter_1\data\env\ascii" -Recurse | Where{$_.Name -Match "chl"} | Remove-Item

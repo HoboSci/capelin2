@@ -24,7 +24,7 @@ suppressMessages(ipak)
 
 
 ```{r base list or ascii layers}
-ascyears <- as.character(c("1998", "1999", "2000", "2001", "2002", "2003", "2004", "2005", "2006", "2007", "2008", "2009", "2010", "2011", "2012", "2013", "2014", "2015")) 
+ascyearslist <- as.character(c("1998", "1999", "2000", "2001", "2002", "2003", "2004", "2005", "2006", "2007", "2008", "2009", "2010", "2011", "2012", "2013", "2014")) 
 #unyears <- paste0("X", unyears) #this adds an X to each year to match with raster naming
 ascmonths <- c("01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12")
 
@@ -32,15 +32,14 @@ ascmonths <- c("01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11",
 asclayerall <- crossing(ascyears, ascmonths)
 asclayerall$stackname <- paste0("st", asclayerall$ascyears, asclayerall$ascmonths) #this creates the name of the stack that will be used
 asclayerall$temp_depth <- NA
-asclayerall$chl_depth <- NA
+asclayerall$chl_surface <- NA
 asclayerall$o2_depth <- NA
 asclayerall$salinity_depth <- NA
-# asclayerall$nao_sample <- NA
-# asclayerall$nao_prev <- NA
-# asclayerall$nao_winter <- NA
-# asclayerall$amo_sample <- NA
-# asclayerall$amo_prev <- NA
-# asclayerall$amo_winter <- NA
+asclayerall$nao_sample <- NA
+asclayerall$nao_prev <- NA
+asclayerall$nao_winter <- NA
+asclayerall$amo_sample <- NA
+asclayerall$amo_winter <- NA
 
 write.csv(asclayerall, "../data/env/test-comb/asc_stacklist_combine.csv", row.names = FALSE)
 ```
@@ -48,7 +47,8 @@ write.csv(asclayerall, "../data/env/test-comb/asc_stacklist_combine.csv", row.na
 
 ```{r asclist for 1998}
 
-myr <- 2014 #!!!!!!  CHANGE ASCNAME, ASCPATH AND CSV FILE NAME
+for (ny in 1:length(ascyearslist)){
+  myr <- ascyearslist[ny] #!!!!!!  CHANGE ASCNAME, ASCPATH AND CSV FILE NAME
 
 asclayer <- subset(asclayerall, ascyears == myr)
 
@@ -59,13 +59,12 @@ tempvar <- "temp.asc"
 chlvar <- "chl.asc"
 o2var <- "o2.asc"
 salvar <- "salinity.asc"
-# naosamplevar <- "naosample"
-# amosamplevar <- "amosample"
-# naoprevvar <- "naoprev"
-# amoprevvar <- "amoprev"
-# naowintervar <- "naowinter"
-# amowintervar <- "amowinter"
-# surfacevar <- "0.50576"
+naosamplevar <- "naosample.asc"
+amosamplevar <- "amosample.asc"
+naoprevvar <- "naoprev.asc"
+naowintervar <- "naowinter.asc"
+amowintervar <- "amowinter.asc"
+surfacevar <- "0.50576"
 
 for (i in 1:nrow(asclayer)){
     print(asclayer$stackname[i])
@@ -84,24 +83,23 @@ for (i in 1:nrow(asclayer)){
         } else if(ascyear == year & ascmonth == month & ascvar == salvar){
           asclayer$salinity_depth[i] <- ascfile
         } else if(ascyear == year & ascmonth == month & ascvar == chlvar){
-          asclayer$chl_depth[i] <- ascfile
+          asclayer$chl_surface[i] <- ascfile
         } else if(ascyear == year & ascmonth == month & ascvar == o2var){
           asclayer$o2_depth[i] <- ascfile
-        # } else if(ascyear == year & ascmonth == month & ascvar == naosamplevar){
-        #   asclayer$nao_sample[i] <- ascfile
-        # } else if(ascyear == year & ascmonth == month & ascvar == amosamplevar){
-        #   asclayer$amo_sample[i] <- ascfile
-        # } else if(ascyear == year & ascmonth == month & ascvar == naoprevvar){
-        #   asclayer$nao_prev[i] <- ascfile
-        # } else if(ascyear == year & ascmonth == month & ascvar == amoprevvar){
-        #   asclayer$amo_prev[i] <- ascfile
-        # } else if(ascyear == year & ascvar == naowintervar){
-        #   asclayer$nao_winter[i] <- ascfile
-        # } else if(ascyear == year & ascvar == amowintervar){
-        #   asclayer$amo_winter[i] <- ascfile
+         } else if(ascyear == year & ascmonth == month & ascvar == naosamplevar){
+           asclayer$nao_sample[i] <- ascfile
+         } else if(ascyear == year & ascmonth == month & ascvar == amosamplevar){
+           asclayer$amo_sample[i] <- ascfile
+         } else if(ascyear == year & ascmonth == month & ascvar == naoprevvar){
+           asclayer$nao_prev[i] <- ascfile
+         } else if(ascyear == year & ascvar == naowintervar){
+           asclayer$nao_winter[i] <- ascfile
+         } else if(ascyear == year & ascvar == amowintervar){
+           asclayer$amo_winter[i] <- ascfile
         }
     }
   write.csv(asclayer, paste0("../data/env/test-comb/asc_layerlist", myr, ".csv"), row.names = TRUE)
+}
 }
 ```
 
