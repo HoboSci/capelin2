@@ -29,8 +29,8 @@ ascyearslist <- as.character(c("1998", "1999", "2000", "2001", "2002", "2003", "
 ascmonths <- c("01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12")
 
 
-asclayerall <- crossing(ascyears, ascmonths)
-asclayerall$stackname <- paste0("st", asclayerall$ascyears, asclayerall$ascmonths) #this creates the name of the stack that will be used
+asclayerall <- crossing(ascyearslist, ascmonths)
+asclayerall$stackname <- paste0("st", asclayerall$ascyearslist, asclayerall$ascmonths) #this creates the name of the stack that will be used
 asclayerall$temp_depth <- NA
 asclayerall$chl_surface <- NA
 asclayerall$o2_depth <- NA
@@ -50,7 +50,7 @@ write.csv(asclayerall, "../data/env/test-comb/asc_stacklist_combine.csv", row.na
 for (ny in 1:length(ascyearslist)){
   myr <- ascyearslist[ny] #!!!!!!  CHANGE ASCNAME, ASCPATH AND CSV FILE NAME
 
-asclayer <- subset(asclayerall, ascyears == myr)
+asclayer <- subset(asclayerall, ascyearslist == myr)
 
 ascname <- list.files(paste0("../data/env/ascii/ascii", myr, "/") , pattern = "*.asc", full.names = FALSE)    # this folder currently contains other dummy files. its just a test to automate stacks
 ascpath <- list.files(paste0("../data/env/ascii/ascii", myr, "/"), pattern = "*.asc", full.names = TRUE)    # this folder currently contains other dummy files. its just a test to automate stacks
@@ -68,7 +68,7 @@ surfacevar <- "0.50576"
 
 for (i in 1:nrow(asclayer)){
     print(asclayer$stackname[i])
-    year <- asclayer$ascyears[i]
+    year <- asclayer$ascyearslist[i]
     month <- asclayer$ascmonths[i]
 
     for (k in 1:length(ascname)){
