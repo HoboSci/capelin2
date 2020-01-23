@@ -121,7 +121,7 @@ for (year in 1:nrow(modelmonth)){
     #now based on glover-kapfer pdf with excel manual + https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/10-1171.1... + adaptation for        getting testAUC.. horrible code
 
     #count number of non-zero coefficients, excluding the final four rows
-    coefile <- read.csv(paste0("../output/maxent/models/", timeslice, "/species.lambdas"), header = FALSE, stringsAsFactors=FALSE)
+    coefile <- read.csv(paste0("../output/maxent/models/test-comb/", timeslice, "/species.lambdas"), header = FALSE, stringsAsFactors=FALSE)
     coefile <- head(coefile, -4)
     coefile2 <- subset(coefile, V2 > 0 | V2 < 0)
     nocoeff <- nrow(coefile2)
@@ -129,13 +129,13 @@ for (year in 1:nrow(modelmonth)){
     bic <- (bick*log(sum(trainpa == 1)) - 2*11)
     
     #no presences used in model (less those used for testing)
-    maxresults <- read.csv(paste0("../output/maxent/models/", timeslice, "/maxentResults.csv"), header = TRUE)
+    maxresults <- read.csv(paste0("../output/maxent/models/test-comb/", timeslice, "/maxentResults.csv"), header = TRUE)
     notrainingpoints <- maxresults$X.Training.samples
     testauc <- maxresults$Test.AUC
     trainauc <- maxresults$Training.AUC
     
     #natural log
-    samplepred <- read.csv(paste0("../output/maxent/models/", timeslice, "/species_samplePredictions.csv"), header = TRUE)
+    samplepred <- read.csv(paste0("../output/maxent/models/test-comb/", timeslice, "/species_samplePredictions.csv"), header = TRUE)
     samplepred$nat_log <- log(samplepred$Raw.prediction)
     sumsamplepred <- sum(samplepred$nat_log)
   
@@ -155,8 +155,8 @@ for (year in 1:nrow(modelmonth)){
     evsensitivity <- threshold(ev, 'sensitivity')
     
     #continuous boyce index
-    predPres <- read.csv(paste0("../output/maxent/models/", timeslice, "/species_samplePredictions.csv"), header = TRUE)
-    predBg <- read.csv(paste0("../output/maxent/models/", timeslice, "/species_backgroundPredictions.csv"), header = TRUE)
+    predPres <- read.csv(paste0("../output/maxent/models/test-comb/", timeslice, "/species_samplePredictions.csv"), header = TRUE)
+    predBg <- read.csv(paste0("../output/maxent/models/test-comb/", timeslice, "/species_backgroundPredictions.csv"), header = TRUE)
     predPres <- predPres$Cloglog.prediction
     predBg <- predBg$Cloglog
     source("../src/contBoyce.R")
@@ -205,7 +205,7 @@ for (year in 1:nrow(modelmonth)){
     stackdep <- subset(unlayer_yr, select = c(stackname))
     stackdeplst[[year]] <- stackdep
     write.csv(stackdep, paste0("../output/maxent/models/test-comb/", timeslice, "/stackdepthlist_", yr, ".csv"), row.names = FALSE)
-    aea <- raster("../output/env/aea.tif") 
+
 
     
   for (td in 1:nrow(unlayer_yr)){
@@ -258,5 +258,696 @@ for (year in 1:nrow(modelmonth)){
 }
 ```
 
-all layers need to be spit in bash
+all layers need to be spit in bash + poweshell
+- pre-split.ps1 
+- separate.sh
+- aftersplit.ps1
+
+# average the maxent results
+
+```{r avg maxentReg}
+monthlist <- c("mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec") # a list of months to order by
+
+
+for (mth in 1:length(monthlist)){
+    mthna <- monthlist[mth]
+    modlist <- list.dirs("../output/maxent/models/test-comb", full.names = FALSE, recursive = FALSE) 
+    modlist <- modlist[ grepl(mthna, modlist) ]
+    aiclst <- list()
+    maxrlst <- list()
+    for (i in 1:length(modlist)){
+      timeslice <- modlist[i]
+      yr <- str_sub(timeslice, -4) #the year 
+      if(yr == 1998){
+        aic1998 <- read.csv(paste0("../output/maxent/models/test-comb/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
+        aiclst[[i]] <- aic1998
+        maxr1998 <- read.csv(paste0("../output/maxent/models/test-comb/", timeslice, "/maxentResults.csv"), header = TRUE)
+        maxrlst[[i]] <- maxr1998
+        } else if (yr == 1999){
+        aic1999 <- read.csv(paste0("../output/maxent/models/test-comb/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
+        aiclst[[i]] <- aic1999
+        maxr1999 <- read.csv(paste0("../output/maxent/models/test-comb/", timeslice, "/maxentResults.csv"), header = TRUE)
+        maxrlst[[i]] <- maxr1999
+        } else if (yr == 2000){
+        aic2000 <- read.csv(paste0("../output/maxent/models/test-comb/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
+        aiclst[[i]] <- aic2000
+        maxr2000 <- read.csv(paste0("../output/maxent/models/test-comb/", timeslice, "/maxentResults.csv"), header = TRUE)
+        maxrlst[[i]] <- maxr2000
+        } else if (yr == 2001){
+        aic2001 <- read.csv(paste0("../output/maxent/models/test-comb/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
+        aiclst[[i]] <- aic2001
+        maxr2001 <- read.csv(paste0("../output/maxent/models/test-comb/", timeslice, "/maxentResults.csv"), header = TRUE)
+        maxrlst[[i]] <- maxr2001
+        } else if (yr == 2002){
+        aic2002 <- read.csv(paste0("../output/maxent/models/test-comb/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
+        aiclst[[i]] <- aic2002
+        maxr2002 <- read.csv(paste0("../output/maxent/models/test-comb/", timeslice, "/maxentResults.csv"), header = TRUE)
+        maxrlst[[i]] <- maxr2002
+        } else if (yr == 2003){
+        aic2003 <- read.csv(paste0("../output/maxent/models/test-comb/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
+        aiclst[[i]] <- aic2003
+        maxr2003 <- read.csv(paste0("../output/maxent/models/test-comb/", timeslice, "/maxentResults.csv"), header = TRUE)
+        maxrlst[[i]] <- maxr2003
+        } else if (yr == 2004){
+        aic2004 <- read.csv(paste0("../output/maxent/models/test-comb/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
+        aiclst[[i]] <- aic2004
+        maxr2004 <- read.csv(paste0("../output/maxent/models/test-comb/", timeslice, "/maxentResults.csv"), header = TRUE)
+        maxrlst[[i]] <- maxr2004
+        } else if (yr == 2005){
+        aic2005 <- read.csv(paste0("../output/maxent/models/test-comb/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
+        aiclst[[i]] <- aic2005
+        maxr2005 <- read.csv(paste0("../output/maxent/models/test-comb/", timeslice, "/maxentResults.csv"), header = TRUE)
+        maxrlst[[i]] <- maxr2005
+        } else if (yr == 2006){
+        aic2006 <- read.csv(paste0("../output/maxent/models/test-comb/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
+        aiclst[[i]] <- aic2006
+        maxr2006 <- read.csv(paste0("../output/maxent/models/test-comb/", timeslice, "/maxentResults.csv"), header = TRUE)
+        maxrlst[[i]] <- maxr2006
+        } else if (yr == 2007){
+        aic2007 <- read.csv(paste0("../output/maxent/models/test-comb/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
+        aiclst[[i]] <- aic2007
+        maxr2007 <- read.csv(paste0("../output/maxent/models/test-comb/", timeslice, "/maxentResults.csv"), header = TRUE)
+        maxrlst[[i]] <- maxr2007
+        } else if (yr == 2008){
+        aic2008 <- read.csv(paste0("../output/maxent/models/test-comb/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
+        aiclst[[i]] <- aic2008
+        maxr2008 <- read.csv(paste0("../output/maxent/models/test-comb/", timeslice, "/maxentResults.csv"), header = TRUE)
+        maxrlst[[i]] <- maxr2008
+        } else if (yr == 2009){
+        aic2009 <- read.csv(paste0("../output/maxent/models/test-comb/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
+        aiclst[[i]] <- aic2009
+        maxr2009 <- read.csv(paste0("../output/maxent/models/test-comb/", timeslice, "/maxentResults.csv"), header = TRUE)
+        maxrlst[[i]] <- maxr2009
+        } else if (yr == 2010){
+        aic2010 <- read.csv(paste0("../output/maxent/models/test-comb/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
+        aiclst[[i]] <- aic2010
+        maxr2010 <- read.csv(paste0("../output/maxent/models/test-comb/", timeslice, "/maxentResults.csv"), header = TRUE)
+        maxrlst[[i]] <- maxr2010
+        } else if (yr == 2011){
+        aic2011 <- read.csv(paste0("../output/maxent/models/test-comb/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
+        aiclst[[i]] <- aic2011
+        maxr2011 <- read.csv(paste0("../output/maxent/models/test-comb/", timeslice, "/maxentResults.csv"), header = TRUE)
+        maxrlst[[i]] <- maxr2011
+        } else if (yr == 2012){
+        aic2012 <- read.csv(paste0("../output/maxent/models/test-comb/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
+        aiclst[[i]] <- aic2012
+        maxr2012 <- read.csv(paste0("../output/maxent/models/test-comb/", timeslice, "/maxentResults.csv"), header = TRUE)
+        maxrlst[[i]] <- maxr2012
+        } else if (yr == 2013){
+        aic2013 <- read.csv(paste0("../output/maxent/models/test-comb/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
+        aiclst[[i]] <- aic2013
+        maxr2013 <- read.csv(paste0("../output/maxent/models/test-comb/", timeslice, "/maxentResults.csv"), header = TRUE)
+        maxrlst[[i]] <- maxr2013
+        } else if (yr == 2014){
+        aic2014 <- read.csv(paste0("../output/maxent/models/test-comb/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
+        aiclst[[i]] <- aic2014
+        maxr2014 <- read.csv(paste0("../output/maxent/models/test-comb/", timeslice, "/maxentResults.csv"), header = TRUE)
+        maxrlst[[i]] <- maxr2014
+        }
+    }
+  aic <- do.call(rbind, aiclst)
+  maxr <- do.call(rbind, maxrlst)
+  
+  aicm <- colMeans(aic)
+  aicm$mod <- "avg"
+  avgAIC <- rbind(aic, aicm)
+  
+  maxr$Species <- 1
+  maxrm <- colMeans(maxr)
+  maxrm$Species <- "avg"
+  maxrm <- rbind(maxr, maxrm)
+  
+  write.csv(avgAIC, paste0("../output/maxent/models/test-comb/", mthna, "avgAIC.csv"), row.names = FALSE)
+  write.csv(maxrm, paste0("../output/maxent/models/test-comb/", mthna, "avgmaxentresults.csv"), row.names = FALSE)
+}
+```
+
+summary table of average maxent results for each month
+```{r average AIC etc for each month in one table}
+aic_lst <- list.files("../output/maxent/models/test-comb/", pattern = "avgAIC.csv", full.names = TRUE)
+aicsum <- data.frame(matrix(ncol = 11, nrow = length(aic_lst)))
+colnames(aicsum) <- c("Month", "BetaVal", "AICc", "Test AUC", "Training AUC", "Correlation", "Correlation P-Val", "TSS", "CBI", "No Omissions", "Prevalence")
+
+for (a in 1:length(aic_lst)){
+  aicr <- read.csv(aic_lst[a])
+  mth <- str_sub(aic_lst[a], start = 35, end = 37) #selects the month from the filename
+  aicsum$Month[a] <- mth
+  aicres <- tail(aicr, 1)
+  aicsum$BetaVal[a] <- aicres$beta
+  aicsum$AICc[a] <- aicres$AICc
+  aicsum$`Test AUC`[a] <- aicres$test_AUC
+  aicsum$`Training AUC`[a] <- aicres$train_AUC
+  aicsum$Correlation[a] <- aicres$test_evcor
+  aicsum$`Correlation P-Val` <- aicres$test_evpcor
+  aicsum$TSS[a] <- aicres$tss
+  aicsum$CBI[a] <- aicres$cbi
+  aicsum$`No Omissions`[a] <- aicres$test_no_omission
+  aicsum$Prevalence[a] <- aicres$test_prevalence
+}
+
+
+mthord <- c("jan", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec") # a list of months to order by
+aicsum <- aicsum[match(mthord, aicsum$Month), ] #reorder based on mthord
+write.csv(aicsum, "../output/maxent/models/test-comb/aicsummary.csv", row.names = FALSE)
+
+```
+
+# average the ascii layers 
+need a montly layer for each month-depth
+
+first need to rebuild a list of stackdepths as this does not work in the code above (due to change in ascii formatting - code above is old)
+
+```{r}
+#need an list of the month years
+p <- list.dirs("../output/maxent/models/test-comb", recursive = FALSE, full.names = FALSE)
+yrmthunique <- as.data.frame(p, stringsAsFactors=FALSE)
+
+
+for(time in 1:nrow(yrmthunique)){
+  slice <- yrmthunique$p[time]
+  mthna <- str_sub(slice, end = 3)
+  yr <-  str_sub(slice, start = 4)
+  mthyrclog <- list.files(paste0("../output/maxent/predictions/com-split/", mthna), pattern = yr)
+  stackd <- data.frame(mthyrclog)
+  for (st in 1:nrow(stackd)){
+    stackd$ascdepths[st] <- str_sub(stackd$mthyrclog[st], 17, -5)
+  }
+  names(stackd)[names(stackd) == "mthyrclog"] <- "stackname"
+  write.csv(stackd, paste0("../output/maxent/models/test-comb/", mthna, yr, "/stackdepthlist_", yr, ".csv"))
+}
+```
+
+
+```{r create list of layers}
+p <- list.dirs("../output/maxent/models/test-comb", recursive = FALSE, full.names = FALSE)
+year <- "2006"
+
+monthlist <- c("mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec") # a list of months to order by
+
+for (m in 1:length(monthlist)){
+  mthna <- monthlist[m]
+  timeslice <- paste(mthna, year, sep = '')
+  clogasc_list <- list.files(paste0("../output/maxent/predictions/com-split/", mthna), pattern = "^cloglog_.*.asc", full.names = TRUE)
+  stlst <- list.files(paste0("../output/maxent/models/test-comb/", timeslice), pattern = "stackdepth.*.csv", full.names = TRUE)
+  stdep <- read.csv(stlst[1])
+  depthlayers <- data.frame(cbind(unique(stdep$ascdepths)))
+  names(depthlayers)[names(depthlayers) == "cbind.unique.stdep.ascdepths.."] <- "depth"
+  depthlayers$depth <- as.character(depthlayers$depth)
+  
+  colno <- 1
+  
+  for (d in 1:nrow(depthlayers)){
+    dep <- depthlayers$depth[d]
+    for (a in 1:length(clogasc_list)){
+      asc <- clogasc_list[a]
+      ascd <- str_sub(asc, 60, -5)
+      if (grepl(dep, ascd)){
+        depthlayers[d , paste0("a", colno)] <- asc
+         colno <- colno+1
+      }
+    }
+  }
+  write.csv(depthlayers, (paste0("../output/maxent/predictions/com-split/", mthna, "/cloglog_asclayerbydepth.csv")), row.names = TRUE)
+}
+```
+
+
+```{r avg asc layers cloglog}
+mthna <- "aug" #change me
+depthlayers <- read.csv(paste0("../output/maxent/predictions/com-split/", mthna, "/cloglog_asclayerbydepth.csv"), header = TRUE)
+p <- list.dirs("../output/maxent/models/test-comb", recursive = FALSE, full.names = FALSE)
+modlist <- p[ grepl(mthna, p) ]
+print(length(modlist)) #need this to modify code below
+print(modlist) #need this to modify code below
+
+
+for (x in 1:nrow(depthlayers)){
+  asclay <- depthlayers[x, ]
+  asclay <- asclay[!is.na(asclay)]
+  asclay <- as.data.frame(rbind(asclay))
+  asclay$V1 <- as.character(asclay$V1) #v1 just a number
+  asclay$V2 <- as.character(asclay$V2) #v2 corresponds to depth
+  asclay$V3 <- as.character(asclay$V3) #yr 1
+  asclay$V4 <- as.character(asclay$V4) #yr 2
+  asclay$V5 <- as.character(asclay$V5) #yr 3
+  asclay$V6 <- as.character(asclay$V6) #yr 4
+  asclay$V7 <- as.character(asclay$V7)
+  asclay$V8 <- as.character(asclay$V8) #yr 6
+  asclay$V9 <- as.character(asclay$V9)
+  asclay$V10 <- as.character(asclay$V10) #yr 8
+  asclay$V11 <- as.character(asclay$V11)
+  asclay$V12 <- as.character(asclay$V12) #yr 10
+  # asclay$V13 <- as.character(asclay$V13)
+  # asclay$V14 <- as.character(asclay$V14) #yr 12
+  # asclay$V15 <- as.character(asclay$V15)
+  # asclay$V16 <- as.character(asclay$V16) #yr 14
+  # asclay$V17<- as.character(asclay$V17)
+  #asclay$V18 <- as.character(asclay$V18) #yr 16
+  #asclay$V19 <- as.character(asclay$V19) #yr 17
+
+  
+  asclaydep <- asclay$V2
+  
+  # asc1998 <- raster(asclay$V3)
+  # asc1999 <- raster(asclay$V4)
+  # asc2000 <- raster(asclay$V5)
+  # asc2001 <- raster(asclay$V6)
+  # asc2002 <- raster(asclay$V7)
+  # asc2003 <- raster(asclay$V8)
+  asc2004 <- raster(asclay$V3)
+  asc2005 <- raster(asclay$V4)
+  asc2006 <- raster(asclay$V5)
+  asc2007 <- raster(asclay$V6)
+  asc2008 <- raster(asclay$V7)
+ # asc2009 <- raster(asclay$V14)
+  asc2010 <- raster(asclay$V8)
+  asc2011 <- raster(asclay$V9)
+  asc2012 <- raster(asclay$V10)
+  asc2013 <- raster(asclay$V11)
+  asc2014 <- raster(asclay$V12)
+  # asc2015 <- raster(asclay$V20)
+
+
+  stkasc <- stack(asc2004, asc2005, asc2006, asc2007, asc2008, asc2010, asc2011, asc2012, asc2013, asc2014) #, asc2015)   asc1998, asc1999, asc2000, asc2001, asc2002, asc2003, asc2009
+
+  avg <- mean(stkasc, na.rm = TRUE)
+  
+  writeRaster(avg, paste0("../output/maxent/predictions/com-split/", mthna, "/avg_cloglog_", asclaydep, ".asc"), overwrite=TRUE)
+  avgplot <- plot(avg, png(paste0("../output/maxent/predictions/com-split/", mthna, "/avg_cloglog_", asclaydep, ".png"))) 
+  dev.off()
+  
+file.rename(paste0("../output/maxent/predictions/com-split/", mthna, "/avg_cloglog_000120.asc"), paste0("../output/maxent/predictions/", mthna, "/avg_cloglog_120.asc"))
+file.rename(paste0("../output/maxent/predictions/com-split/", mthna, "/avg_cloglog_000120.png"), paste0("../output/maxent/predictions/", mthna, "/avg_cloglog_120.png"))
+file.rename(paste0("../output/maxent/predictions/com-split/", mthna, "/avg_cloglog_041.18.asc"), paste0("../output/maxent/predictions/", mthna, "/avg_cloglog_41.18.asc"))
+file.rename(paste0("../output/maxent/predictions/com-split/", mthna, "/avg_cloglog_041.18.png"), paste0("../output/maxent/predictions/", mthna, "/avg_cloglog_41.18.png"))
+}
+```
+
+
+#plotting
+
+need some additional packages installed
+```{r pre-install & load packages, include=FALSE}
+packages <- c("stringr", "reshape2", "ggplot2", "Hmisc", "viridis", "raster", "RColorBrewer", "cowplot", "rasterVis")
+source("../src/ipak.R")
+ipak(packages)
+```
+
+
+# stacked permutation importance plot
+
+note if you change mind and want jackknife then the code is in the older plots for papers rmd
+
+first need to make the data plot-ready
+
+```{r create permutation & jack data}
+maxr_lst <- list.files("../output/maxent/models/test-comb/", pattern = "maxentresults.csv", full.names = TRUE)
+perm <- data.frame(matrix(ncol = 10, nrow = length(maxr_lst)))
+colnames(perm) <- c("Month", "amo_sample", "amo_winter", "chl_surface", "nao_prev", "nao_sample", "nao_winter", "o2_depth", "salinity_depth", "temp_depth")
+# jack <- data.frame(matrix(ncol = 10, nrow = length(maxr_lst)))
+# colnames(jack) <- c("Month", "amo_sample", "amo_winter", "chl_surface", "nao_prev", "nao_sample", "nao_winter", "o2_depth", "salinity_depth", "temp_depth")
+
+for (m in 1:length(maxr_lst)){
+  maxr <- read.csv(maxr_lst[m])
+  mth <- str_sub(maxr_lst[m], start = 35, end = 37) #selects the month from the filename
+  perm$Month[m] <- mth
+  # jack$Month[m] <- mth
+  maxt <- tail(maxr, 1)
+  perm$amo_sample[m] <- maxt$amo_sample.permutation.importance
+  perm$amo_winter[m] <- maxt$amo_winter.permutation.importance
+  perm$chl_surface[m] <- maxt$chl_surface.permutation.importance
+  perm$nao_prev[m] <- maxt$nao_prev.permutation.importance
+  perm$nao_sample[m] <- maxt$nao_sample.permutation.importance
+  perm$nao_winter[m] <- maxt$nao_winter.permutation.importance
+  perm$o2_depth[m] <- maxt$o2_depth.permutation.importance
+  perm$salinity_depth[m] <- maxt$salinity_depth.permutation.importance
+  perm$temp_depth[m] <- maxt$temp_depth.permutation.importance
+
+  # jack$amo_sample[m] <- maxt$Training.gain.without.amo_sample
+  # jack$amo_winter[m] <- maxt$Training.gain.without.amo_winter
+  # jack$chl_surface[m] <- maxt$Training.gain.without.chl_surface
+  # jack$nao_prev[m] <- maxt$Training.gain.without.nao_prev
+  # jack$nao_sample[m] <- maxt$Training.gain.without.nao_sample
+  # jack$nao_winter[m] <- maxt$Training.gain.without.nao_winter
+  # jack$o2_depth[m] <- maxt$Training.gain.without.o2_depth
+  # jack$salinity_depth[m] <- maxt$Training.gain.without.salinity_depth
+  # jack$temp_depth[m] <- maxt$Training.gain.without.temp_depth
+}
+
+
+mthord <- c("mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec") # a list of months to order by
+permu <- perm[match(mthord, perm$Month), ] #reorder based on mthord
+# jackk <- jack[match(mthord, jack$Month), ] #reorder based on mthord
+
+# rename the months so they are capitalised
+permu$Month <- capitalize(permu$Month)
+# jackk$Month <- capitalize(jackk$Month)
+
+
+# rename the col names so they are capitalised and shortened
+colnames(permu)[colnames(permu)=="amo_sample"] <- "AMO_Sample"
+colnames(permu)[colnames(permu)=="amo_winter"] <- "AMO_Winter"
+colnames(permu)[colnames(permu)=="chl_surface"] <- "Chl_Surface"
+colnames(permu)[colnames(permu)=="nao_prev"] <- "NAO_Prev"
+colnames(permu)[colnames(permu)=="nao_sample"] <- "NAO_Sample"
+colnames(permu)[colnames(permu)=="nao_winter"] <- "NAO_Winter"
+colnames(permu)[colnames(permu)=="o2_depth"] <- "O2_Depth"
+colnames(permu)[colnames(permu)=="salinity_depth"] <- "Salinity_Depth"
+colnames(permu)[colnames(permu)=="temp_depth"] <- "Temp_Depth"
+
+# colnames(jackk)[colnames(jackk)=="amo_sample"] <- "AMO_Sample"
+# colnames(jackk)[colnames(jackk)=="amo_winter"] <- "AMO_Winter"
+# colnames(jackk)[colnames(jackk)=="chl_surface"] <- "Chl_Surface"
+# colnames(jackk)[colnames(jackk)=="nao_prev"] <- "NAO_Prev"
+# colnames(jackk)[colnames(jackk)=="nao_sample"] <- "NAO_Sample"
+# colnames(jackk)[colnames(jackk)=="nao_winter"] <- "NAO_Winter"
+# colnames(jackk)[colnames(jackk)=="o2_depth"] <- "O2_Depth"
+# colnames(jackk)[colnames(jackk)=="salinity_depth"] <- "Salinity_Depth"
+# colnames(jackk)[colnames(jackk)=="temp_depth"] <- "Temp_Depth"
+
+
+write.csv(permu, "../output/maxent/models/test-comb/permutation_avg.csv", row.names = FALSE)
+# write.csv(jackk, "../output/maxent/models/test-comb/jack_avg.csv", row.names = FALSE)
+
+```
+
+now make the plot
+
+```{r permulation plot}
+permu <- read.csv("../output/maxent/models/test-comb/permutation_avg.csv")
+
+mthna <- c("Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+
+permelt <- melt(permu, id = "Month") #need to melt the data into this format for ggplot
+permelt$variable <- factor(permelt$variable, levels = c("AMO_Sample", "AMO_Winter", "NAO_Sample", "NAO_Prev", "NAO_Winter", "Chl_Surface", "O2_Depth", "Salinity_Depth", "Temp_Depth")) #reorder the variables
+perpl <- ggplot(data = permelt, aes(x = Month, y = value, fill = variable)) + geom_bar(stat = "identity") +  scale_fill_viridis_d(direction = 1, labels = c("AMO Sample", "AMO Winter", "NAO Sample", "NAO Prev", "NAO Winter", "Chl Surface", "O2 Depth", "Salinity Depth", "Temp Depth")) + theme_half_open(12) + scale_x_discrete(limits = mthna) + labs(y = "Permutation Importance (%)")
+png("../output/maxent/paper_plots/permutation_plot.png")
+print(perpl)
+dev.off()
+```
+
+#historgams of probability by depth
+
+count number of cells that are not NA in each raster layer that are inside the mcp
+
+```{r}
+outsidemcp <- shapefile("../data/env/landp/mcpout.shp") #made in arcgis
+wgsraster <- raster("../output/maxent/predictions/com-split/apr/cloglog_1998_04_0.50576.asc") #just chosen randomly to act as dummy file
+crs(wgsraster) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0 "
+outsidemcp <- spTransform(outsidemcp, crs(wgsraster))
+
+clogasc_list <- list.files(paste0("../output/maxent/predictions/com-split/dec"), pattern = "^avg_cloglog_.*.asc", full.names = TRUE) #just choose a random month to calculate cells
+cumst <- data.frame(0, 0)
+colnames(cumst) <- c("depth", "no_cells")
+for (cum in 1:length(clogasc_list)){
+  cumasc <- raster(clogasc_list[6])
+  ascname <- names(cumasc)
+  cumst[cum, 1] <- str_sub(ascname, 13)
+  cumasc2 <- raster::mask(cumasc, outsidemcp, inverse = TRUE)
+  ccnt <- freq(cumasc2, useNA='no')
+  ccnt <- sum(ccnt[ ,2])
+  cumst[cum, 2] <- ccnt
+}
+
+cumst$depth <- as.numeric(cumst$depth)
+cumst1 <- cumst[order(cumst$no_cells), ]
+
+write.csv(cumst1, "../output/maxent/paper_plots/prob_by_depth/cellsperlayermar.csv", row.names = FALSE)
+
+```
+
+first bin the probabilities for cells inside the mcp
+
+```{r bin probabilities}
+outsidemcp <- shapefile("../data/env/landp/mcpout.shp") #made in arcgis
+mthord <- c("dec") #"mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", 
+
+for (m in 1:length(mthord)){
+  mth <- mthord[m]
+  clogasc_list <- list.files(paste0("../output/maxent/predictions/", mth), pattern = "^avg_cloglog.*.asc", full.names = TRUE)
+  
+  binprob <- function(x){
+    ifelse(x > 0 & x < 0.1, 0.1,
+    ifelse(x <= 0, 0, NA))
+  }
+  
+  for (cum in 1:length(clogasc_list)){
+    cumasc <- raster(clogasc_list[cum])
+    ascname <- names(cumasc)
+    cumasc <- mask(cumasc, outsidemcp, inverse = TRUE)
+    probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
+    writeRaster(probbin, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_1_avgprob_", ascname, ".asc"), overwrite = TRUE)
+    plot(probbin, png(paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_1_avgprob_", ascname, ".png")), overwrite = TRUE)
+    dev.off() # stops automatic saving of the plot to a png
+  }
+  
+  
+  
+  binprob <- function(x){
+    ifelse(x >= 0.1 & x < 0.2, 0.2,
+    ifelse(x <= 0, 0, NA))
+  }
+  
+  for (cum in 1:length(clogasc_list)){
+    cumasc <- raster(clogasc_list[cum])
+    ascname <- names(cumasc)
+    cumasc <- mask(cumasc, outsidemcp, inverse = TRUE)
+    probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
+    writeRaster(probbin, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_2_avgprob_", ascname, ".asc"), overwrite = TRUE)
+    plot(probbin, png(paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_2_avgprob_", ascname, ".png")), overwrite = TRUE)
+    dev.off() # stops automatic saving of the plot to a png
+  }
+  
+  binprob <- function(x){
+    ifelse(x >= 0.2 & x < 0.3, 0.3,
+    ifelse(x <= 0, 0, NA))
+  }
+  
+  for (cum in 1:length(clogasc_list)){
+    cumasc <- raster(clogasc_list[cum])
+    ascname <- names(cumasc)
+    cumasc <- mask(cumasc, outsidemcp, inverse = TRUE)
+    probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
+    writeRaster(probbin, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_3_avgprob_", ascname, ".asc"), overwrite = TRUE)
+    plot(probbin, png(paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_3_avgprob_", ascname, ".png")), overwrite = TRUE)
+    dev.off() # stops automatic saving of the plot to a png
+  }
+  
+  
+  binprob <- function(x){
+    ifelse(x >= 0.3 & x < 0.4, 0.4,
+    ifelse(x <= 0, 0, NA))
+  }
+  
+  for (cum in 1:length(clogasc_list)){
+    cumasc <- raster(clogasc_list[cum])
+    ascname <- names(cumasc)
+    cumasc <- mask(cumasc, outsidemcp, inverse = TRUE)
+    probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
+    writeRaster(probbin, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_4_avgprob_", ascname, ".asc"), overwrite = TRUE)
+    plot(probbin, png(paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_4_avgprob_", ascname, ".png")), overwrite = TRUE)
+    dev.off() # stops automatic saving of the plot to a png
+  }
+  
+  
+  
+  binprob <- function(x){
+    ifelse(x >= 0.4 & x < 0.5, 0.5,
+    ifelse(x <= 0, 0, NA))
+  }
+  
+  for (cum in 1:length(clogasc_list)){
+    cumasc <- raster(clogasc_list[cum])
+    ascname <- names(cumasc)
+    cumasc <- mask(cumasc, outsidemcp, inverse = TRUE)
+    probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
+    writeRaster(probbin, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_5_avgprob_", ascname, ".asc"), overwrite = TRUE)
+    plot(probbin, png(paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_5_avgprob_", ascname, ".png")), overwrite = TRUE)
+    dev.off() # stops automatic saving of the plot to a png
+  }
+   
+  
+  binprob <- function(x){
+    ifelse(x >= 0.5 & x < 0.6, 0.6,
+    ifelse(x <= 0, 0, NA))
+  }
+  
+  for (cum in 1:length(clogasc_list)){
+    cumasc <- raster(clogasc_list[cum])
+    ascname <- names(cumasc)
+    cumasc <- mask(cumasc, outsidemcp, inverse = TRUE)
+    probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
+    writeRaster(probbin, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_6_avgprob_", ascname, ".asc"), overwrite = TRUE)
+    plot(probbin, png(paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_6_avgprob_", ascname, ".png")), overwrite = TRUE)
+    dev.off() # stops automatic saving of the plot to a png
+  } 
+  
+  
+  
+  binprob <- function(x){
+    ifelse(x >= 0.6 & x < 0.7, 0.7,
+    ifelse(x <= 0, 0, NA))
+  }
+  
+  for (cum in 1:length(clogasc_list)){
+    cumasc <- raster(clogasc_list[cum])
+    ascname <- names(cumasc)
+    cumasc <- mask(cumasc, outsidemcp, inverse = TRUE)
+    probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
+    writeRaster(probbin, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_7_avgprob_", ascname, ".asc"), overwrite = TRUE)
+    plot(probbin, png(paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_7_avgprob_", ascname, ".png")), overwrite = TRUE)
+    dev.off() # stops automatic saving of the plot to a png
+  }
+  
+  
+  binprob <- function(x){
+    ifelse(x >= 0.7 & x < 0.8, 0.8,
+    ifelse(x <= 0, 0, NA))
+  }
+  
+  for (cum in 1:length(clogasc_list)){
+    cumasc <- raster(clogasc_list[cum])
+    ascname <- names(cumasc)
+    cumasc <- mask(cumasc, outsidemcp, inverse = TRUE)
+    probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
+    writeRaster(probbin, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_8_avgprob_", ascname, ".asc"), overwrite = TRUE)
+    plot(probbin, png(paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_8_avgprob_", ascname, ".png")), overwrite = TRUE)
+    dev.off() # stops automatic saving of the plot to a png
+  }
+  
+  
+  binprob <- function(x){
+    ifelse(x >= 0.8 & x < 0.9, 0.9,
+    ifelse(x <= 0, 0, NA))
+  }
+  
+  for (cum in 1:length(clogasc_list)){
+    cumasc <- raster(clogasc_list[cum])
+    ascname <- names(cumasc)
+    cumasc <- mask(cumasc, outsidemcp, inverse = TRUE)
+    probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
+    writeRaster(probbin, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_9_avgprob_", ascname, ".asc"), overwrite = TRUE)
+    plot(probbin, png(paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_9_avgprob_", ascname, ".png")), overwrite = TRUE)
+    dev.off() # stops automatic saving of the plot to a png
+  }
+  
+  
+  binprob <- function(x){
+    ifelse(x >= 0.9 & x <= 1, 1,
+    ifelse(x <= 0, 0, NA))
+  }
+  
+  for (cum in 1:length(clogasc_list)){
+    cumasc <- raster(clogasc_list[cum])
+    ascname <- names(cumasc)
+    cumasc <- mask(cumasc, outsidemcp, inverse = TRUE)
+    probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
+    writeRaster(probbin, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_10_avgprob_", ascname, ".asc"), overwrite = TRUE)
+    plot(probbin, png(paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_10_avgprob_", ascname, ".png")), overwrite = TRUE)
+    dev.off() # stops automatic saving of the plot to a png
+  }
+}
+```
+
+
+get data to plot probability by depth... 
+```{r}
+mthord <- c("mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
+binlst <- c(1:10)
+
+binprob <- function(x){
+  ifelse(x >0,  1,
+  ifelse(x == -9999, 0, NA))
+}
+
+
+for (m in 1:length(mthord)){
+  for (b in 1:length(binlst)){
+    mth <- mthord[m]
+    bin <- binlst[b]
+    # mth <- "dec"
+    # bin <- 1
+  ascdepth <- list.files(paste0("../output/maxent/paper_plots/prob_by_depth"), pattern = paste0("^", mth, "_binned_", bin, "_avg.*asc"), full.names = TRUE)
+
+  binaryavgstack <- stack(ascdepth)
+  stackstathigh <- data.frame(matrix(ncol = 2, nrow = nlayers(binaryavgstack)))
+  stackstathigh[ ,1] <- c(1:49)
+  colnames(stackstathigh) <- c("asclayer", "prob_bin")
+  
+  for (lyr in 1:nlayers(binaryavgstack)){
+    ascname <-  str_sub(ascdepth[lyr], 77, -5)
+    dlay <- binaryavgstack[[lyr]]
+    dlay <- calc(dlay, fun = binprob) #creates raster layer with cell values based on the binprob function
+    lyrsum <- cellStats(dlay, sum)
+    stackstathigh$prob_bin[lyr] <- lyrsum
+    stackstathigh$asclayer[lyr] <- ascname
+  
+  }
+  write.csv(stackstathigh, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_probbin_", bin, "_cellcount_bydepth_avg.csv"), row.names = FALSE)
+  }
+}
+
+```
+
+
+```{r}
+mthord <- c("mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
+
+for (m in 1:length(mthord)){
+  mth <- mthord[m]
+  probblst <- list.files(paste0("../output/maxent/paper_plots/prob_by_depth"), pattern = paste0("^", mth, "_probbin_.*.csv"), full.names = TRUE)
+  a <- read.csv(probblst[1])
+  b <- read.csv(probblst[2])
+  c <- read.csv(probblst[3])
+  d <- read.csv(probblst[4])
+  e <- read.csv(probblst[5])
+  f <- read.csv(probblst[6])
+  g <- read.csv(probblst[7])
+  h <- read.csv(probblst[8])
+  i <- read.csv(probblst[9])
+  j <- read.csv(probblst[10])
+  
+  stackstat <- cbind(a, b[ ,2], c[ ,2], d[ ,2], e[ , 2], f[ ,2], g[ ,2], h[ ,2], i[ ,2], j[ ,2])
+  colnames(stackstat) <- c("depth", "0 - 0.09", "0.1 - 0.19", "0.2 - 0.29", "0.3 - 0.39", "0.4 - 0.49", "0.5 - 0.59", "0.6 - 0.69", "0.7 - 0.79", "0.8 - 0.89", ">0.9")
+  stackstat <- melt(stackstat, id = "depth")
+  stackstat <- stackstat[!(stackstat$depth == "1151.99"), ]
+  stackstat <- stackstat[!(stackstat$depth == "1265.86"), ]
+  stackstat <- stackstat[!(stackstat$depth == "1387.38"), ]
+  
+  colnames(stackstat) <- c("Depth", "Probability", "Cells")
+  
+  write.csv(stackstat, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_allprobbin_cellcount_bydepth_avg.csv"), row.names = FALSE)
+}
+
+```
+
+think about how to get proportions... 
+
+```{r}
+mthord <- c("mar",  "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
+cumst1 <- read.csv("../output/maxent/paper_plots/prob_by_depth/cellsperlayer.csv", header = TRUE)
+
+for (m in 1:length(mthord)){
+  mth <- mthord[m]
+  a <- read.csv(paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_allprobbin_cellcount_bydepth_avg.csv"), header = TRUE, stringsAsFactors=FALSE)
+  for (r in 1:nrow(a)){
+    # a$Depth[r] <- gsub("b_avg_cloglog_", "", x = a$Depth[r])
+    # d1 <- str_sub(a$Depth[r], end = 4)
+    d1 <- a$Depth[r]
+	  for (ro in 1:nrow(cumst1)){
+      #d2 <- str_sub(cumst1$depth[ro], end = 4)
+	    d2 <- cumst1$depth[ro]
+      if (d1 == d2){
+          a$total_cells[r] <- cumst1$no_cells[ro]
+      }
+	  }
+    a$p_cells[r] <- (a$Cells[r]/a$total_cells[r])*100
+  }
+    a$Depth <- as.numeric(a$Depth)
+
+  write.csv(a, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_dis_prob_cells.csv"), row.names = FALSE)
+}
+
+```
+
 

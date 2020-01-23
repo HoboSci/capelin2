@@ -3886,3 +3886,17 @@ for (dir in 1:length(asciidirs)){ #go through each directory
 
 ```
 
+
+
+
+
+# mcp shape needs to be in wgs...
+
+```{r}
+outsidemcp <- shapefile("../data/env/landp/mcpout.shp") #made in arcgis - in aea
+wgsraster <- raster("../output/maxent/predictions/com-split/apr/cloglog_1998_04_0.50576.asc") #just chosen randomly to act as dummy file
+crs(wgsraster) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0 "
+outsidemcp <- spTransform(outsidemcp, crs(wgsraster))
+
+```
+
