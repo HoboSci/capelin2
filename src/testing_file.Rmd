@@ -3900,3 +3900,113 @@ outsidemcp <- spTransform(outsidemcp, crs(wgsraster))
 
 ```
 
+
+#need to reclassify cells outside the mcp to NA for predictions
+```{r}
+outsidemcp <- shapefile("../data/env/landp/outside-mcp-wgs84.shp") #made in arcgis - in aea
+
+ascdirs <- list.dirs("../data/env/ascii-original", full.names = FALSE, recursive = FALSE) 
+
+for (ad in 1:length(ascdirs)){
+  timeslice <- ascdirs[ad]
+  ascfiles <- list.files(paste0("../data/env/ascii-original/", timeslice), pattern = "\\.asc$", full.names = TRUE)
+  for (file in 1:length(ascfiles)){
+    ras<- raster(ascfiles[file])
+    crs(ras) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0 "
+    ascname <- str_sub(ascfiles[file], start = 38)
+    ras[outsidemcp] <- 500000
+    ras[ras == 500000] <- NA
+    writeRaster(ras, paste0("../data/env/asciitrim/", ascdirs[ad], "/", ascname), overwrite=TRUE)
+  }
+}
+
+
+
+```
+
+
+
+test <- raster("../output/maxent/predictions/com-split/apr/cloglog_1998_04_0.50576.asc") #just chosen randomly to act as dummy file
+crs(test) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0 "
+
+test[outsidemcp] <- 500000
+test[test == 500000] <- NA
+plot(test)
+
+
+
+
+#if need to predict from the model...
+
+```{r}
+
+#monthlist <- c("mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec") # a list of months to order by
+
+modlist <- list.dirs("../output/maxent/models/test-comb", full.names = FALSE, recursive = FALSE) 
+#modlist <- modlist[ grepl(mthna, modlist) ]
+
+for (mth in 1:length(modlist)){
+    mthna <- str_sub(modlist[mth], end = 3)
+    yr <- str_sub(modlist[mth], start = 4)
+    timeslice <- modlist[mth]
+    mod <- readRDS(paste0("../output/maxent/models/test-comb/", timeslice, "/", timeslice, ".rda"))
+    unlayer <- read.csv(paste0("../data/env/test-comb/asc_layerlist", mthna, ".csv"), header = TRUE) #if code doesnt work put back to unlayer_yr
+
+    unlayer_yr <- subset(unlayer, ascyearslist == yr)
+    #unlayer_yr <- unlayer_yr[-c(1), ]
+    unlayer_yr[] <- lapply(unlayer_yr, as.character) #from https://stackoverflow.com/questions/2851015/convert-data-frame-columns-from-factors-to-characters
+    stackdeplst <- list()
+    stackdep <- subset(unlayer_yr, select = c(stackname))
+    stackdeplst[[yr]] <- stackdep
+    write.csv(stackdep, paste0("../output/maxent/models/test-comb/", timeslice, "/stackdepthlist_", yr, ".csv"), row.names = FALSE)
+    
+    for (td in 1:nrow(unlayer_yr)){
+        temp_depth <- raster(unlayer_yr$temp_depth[td])
+        crs(temp_depth) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0" 
+        names(temp_depth) <- "temp_depth"
+        #temp_depth <- projectRaster(temp_depth, aea)
+        chl_surface <- raster(unlayer_yr$chl_surface[td])
+        crs(chl_surface) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0" 
+        names(chl_surface) <- "chl_surface"
+        #chl_depth <- projectRaster(chl_depth, aea)
+        o2_depth <- raster(unlayer_yr$o2_depth[td])
+        crs(o2_depth) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0" 
+        names(o2_depth) <- "o2_depth"
+        #o2_depth <- projectRaster(o2_depth, aea)
+        salinity_depth <- raster(unlayer_yr$salinity_depth[td])
+        crs(salinity_depth) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0" 
+        names(salinity_depth) <- "salinity_depth"
+        #salinity_depth <- projectRaster(salinity_depth, aea)
+        nao_sample <- raster(unlayer_yr$nao_sample[td])
+        crs(nao_sample) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0" 
+        names(nao_sample) <- "nao_sample"
+        #nao_sample <- projectRaster(nao_sample, aea)
+        nao_prev <- raster(unlayer_yr$nao_prev[td])
+        crs(nao_prev) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0" 
+        names(nao_prev) <- "nao_prev"
+        #nao_prev <- projectRaster(nao_prev, aea)
+        nao_winter <- raster(unlayer_yr$nao_winter[td])
+        crs(nao_winter) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"
+        names(nao_winter) <- "nao_winter"
+        #nao_winter <- projectRaster(nao_winter, aea)
+        amo_sample <- raster(unlayer_yr$amo_sample[td])
+        crs(amo_sample) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0" 
+        names(amo_sample) <- "amo_sample"
+        #amo_sample <- projectRaster(amo_sample, aea)
+        amo_winter <- raster(unlayer_yr$amo_winter[td])
+        crs(amo_winter) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"
+        names(amo_winter) <- "amo_winter"
+        #amo_winter <- projectRaster(amo_winter, aea)
+        stackn <- unlayer_yr$stackname[td]
+        stack <- stack(temp_depth, salinity_depth, o2_depth, chl_surface, nao_sample, nao_prev, nao_winter, amo_sample, amo_winter)
+  
+  
+        #stackSave(test,unlayer_yr$stackname[td])
+        pred <- predict(mod, stack, file = paste0("../output/maxent/predictions/test-comb/", mthna, "/", "cloglog_", stackn, ".asc"), overwrite=TRUE, args=c('outputformat=cloglog')) 
+        # predraw <- predict(mod, stack, file = paste0("../output/maxent/predictions/test-comb/", mthna, "/", "raw_", stackn, ".asc"), overwrite=TRUE, args=c('outputformat=raw')) 
+        prplot <- plot(pred, png(paste0("../output/maxent/predictions/test-comb/", mthna, "/", "cloglog_", stackn, ".png")))
+        dev.off() # stops automatic saving of the plot to a png
+    }
+}
+```
+

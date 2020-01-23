@@ -10,9 +10,9 @@
 
 #chl.nc_0.50576
 
-$source="C:\Users\bunny\Documents\GitHub\Chapter_1\data\env\ascii-original\ascii2004" #location of starting directory
+$source="C:\Users\bunny\Documents\GitHub\Chapter_1\data\env\asciitrim\ascii1998" #location of starting directory
 $dest = "C:\cygwin64\home\bunny\ASCII"; #location where files will be copied to
-$filterchl = "10_naosample_01.asc"   
+$filterchl = "12_amosample_01.asc"   
 
 $NumArray = (1..47)
 
