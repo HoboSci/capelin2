@@ -6,9 +6,9 @@
 #temp
 #salinity
 
-$source="C:\Users\bunny\Documents\GitHub\Chapter_1\data\env\asciitrim\ascii1998" #location of starting directory
+$source="C:\Users\bunny\Documents\GitHub\Chapter_1\data\env\asciitrim\ascii2014" #location of starting directory
 $dest = "C:\cygwin64\home\bunny\ASCII"; #location where files will be copied to
-$filter = "1998_12_salinity" #  start sal (2014 aug sep oct)
+$filter = "2014_10_salinity" #  start 0
 
 
 #empty the destimation folder

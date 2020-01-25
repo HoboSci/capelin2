@@ -3945,7 +3945,7 @@ plot(test)
 modlist <- list.dirs("../output/maxent/models/test-comb", full.names = FALSE, recursive = FALSE) 
 #modlist <- modlist[ grepl(mthna, modlist) ]
 
-for (mth in 1:length(modlist)){
+for (mth in 65:length(modlist)){
     mthna <- str_sub(modlist[mth], end = 3)
     yr <- str_sub(modlist[mth], start = 4)
     timeslice <- modlist[mth]

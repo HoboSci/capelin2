@@ -7,12 +7,11 @@
 #naoprev_01
 #naosample_01
 #amosample_01
-
 #chl.nc_0.50576
 
-$source="C:\Users\bunny\Documents\GitHub\Chapter_1\data\env\asciitrim\ascii1998" #location of starting directory
+$source="C:\Users\bunny\Documents\GitHub\Chapter_1\data\env\asciitrim\ascii2008" #location of starting directory
 $dest = "C:\cygwin64\home\bunny\ASCII"; #location where files will be copied to
-$filterchl = "12_amosample_01.asc"   
+$filterchl = "06_naoprev_01.asc"   
 
 $NumArray = (1..47)
 

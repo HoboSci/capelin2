@@ -6,6 +6,29 @@ source("../src/ipak.R")
 ipak(packages)
 ```
 
+#need to reclassify cells outside the mcp to NA for predictions
+```{r}
+outsidemcp <- shapefile("../data/env/landp/outside-mcp-wgs84.shp") #made in arcgis - in aea
+
+ascdirs <- list.dirs("../data/env/ascii-original", full.names = FALSE, recursive = FALSE) 
+
+for (ad in 1:length(ascdirs)){
+  timeslice <- ascdirs[ad]
+  ascfiles <- list.files(paste0("../data/env/ascii-original/", timeslice), pattern = "\\.asc$", full.names = TRUE)
+  for (file in 1:length(ascfiles)){
+    ras<- raster(ascfiles[file])
+    crs(ras) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0 "
+    ascname <- str_sub(ascfiles[file], start = 38)
+    ras[outsidemcp] <- 500000
+    ras[ras == 500000] <- NA
+    writeRaster(ras, paste0("../data/env/asciitrim/", ascdirs[ad], "/", ascname), overwrite=TRUE)
+  }
+}
+
+
+
+```
+
 load the presence-background dataset 
 ("../output/bio/presab_nafo_yr.csv")
 
@@ -75,125 +98,125 @@ modelmonth <- cbind(paste0(mthna, unique(prback$year)))
 aicetc <- read.csv("../data/env/AICcFinalmod.csv", header = TRUE) #pre-created csv file
 unlayer <- read.csv(paste0("../data/env/test-comb/asc_layerlist", mthna, ".csv"), header = TRUE) #if code doesnt work put back to unlayer_yr
 
-# 
-# 
-# for (year in 1:nrow(modelmonth)){
-#   timeslice <- modelmonth[year] #testing timeslice
-#   yr <- str_sub(timeslice, -4) #the year being used for testing
-#   train <- subset(prback, year != yr) #training data is all years but testing
-#   trainpa <- train$occurrence #creates a vector of presence/background ID (1/0)
-#   test <-  subset(prback, year == yr) #creates the testing dataset
-#   testp <- subset(test, occurrence == "1") #splits the testing dataset into presences
-#   testp <- subset(testp, select = -c(year, occurrence)) #don't need year and occurrence for modelling
-#   testb <- subset(test, occurrence == "0") #splits the testing dataset into background
-#   testb <- subset(testb, select = -c(year, occurrence)) #don't need year and occurrence for modelling
-#   #mess_pr <- subset(train, occurrence == 1)
-#   #mess_pr  <- subset(train, select = -c(year, occurrence)) #don't need year and occurrence for modelling
-#   train  <- subset(train, select = -c(year, occurrence)) #don't need year and occurrence for modelling
-# 
-#   
-#   if (yr == "1998"){
-#     betaval <- 0.25
-#   } else if (yr == "2001"){
-#     betaval <- 0.75
-#   } else if (yr == "2002" | yr == "2003"| yr == "2004"| yr == "2006"| yr == "2011"){
-#     betaval <- 1
-#   } else if (yr == "2005"){
-#     betaval <- 1.25
-#   } else if (yr == "1999" | yr == "2000"| yr == "2009"){
-#     betaval <- 1.5
-#   } else if (yr == "2007"){
-#     betaval <- 1.75
-#   } else if (yr == "2010"){
-#     betaval <- 2
-#   } else if (yr == "2008"){
-#     betaval <- 2.25
-#   }
-# 
-# 
-#   
-#   
-#     mod <- maxent(x = train, p = trainpa, path = paste0("../output/maxent/models/test-comb/", timeslice), args=c("writebackgroundpredictions=TRUE",  "maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "addsamplestobackground=TRUE", paste0("betamultiplier=", betaval)))
-#     
-#     saveRDS(mod, file= paste0("../output/maxent/models/test-comb/", timeslice, "/", timeslice, ".rda"))
-# 
-# 
-#     #now based on glover-kapfer pdf with excel manual + https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/10-1171.1... + adaptation for        getting testAUC.. horrible code
-# 
-#     #count number of non-zero coefficients, excluding the final four rows
-#     coefile <- read.csv(paste0("../output/maxent/models/test-comb/", timeslice, "/species.lambdas"), header = FALSE, stringsAsFactors=FALSE)
-#     coefile <- head(coefile, -4)
-#     coefile2 <- subset(coefile, V2 > 0 | V2 < 0)
-#     nocoeff <- nrow(coefile2)
-#     bick <- sum(as.numeric(coefile2[, 2]))
-#     bic <- (bick*log(sum(trainpa == 1)) - 2*11)
-#     
-#     #no presences used in model (less those used for testing)
-#     maxresults <- read.csv(paste0("../output/maxent/models/test-comb/", timeslice, "/maxentResults.csv"), header = TRUE)
-#     notrainingpoints <- maxresults$X.Training.samples
-#     testauc <- maxresults$Test.AUC
-#     trainauc <- maxresults$Training.AUC
-#     
-#     #natural log
-#     samplepred <- read.csv(paste0("../output/maxent/models/test-comb/", timeslice, "/species_samplePredictions.csv"), header = TRUE)
-#     samplepred$nat_log <- log(samplepred$Raw.prediction)
-#     sumsamplepred <- sum(samplepred$nat_log)
-#   
-#   
-#     #test auc scores and other lovely things you might want to include
-#     ev <- evaluate(p = testp, a= testb, model = mod)
-#     evauc <- ev@auc
-#     evcor <- ev@cor
-#     evpcor <- ev@pcor
-#     evnp <- ev@np
-#     evna <- ev@na
-#     evmaxtprtnr <- threshold(ev, 'spec_sens')
-#     evmaxkap <- threshold(ev, 'kappa')
-#     evno_omission <- threshold(ev, 'no_omission')
-#     evprevalence <- threshold(ev, 'prevalence')
-#     evequal_sens_spec <- threshold(ev, 'equal_sens_spec')
-#     evsensitivity <- threshold(ev, 'sensitivity')
-#     
-#     #continuous boyce index
-#     predPres <- read.csv(paste0("../output/maxent/models/test-comb/", timeslice, "/species_samplePredictions.csv"), header = TRUE)
-#     predBg <- read.csv(paste0("../output/maxent/models/test-comb/", timeslice, "/species_backgroundPredictions.csv"), header = TRUE)
-#     predPres <- predPres$Cloglog.prediction
-#     predBg <- predBg$Cloglog
-#     source("../src/contBoyce.R")
-#     cbi <- contBoyce(pres = predPres, bg = predBg)
-#     
-#   
-#       aicetc$train_AUC <- trainauc #training only AUC - not tested
-#       aicetc$no_trainng_points <- notrainingpoints #numberof points used for training
-#       aicetc$coefficients <- nocoeff #this is to calculate the AIC
-#       aicetc$sum.of.logs <- sumsamplepred #this is to calculate the AIC
-#       aicetc$test_AUC <- evauc #testing AUC
-#       aicetc$test_evcor <- evcor #testing correlation coefficient
-#       aicetc$test_evpcor <- evpcor # testing p-value for correlation coefficient
-#       aicetc$test_nopresence <- evnp 
-#       aicetc$test_nobackground <- evna
-#       aicetc$test_maxsumsenspec <- evmaxtprtnr
-#       aicetc$test_maxkap <- evmaxkap
-#       aicetc$test_no_omission <- evno_omission
-#       aicetc$test_prevalence <- evprevalence
-#       aicetc$test_equal_sens_spec <- evequal_sens_spec
-#       aicetc$test_sensitivity <- evsensitivity
-#       aicetc$tss <- max(ev@TPR + ev@TNR) - 1
-#       aicetc$test_bic <- bic #not sure this is correct...
-#       aicetc$beta <- betaval
-#       aicetc$cbi <- cbi
-#       
-#     aicetc$AIC <- ((2*aicetc$coefficients)-(2*aicetc$sum.of.logs))
-#     aicetc$AICc <- (-2*(aicetc$sum.of.logs)+((2*aicetc$coefficients)*(aicetc$no_trainng_points/(aicetc$no_trainng_points - aicetc$coefficients-1))))
-#     
-#     #calculate minimal predicted area using ecospat
-#     aicetc$mpa_0.9_cum <- ecospat.mpa(samplepred$Cumulative.prediction, perc = 0.9) #90%
-#     aicetc$mpa_0.9_clog <- ecospat.mpa(samplepred$Cloglog.prediction, perc = 0.9) #90%
-#     aicetc$year <- yr
-# 
-# 
-#     write.csv(aicetc, paste0("../output/maxent/models/test-comb/", timeslice, "/AICforMaxentReg.csv"), row.names = FALSE)
-    
+
+
+ for (year in 1:nrow(modelmonth)){
+   timeslice <- modelmonth[year] #testing timeslice
+   yr <- str_sub(timeslice, -4) #the year being used for testing
+   train <- subset(prback, year != yr) #training data is all years but testing
+   trainpa <- train$occurrence #creates a vector of presence/background ID (1/0)
+   test <-  subset(prback, year == yr) #creates the testing dataset
+   testp <- subset(test, occurrence == "1") #splits the testing dataset into presences
+   testp <- subset(testp, select = -c(year, occurrence)) #don't need year and occurrence for modelling
+   testb <- subset(test, occurrence == "0") #splits the testing dataset into background
+   testb <- subset(testb, select = -c(year, occurrence)) #don't need year and occurrence for modelling
+   #mess_pr <- subset(train, occurrence == 1)
+   #mess_pr  <- subset(train, select = -c(year, occurrence)) #don't need year and occurrence for modelling
+   train  <- subset(train, select = -c(year, occurrence)) #don't need year and occurrence for modelling
+
+
+   if (yr == "1998"){
+     betaval <- 0.25
+   } else if (yr == "2001"){
+     betaval <- 0.75
+   } else if (yr == "2002" | yr == "2003"| yr == "2004"| yr == "2006"| yr == "2011"){
+     betaval <- 1
+   } else if (yr == "2005"){
+     betaval <- 1.25
+   } else if (yr == "1999" | yr == "2000"| yr == "2009"){
+     betaval <- 1.5
+   } else if (yr == "2007"){
+     betaval <- 1.75
+   } else if (yr == "2010"){
+     betaval <- 2
+   } else if (yr == "2008"){
+     betaval <- 2.25
+   }
+
+
+
+
+     mod <- maxent(x = train, p = trainpa, path = paste0("../output/maxent/models/test-comb/", timeslice), args=c("writebackgroundpredictions=TRUE",  "maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "addsamplestobackground=TRUE", paste0("betamultiplier=", betaval)))
+
+     saveRDS(mod, file= paste0("../output/maxent/models/test-comb/", timeslice, "/", timeslice, ".rda"))
+
+
+     #now based on glover-kapfer pdf with excel manual + https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/10-1171.1... + adaptation for        getting testAUC.. horrible code
+
+     #count number of non-zero coefficients, excluding the final four rows
+     coefile <- read.csv(paste0("../output/maxent/models/test-comb/", timeslice, "/species.lambdas"), header = FALSE, stringsAsFactors=FALSE)
+     coefile <- head(coefile, -4)
+     coefile2 <- subset(coefile, V2 > 0 | V2 < 0)
+     nocoeff <- nrow(coefile2)
+     bick <- sum(as.numeric(coefile2[, 2]))
+     bic <- (bick*log(sum(trainpa == 1)) - 2*11)
+
+     #no presences used in model (less those used for testing)
+     maxresults <- read.csv(paste0("../output/maxent/models/test-comb/", timeslice, "/maxentResults.csv"), header = TRUE)
+     notrainingpoints <- maxresults$X.Training.samples
+     testauc <- maxresults$Test.AUC
+     trainauc <- maxresults$Training.AUC
+
+     #natural log
+     samplepred <- read.csv(paste0("../output/maxent/models/test-comb/", timeslice, "/species_samplePredictions.csv"), header = TRUE)
+     samplepred$nat_log <- log(samplepred$Raw.prediction)
+     sumsamplepred <- sum(samplepred$nat_log)
+
+
+     #test auc scores and other lovely things you might want to include
+     ev <- evaluate(p = testp, a= testb, model = mod)
+     evauc <- ev@auc
+     evcor <- ev@cor
+     evpcor <- ev@pcor
+     evnp <- ev@np
+     evna <- ev@na
+     evmaxtprtnr <- threshold(ev, 'spec_sens')
+     evmaxkap <- threshold(ev, 'kappa')
+     evno_omission <- threshold(ev, 'no_omission')
+     evprevalence <- threshold(ev, 'prevalence')
+     evequal_sens_spec <- threshold(ev, 'equal_sens_spec')
+     evsensitivity <- threshold(ev, 'sensitivity')
+
+     #continuous boyce index
+     predPres <- read.csv(paste0("../output/maxent/models/test-comb/", timeslice, "/species_samplePredictions.csv"), header = TRUE)
+     predBg <- read.csv(paste0("../output/maxent/models/test-comb/", timeslice, "/species_backgroundPredictions.csv"), header = TRUE)
+     predPres <- predPres$Cloglog.prediction
+     predBg <- predBg$Cloglog
+     source("../src/contBoyce.R")
+     cbi <- contBoyce(pres = predPres, bg = predBg)
+
+
+       aicetc$train_AUC <- trainauc #training only AUC - not tested
+       aicetc$no_trainng_points <- notrainingpoints #numberof points used for training
+       aicetc$coefficients <- nocoeff #this is to calculate the AIC
+       aicetc$sum.of.logs <- sumsamplepred #this is to calculate the AIC
+       aicetc$test_AUC <- evauc #testing AUC
+       aicetc$test_evcor <- evcor #testing correlation coefficient
+       aicetc$test_evpcor <- evpcor # testing p-value for correlation coefficient
+       aicetc$test_nopresence <- evnp
+       aicetc$test_nobackground <- evna
+       aicetc$test_maxsumsenspec <- evmaxtprtnr
+       aicetc$test_maxkap <- evmaxkap
+       aicetc$test_no_omission <- evno_omission
+       aicetc$test_prevalence <- evprevalence
+       aicetc$test_equal_sens_spec <- evequal_sens_spec
+       aicetc$test_sensitivity <- evsensitivity
+       aicetc$tss <- max(ev@TPR + ev@TNR) - 1
+       aicetc$test_bic <- bic #not sure this is correct...
+       aicetc$beta <- betaval
+       aicetc$cbi <- cbi
+
+     aicetc$AIC <- ((2*aicetc$coefficients)-(2*aicetc$sum.of.logs))
+     aicetc$AICc <- (-2*(aicetc$sum.of.logs)+((2*aicetc$coefficients)*(aicetc$no_trainng_points/(aicetc$no_trainng_points - aicetc$coefficients-1))))
+
+     #calculate minimal predicted area using ecospat
+     aicetc$mpa_0.9_cum <- ecospat.mpa(samplepred$Cumulative.prediction, perc = 0.9) #90%
+     aicetc$mpa_0.9_clog <- ecospat.mpa(samplepred$Cloglog.prediction, perc = 0.9) #90%
+     aicetc$year <- yr
+
+
+     write.csv(aicetc, paste0("../output/maxent/models/test-comb/", timeslice, "/AICforMaxentReg.csv"), row.names = FALSE)
+
     mod <- readRDS(paste0("../output/maxent/models/test-comb/", timeslice, "/", timeslice, ".rda"))
 
 
@@ -473,7 +496,7 @@ for (m in 1:length(monthlist)){
 
 
 ```{r avg asc layers cloglog}
-mthna <- "aug" #change me
+mthna <- "dec" #change me
 depthlayers <- read.csv(paste0("../output/maxent/predictions/com-split/", mthna, "/cloglog_asclayerbydepth.csv"), header = TRUE)
 p <- list.dirs("../output/maxent/models/test-comb", recursive = FALSE, full.names = FALSE)
 modlist <- p[ grepl(mthna, p) ]
@@ -497,38 +520,37 @@ for (x in 1:nrow(depthlayers)){
   asclay$V10 <- as.character(asclay$V10) #yr 8
   asclay$V11 <- as.character(asclay$V11)
   asclay$V12 <- as.character(asclay$V12) #yr 10
-  # asclay$V13 <- as.character(asclay$V13)
-  # asclay$V14 <- as.character(asclay$V14) #yr 12
-  # asclay$V15 <- as.character(asclay$V15)
-  # asclay$V16 <- as.character(asclay$V16) #yr 14
-  # asclay$V17<- as.character(asclay$V17)
+  asclay$V13 <- as.character(asclay$V13)
+  asclay$V14 <- as.character(asclay$V14) #yr 12
+  asclay$V15 <- as.character(asclay$V15)
+  asclay$V16 <- as.character(asclay$V16) #yr 14
+  #asclay$V17<- as.character(asclay$V17)
   #asclay$V18 <- as.character(asclay$V18) #yr 16
   #asclay$V19 <- as.character(asclay$V19) #yr 17
 
   
   asclaydep <- asclay$V2
   
-  # asc1998 <- raster(asclay$V3)
-  # asc1999 <- raster(asclay$V4)
-  # asc2000 <- raster(asclay$V5)
-  # asc2001 <- raster(asclay$V6)
-  # asc2002 <- raster(asclay$V7)
-  # asc2003 <- raster(asclay$V8)
-  asc2004 <- raster(asclay$V3)
-  asc2005 <- raster(asclay$V4)
-  asc2006 <- raster(asclay$V5)
-  asc2007 <- raster(asclay$V6)
-  asc2008 <- raster(asclay$V7)
- # asc2009 <- raster(asclay$V14)
-  asc2010 <- raster(asclay$V8)
-  asc2011 <- raster(asclay$V9)
-  asc2012 <- raster(asclay$V10)
-  asc2013 <- raster(asclay$V11)
-  asc2014 <- raster(asclay$V12)
-  # asc2015 <- raster(asclay$V20)
+  asc1 <- raster(asclay$V3) #1
+  asc2 <- raster(asclay$V4)
+  asc3 <- raster(asclay$V5) #3
+  asc4 <- raster(asclay$V6)
+  asc5 <- raster(asclay$V7) #5
+  asc6 <- raster(asclay$V8)
+  asc7 <- raster(asclay$V9) #7
+  asc8 <- raster(asclay$V10)
+  asc9 <- raster(asclay$V11) #9
+  asc10 <- raster(asclay$V12)
+  asc11 <- raster(asclay$V13) #11
+  asc12 <- raster(asclay$V14)
+  asc13 <- raster(asclay$V15) #13
+  asc14 <- raster(asclay$V16)
+  #asc15 <- raster(asclay$V17) #15
+ # asc16 <- raster(asclay$V18)
+ # asc17 <- raster(asclay$V19)
 
 
-  stkasc <- stack(asc2004, asc2005, asc2006, asc2007, asc2008, asc2010, asc2011, asc2012, asc2013, asc2014) #, asc2015)   asc1998, asc1999, asc2000, asc2001, asc2002, asc2003, asc2009
+  stkasc <- stack(asc1, asc2, asc3, asc4, asc5, asc6, asc7, asc8, asc9, asc10, asc11, asc12, asc13, asc14) #, asc15) #, asc16) #, asc2015)   asc1998, asc1999, asc2000, asc2001, asc2002, asc2003, asc2009
 
   avg <- mean(stkasc, na.rm = TRUE)
   
@@ -536,10 +558,10 @@ for (x in 1:nrow(depthlayers)){
   avgplot <- plot(avg, png(paste0("../output/maxent/predictions/com-split/", mthna, "/avg_cloglog_", asclaydep, ".png"))) 
   dev.off()
   
-file.rename(paste0("../output/maxent/predictions/com-split/", mthna, "/avg_cloglog_000120.asc"), paste0("../output/maxent/predictions/", mthna, "/avg_cloglog_120.asc"))
-file.rename(paste0("../output/maxent/predictions/com-split/", mthna, "/avg_cloglog_000120.png"), paste0("../output/maxent/predictions/", mthna, "/avg_cloglog_120.png"))
-file.rename(paste0("../output/maxent/predictions/com-split/", mthna, "/avg_cloglog_041.18.asc"), paste0("../output/maxent/predictions/", mthna, "/avg_cloglog_41.18.asc"))
-file.rename(paste0("../output/maxent/predictions/com-split/", mthna, "/avg_cloglog_041.18.png"), paste0("../output/maxent/predictions/", mthna, "/avg_cloglog_41.18.png"))
+file.rename(paste0("../output/maxent/predictions/com-split/", mthna, "/avg_cloglog_000120.asc"), paste0("../output/maxent/predictions/com-split", mthna, "/avg_cloglog_120.asc"))
+file.rename(paste0("../output/maxent/predictions/com-split/", mthna, "/avg_cloglog_000120.png"), paste0("../output/maxent/predictions/com-split/", mthna, "/avg_cloglog_120.png"))
+file.rename(paste0("../output/maxent/predictions/com-split/", mthna, "/avg_cloglog_041.18.asc"), paste0("../output/maxent/predictions/com-split/", mthna, "/avg_cloglog_41.18.asc"))
+file.rename(paste0("../output/maxent/predictions/com-split/", mthna, "/avg_cloglog_041.18.png"), paste0("../output/maxent/predictions/com-split/", mthna, "/avg_cloglog_41.18.png"))
 }
 ```
 
@@ -651,10 +673,10 @@ dev.off()
 count number of cells that are not NA in each raster layer that are inside the mcp
 
 ```{r}
-outsidemcp <- shapefile("../data/env/landp/mcpout.shp") #made in arcgis
-wgsraster <- raster("../output/maxent/predictions/com-split/apr/cloglog_1998_04_0.50576.asc") #just chosen randomly to act as dummy file
-crs(wgsraster) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0 "
-outsidemcp <- spTransform(outsidemcp, crs(wgsraster))
+# outsidemcp <- shapefile("../data/env/landp/mcpout.shp") #made in arcgis
+# wgsraster <- raster("../output/maxent/predictions/com-split/apr/cloglog_1998_04_0.50576.asc") #just chosen randomly to act as dummy file
+# crs(wgsraster) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0 "
+# outsidemcp <- spTransform(outsidemcp, crs(wgsraster))
 
 clogasc_list <- list.files(paste0("../output/maxent/predictions/com-split/mar"), pattern = "^avg_cloglog_.*.asc", full.names = TRUE) #just choose a random month to calculate cells
 cumst <- data.frame(0, 0)
@@ -663,8 +685,8 @@ for (cum in 1:length(clogasc_list)){
   cumasc <- raster(clogasc_list[cum])
   ascname <- names(cumasc)
   cumst[cum, 1] <- str_sub(ascname, 13)
-  cumasc2 <- raster::mask(cumasc, outsidemcp, inverse = TRUE)
-  ccnt <- freq(cumasc2, useNA='no')
+  #cumasc2 <- raster::mask(cumasc, outsidemcp, inverse = TRUE)
+  ccnt <- freq(cumasc, useNA='no')
   ccnt <- sum(ccnt[ ,2])
   cumst[cum, 2] <- ccnt
 }
@@ -679,12 +701,12 @@ write.csv(cumst1, "../output/maxent/paper_plots/cellsperlayer.csv", row.names = 
 first bin the probabilities for cells inside the mcp
 
 ```{r bin probabilities}
-outsidemcp <- shapefile("../data/env/landp/mcpout.shp") #made in arcgis
-mthord <- c("dec") #"mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", 
+#outsidemcp <- shapefile("../data/env/landp/mcpout.shp") #made in arcgis
+mthord <- c("mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
 
 for (m in 1:length(mthord)){
   mth <- mthord[m]
-  clogasc_list <- list.files(paste0("../output/maxent/predictions/", mth), pattern = "^avg_cloglog.*.asc", full.names = TRUE)
+  clogasc_list <- list.files(paste0("../output/maxent/predictions/com-split/", mth), pattern = "^avg_cloglog.*.asc", full.names = TRUE)
   
   binprob <- function(x){
     ifelse(x > 0 & x < 0.1, 0.1,
@@ -694,7 +716,7 @@ for (m in 1:length(mthord)){
   for (cum in 1:length(clogasc_list)){
     cumasc <- raster(clogasc_list[cum])
     ascname <- names(cumasc)
-    cumasc <- mask(cumasc, outsidemcp, inverse = TRUE)
+    #cumasc <- mask(cumasc, outsidemcp, inverse = TRUE)
     probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
     writeRaster(probbin, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_1_avgprob_", ascname, ".asc"), overwrite = TRUE)
     plot(probbin, png(paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_1_avgprob_", ascname, ".png")), overwrite = TRUE)
@@ -711,7 +733,7 @@ for (m in 1:length(mthord)){
   for (cum in 1:length(clogasc_list)){
     cumasc <- raster(clogasc_list[cum])
     ascname <- names(cumasc)
-    cumasc <- mask(cumasc, outsidemcp, inverse = TRUE)
+    #cumasc <- mask(cumasc, outsidemcp, inverse = TRUE)
     probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
     writeRaster(probbin, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_2_avgprob_", ascname, ".asc"), overwrite = TRUE)
     plot(probbin, png(paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_2_avgprob_", ascname, ".png")), overwrite = TRUE)
@@ -726,7 +748,7 @@ for (m in 1:length(mthord)){
   for (cum in 1:length(clogasc_list)){
     cumasc <- raster(clogasc_list[cum])
     ascname <- names(cumasc)
-    cumasc <- mask(cumasc, outsidemcp, inverse = TRUE)
+    #cumasc <- mask(cumasc, outsidemcp, inverse = TRUE)
     probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
     writeRaster(probbin, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_3_avgprob_", ascname, ".asc"), overwrite = TRUE)
     plot(probbin, png(paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_3_avgprob_", ascname, ".png")), overwrite = TRUE)
@@ -742,7 +764,7 @@ for (m in 1:length(mthord)){
   for (cum in 1:length(clogasc_list)){
     cumasc <- raster(clogasc_list[cum])
     ascname <- names(cumasc)
-    cumasc <- mask(cumasc, outsidemcp, inverse = TRUE)
+    #cumasc <- mask(cumasc, outsidemcp, inverse = TRUE)
     probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
     writeRaster(probbin, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_4_avgprob_", ascname, ".asc"), overwrite = TRUE)
     plot(probbin, png(paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_4_avgprob_", ascname, ".png")), overwrite = TRUE)
@@ -759,7 +781,7 @@ for (m in 1:length(mthord)){
   for (cum in 1:length(clogasc_list)){
     cumasc <- raster(clogasc_list[cum])
     ascname <- names(cumasc)
-    cumasc <- mask(cumasc, outsidemcp, inverse = TRUE)
+    #cumasc <- mask(cumasc, outsidemcp, inverse = TRUE)
     probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
     writeRaster(probbin, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_5_avgprob_", ascname, ".asc"), overwrite = TRUE)
     plot(probbin, png(paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_5_avgprob_", ascname, ".png")), overwrite = TRUE)
@@ -775,7 +797,7 @@ for (m in 1:length(mthord)){
   for (cum in 1:length(clogasc_list)){
     cumasc <- raster(clogasc_list[cum])
     ascname <- names(cumasc)
-    cumasc <- mask(cumasc, outsidemcp, inverse = TRUE)
+    #cumasc <- mask(cumasc, outsidemcp, inverse = TRUE)
     probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
     writeRaster(probbin, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_6_avgprob_", ascname, ".asc"), overwrite = TRUE)
     plot(probbin, png(paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_6_avgprob_", ascname, ".png")), overwrite = TRUE)
@@ -792,7 +814,7 @@ for (m in 1:length(mthord)){
   for (cum in 1:length(clogasc_list)){
     cumasc <- raster(clogasc_list[cum])
     ascname <- names(cumasc)
-    cumasc <- mask(cumasc, outsidemcp, inverse = TRUE)
+    #cumasc <- mask(cumasc, outsidemcp, inverse = TRUE)
     probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
     writeRaster(probbin, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_7_avgprob_", ascname, ".asc"), overwrite = TRUE)
     plot(probbin, png(paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_7_avgprob_", ascname, ".png")), overwrite = TRUE)
@@ -808,7 +830,7 @@ for (m in 1:length(mthord)){
   for (cum in 1:length(clogasc_list)){
     cumasc <- raster(clogasc_list[cum])
     ascname <- names(cumasc)
-    cumasc <- mask(cumasc, outsidemcp, inverse = TRUE)
+    #cumasc <- mask(cumasc, outsidemcp, inverse = TRUE)
     probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
     writeRaster(probbin, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_8_avgprob_", ascname, ".asc"), overwrite = TRUE)
     plot(probbin, png(paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_8_avgprob_", ascname, ".png")), overwrite = TRUE)
@@ -824,7 +846,7 @@ for (m in 1:length(mthord)){
   for (cum in 1:length(clogasc_list)){
     cumasc <- raster(clogasc_list[cum])
     ascname <- names(cumasc)
-    cumasc <- mask(cumasc, outsidemcp, inverse = TRUE)
+    #cumasc <- mask(cumasc, outsidemcp, inverse = TRUE)
     probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
     writeRaster(probbin, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_9_avgprob_", ascname, ".asc"), overwrite = TRUE)
     plot(probbin, png(paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_9_avgprob_", ascname, ".png")), overwrite = TRUE)
@@ -840,7 +862,7 @@ for (m in 1:length(mthord)){
   for (cum in 1:length(clogasc_list)){
     cumasc <- raster(clogasc_list[cum])
     ascname <- names(cumasc)
-    cumasc <- mask(cumasc, outsidemcp, inverse = TRUE)
+   # cumasc <- mask(cumasc, outsidemcp, inverse = TRUE)
     probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
     writeRaster(probbin, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_10_avgprob_", ascname, ".asc"), overwrite = TRUE)
     plot(probbin, png(paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_10_avgprob_", ascname, ".png")), overwrite = TRUE)
@@ -871,7 +893,7 @@ for (m in 1:length(mthord)){
 
   binaryavgstack <- stack(ascdepth)
   stackstathigh <- data.frame(matrix(ncol = 2, nrow = nlayers(binaryavgstack)))
-  stackstathigh[ ,1] <- c(1:49)
+  stackstathigh[ ,1] <- c(1:47)
   colnames(stackstathigh) <- c("asclayer", "prob_bin")
   
   for (lyr in 1:nlayers(binaryavgstack)){
@@ -925,7 +947,7 @@ think about how to get proportions...
 
 ```{r}
 mthord <- c("mar",  "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
-cumst1 <- read.csv("../output/maxent/paper_plots/prob_by_depth/cellsperlayer.csv", header = TRUE)
+cumst1 <- read.csv("../output/maxent/paper_plots/cellsperlayer.csv", header = TRUE)
 
 for (m in 1:length(mthord)){
   mth <- mthord[m]
@@ -950,4 +972,4 @@ for (m in 1:length(mthord)){
 
 ```
 
-
+GO FROM HERE
