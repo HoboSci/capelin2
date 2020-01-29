@@ -2634,20 +2634,21 @@ library(rgdal)
 library(rasterVis)
 library(colorspace)
 
-aea <- raster("../output/env/aea.tif") #the correct CRS
-s <- shapefile("../data/env/landp/landpro.shp") #made in arcgis
-acrs <- aea@crs
-mcp <- shapefile("../output/bio/minimum_convex_poly/mcp_capelin_100_poly.shp")
-ss <- raster::intersect(s, mcp)  #trim land file to mcp
+#aea <- raster("../output/env/aea.tif") #the correct CRS
+s <- shapefile("../data/env/landp/land-wgs84v2.shp") #made in arcgis
+crs(s) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"
+#acrs <- aea@crs
+mcp <- shapefile("../output/bio/minimum_convex_poly/mcp-wgs84.shp")
+#ss <- raster::intersect(s, mcp)  #trim land file to mcp
 
 #selmth <- c("mar", "jun", "sep", "dec")
 #seldep <- c("11.7737", "61.1128", "199.79", "628.026")
 
 
-mar11 <- raster("../output/maxent/predictions/mar/avg_cloglog_11.7737.asc")
-mar61 <- raster("../output/maxent/predictions/mar/avg_cloglog_61.1128.asc")
-mar199 <- raster("../output/maxent/predictions/mar/avg_cloglog_199.79.asc")
-mar628 <- raster("../output/maxent/predictions/mar/avg_cloglog_628.026.asc")
+mar11 <- raster("../output/maxent/predictions/com-split/mar/avg_cloglog_11.7737.asc")
+mar61 <- raster("../output/maxent/predictions/com-split/mar/avg_cloglog_61.1128.asc")
+mar199 <- raster("../output/maxent/predictions/com-split/mar/avg_cloglog_199.79.asc")
+mar628 <- raster("../output/maxent/predictions/com-split/mar/avg_cloglog_628.026.asc")
 mar11@crs <- acrs
 mar61@crs <- acrs
 mar199@crs <- acrs
@@ -2658,10 +2659,10 @@ mar199 <- raster::mask(mar199, mcp)
 mar628 <- raster::mask(mar628, mcp)
 
 
-jun11 <- raster("../output/maxent/predictions/jun/avg_cloglog_11.7737.asc")
-jun61 <- raster("../output/maxent/predictions/jun/avg_cloglog_61.1128.asc")
-jun199 <- raster("../output/maxent/predictions/jun/avg_cloglog_199.79.asc")
-jun628 <- raster("../output/maxent/predictions/jun/avg_cloglog_628.026.asc")
+jun11 <- raster("../output/maxent/predictions/com-split/jun/avg_cloglog_11.7737.asc")
+jun61 <- raster("../output/maxent/predictions/com-split/jun/avg_cloglog_61.1128.asc")
+jun199 <- raster("../output/maxent/predictions/com-split/jun/avg_cloglog_199.79.asc")
+jun628 <- raster("../output/maxent/predictions/com-split/jun/avg_cloglog_628.026.asc")
 jun11@crs <- acrs
 jun61@crs <- acrs
 jun199@crs <- acrs
@@ -2671,10 +2672,10 @@ jun61 <- raster::mask(jun61, mcp)
 jun199 <- raster::mask(jun199, mcp)
 jun628 <- raster::mask(jun628, mcp)
 
-sep11 <- raster("../output/maxent/predictions/sep/avg_cloglog_11.7737.asc")
-sep61 <- raster("../output/maxent/predictions/sep/avg_cloglog_61.1128.asc")
-sep199 <- raster("../output/maxent/predictions/sep/avg_cloglog_199.79.asc")
-sep628 <- raster("../output/maxent/predictions/sep/avg_cloglog_628.026.asc")
+sep11 <- raster("../output/maxent/predictions/com-split/sep/avg_cloglog_11.7737.asc")
+sep61 <- raster("../output/maxent/predictions/com-split/sep/avg_cloglog_61.1128.asc")
+sep199 <- raster("../output/maxent/predictions/com-split/sep/avg_cloglog_199.79.asc")
+sep628 <- raster("../output/maxent/predictions/com-split//sep/avg_cloglog_628.026.asc")
 sep11@crs <- acrs
 sep61@crs <- acrs
 sep199@crs <- acrs
@@ -2684,10 +2685,10 @@ sep61 <- raster::mask(sep61, mcp)
 sep199 <- raster::mask(sep199, mcp)
 sep628 <- raster::mask(sep628, mcp)
 
-dec11 <- raster("../output/maxent/predictions/dec/avg_cloglog_11.7737.asc")
-dec61 <- raster("../output/maxent/predictions/dec/avg_cloglog_61.1128.asc")
-dec199 <- raster("../output/maxent/predictions/dec/avg_cloglog_199.79.asc")
-dec628 <- raster("../output/maxent/predictions/dec/avg_cloglog_628.026.asc")
+dec11 <- raster("../output/maxent/predictions/com-split/dec/avg_cloglog_11.7737.asc")
+dec61 <- raster("../output/maxent/predictions/com-split/dec/avg_cloglog_61.1128.asc")
+dec199 <- raster("../output/maxent/predictions/com-split/dec/avg_cloglog_199.79.asc")
+dec628 <- raster("../output/maxent/predictions/com-split/dec/avg_cloglog_628.026.asc")
 dec11@crs <- acrs
 dec61@crs <- acrs
 dec199@crs <- acrs
@@ -2697,19 +2698,19 @@ dec61 <- raster::mask(dec61, mcp)
 dec199 <- raster::mask(dec199, mcp)
 dec628 <- raster::mask(dec628, mcp)
 
-#2d plots
-mar2d <- raster("../output/maxent/paper_plots/hotspot_mapping/mar_bin_0.5_2d_single.asc")
-mar2d <- raster::mask(mar2d, mcp)
-mar2d@crs <- acrs
-jun2d <- raster("../output/maxent/paper_plots/hotspot_mapping/jun_bin_0.5_2d_single.asc")
-jun2d <- raster::mask(jun2d, mcp)
-jun2d@crs <- acrs
-sep2d <- raster("../output/maxent/paper_plots/hotspot_mapping/sep_bin_0.5_2d_single.asc")
-sep2d <- raster::mask(sep2d, mcp)
-sep2d@crs <- acrs
-dec2d <- raster("../output/maxent/paper_plots/hotspot_mapping/dec_bin_0.5_2d_single.asc")
-dec2d <- raster::mask(dec2d, mcp)
-dec2d@crs <- acrs
+# #2d plots
+# mar2d <- raster("../output/maxent/paper_plots/hotspot_mapping/mar_bin_0.5_2d_single.asc")
+# mar2d <- raster::mask(mar2d, mcp)
+# mar2d@crs <- acrs
+# jun2d <- raster("../output/maxent/paper_plots/hotspot_mapping/jun_bin_0.5_2d_single.asc")
+# jun2d <- raster::mask(jun2d, mcp)
+# jun2d@crs <- acrs
+# sep2d <- raster("../output/maxent/paper_plots/hotspot_mapping/sep_bin_0.5_2d_single.asc")
+# sep2d <- raster::mask(sep2d, mcp)
+# sep2d@crs <- acrs
+# dec2d <- raster("../output/maxent/paper_plots/hotspot_mapping/dec_bin_0.5_2d_single.asc")
+# dec2d <- raster::mask(dec2d, mcp)
+# dec2d@crs <- acrs
 
 #mar2d, jun2d, sep2d, dec2d, 
 
@@ -2720,7 +2721,7 @@ cls <- c("March", "June", "September", "December", "", "", "", "", "", "", "", "
 myTheme <- rasterTheme(region = inferno(rev(10)))
 my.at <- seq(0, 1, by = 0.1)
 
-p <- levelplot(pstack, ylab = NULL, xlab = NULL, colorkey=list(space="bottom", at = my.at), par.settings = myTheme, layout = c(4, 4), margin = FALSE, scales=list(draw=FALSE), col.regions=rev(inferno(10)), at= my.at, names.attr = cls) + latticeExtra::layer(sp.polygons(ss, fill = "dark grey", col = "transparent"))+ latticeExtra::layer(sp.polygons(mcp, col = "dark grey"))
+p <- levelplot(pstack, ylab = NULL, xlab = NULL, colorkey=list(space="bottom", at = my.at), par.settings = myTheme, layout = c(4, 4), margin = FALSE, scales=list(draw=FALSE), col.regions=rev(inferno(10)), at= my.at, names.attr = cls) + latticeExtra::layer(sp.polygons(ss, fill = "dark grey", col = "transparent")) #+ latticeExtra::layer(sp.polygons(mcp, col = "dark grey"))
 png("../output/maxent/paper_plots/bydepth.png", height = 1024, width = 1024)
 p
 dev.off()
@@ -4008,5 +4009,408 @@ for (mth in 65:length(modlist)){
         dev.off() # stops automatic saving of the plot to a png
     }
 }
+```
+
+
+
+
+
+#probabilty maps (selected)
+
+xxxx
+```{r}
+library(raster)
+library(rgdal)
+library(rasterVis)
+library(colorspace)
+
+aea <- raster("../output/env/aea.tif") #the correct CRS
+s <- shapefile("../data/env/landp/landpro.shp") #made in arcgis
+acrs <- aea@crs
+mcp <- shapefile("../output/bio/minimum_convex_poly/mcp_capelin_100_poly.shp")
+ss <- raster::intersect(s, mcp)  #trim land file to mcp
+
+
+
+mar2d <- raster("../output/maxent/paper_plots/hotspot_mapping/mar_bin_0.5_2d_single.asc")
+apr2d <- raster("../output/maxent/paper_plots/hotspot_mapping/apr_bin_0.5_2d_single.asc")
+may2d <- raster("../output/maxent/paper_plots/hotspot_mapping/may_bin_0.5_2d_single.asc")
+jun2d <- raster("../output/maxent/paper_plots/hotspot_mapping/jun_bin_0.5_2d_single.asc")
+jul2d <- raster("../output/maxent/paper_plots/hotspot_mapping/jul_bin_0.5_2d_single.asc")
+aug2d <- raster("../output/maxent/paper_plots/hotspot_mapping/aug_bin_0.5_2d_single.asc")
+sep2d <- raster("../output/maxent/paper_plots/hotspot_mapping/sep_bin_0.5_2d_single.asc")
+oct2d <- raster("../output/maxent/paper_plots/hotspot_mapping/oct_bin_0.5_2d_single.asc")
+nov2d <- raster("../output/maxent/paper_plots/hotspot_mapping/nov_bin_0.5_2d_single.asc")
+dec2d <- raster("../output/maxent/paper_plots/hotspot_mapping/dec_bin_0.5_2d_single.asc")
+
+#trim to mcp
+mar2d <- raster::mask(mar2d, mcp)
+apr2d <- raster::mask(apr2d, mcp)
+may2d <- raster::mask(may2d, mcp)
+jun2d <- raster::mask(jun2d, mcp)
+jul2d <- raster::mask(jul2d, mcp)
+aug2d <- raster::mask(aug2d, mcp)
+sep2d <- raster::mask(sep2d, mcp)
+oct2d <- raster::mask(oct2d, mcp)
+nov2d <- raster::mask(nov2d, mcp)
+dec2d <- raster::mask(dec2d, mcp)
+
+#add crs
+mar2d@crs <- acrs
+apr2d@crs <- acrs
+may2d@crs <- acrs
+jun2d@crs <- acrs
+jul2d@crs <- acrs
+aug2d@crs <- acrs
+sep2d@crs <- acrs
+oct2d@crs <- acrs
+nov2d@crs <- acrs
+dec2d@crs <- acrs
+
+
+
+
+
+maplst <- list.files("../output/maxent/predictions/may", pattern = "^avg_clog.*.asc", full.names = TRUE)
+maplst2 <- list.files("../output/maxent/predictions/sep", pattern = "^avg_clog.*.asc", full.names = TRUE)
+brk <- seq(0, 1, 0.1) #for legend
+lgc <- sequential_hcl(10, palette = "YlOrRd") #colour scheme from colorspace package
+outsidemcp <- shapefile("../data/env/landp/mcpout.shp") #made in arcgis
+
+pras6 <- raster(maplst[37])
+pras180 <- raster(maplst[14])
+pras370 <- raster(maplst[28])
+pras697 <- raster(maplst[41])
+p2ras6 <- raster(maplst2[37])
+p2ras180 <- raster(maplst2[14])
+p2ras370 <- raster(maplst2[28])
+p2ras697 <- raster(maplst2[41])
+crs(pras6) <- apr
+crs(pras180) <- apr
+crs(pras370) <- apr
+```
+
+
+```{r}
+crs(pras697) <- apr
+crs(p2ras6) <- apr
+crs(p2ras180) <- apr
+crs(p2ras370) <- apr
+crs(p2ras697) <- apr
+ascname6 <- names(pras6)
+ascname180 <- names(pras180)
+ascname370 <- names(pras370)
+ascname697 <- names(pras697)
+a2scname6 <- names(p2ras6)
+a2scname180 <- names(p2ras180)
+a2scname370 <- names(p2ras370)
+a2scname697 <- names(p2ras697)
+
+# pstack <- stack(pras6, pras180, pras370, pras697) #stack the layers
+# 
+# pras1 <- raster(maplst[1])
+# pras2 <- raster(maplst[2])
+# pras3 <- raster(maplst[3])
+# pras4 <- raster(maplst[4])
+# crs(pras1) <- apr
+# crs(pras2) <- apr
+# crs(pras3) <- apr
+# crs(pras4) <- apr
+
+pstack <- stack(pras6, pras180, pras370, pras697, p2ras6, p2ras180, p2ras370, p2ras697) #stack the layers
+
+cls <- c("6m", "180m", "370m", "697m")
+rws <- c("May", "Sep")
+mapTheme <- rasterTheme(region = rev(brewer.pal(10,"RdYlGn")))
+my.at <- seq(0, 1, by = 0.1)
+
+
+p <- levelplot(pstack, ylab = NULL, xlab = NULL, scales=list(draw=FALSE), colorkey=list(space="bottom", at = my.at), par.settings = mapTheme, layout = c(4, 2), names.attr = c("6m", "180m", "370m", "697m", "", "", "", ""), margin = FALSE)
+p + layer(sp.polygons(s, fill = "black")) + layer (sp.polygons(outsidemcp, fill = redtrans, col = NA))
+
+
+#dev.copy(png, (paste0("../output/maxent/predictions/testplots/rasterVis.png")), width = 1920,height = 1080)
+#dev.off() # stops automatic saving of the plot to a png))
+
+
+
+```
+
+```{r}
+streams <- raster::shapefile("../data/env/landp/land-wgs84v2.shp")
+ras <- 
+
+ggplot() + layer_spatial(data = streams, fill = "dark grey", colour = "transparent") + layer_spatial() + theme_void()
+
+
+```
+
+#2d maps for comb-maxent
+
+#2d hotspot maps
+
+first create layers that are 0.5 and above
+
+```{r habitat classification on probability - >0.5xx}
+
+binprob <- function(x){
+  ifelse(x >= 0.5, 1,
+  ifelse(x < 0.5, 0, NA)) 
+}
+
+mthord <- c("mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
+
+for (m in 1:length(mthord)){
+  mthna <- mthord[m]
+  clogasc_list <- list.files(paste0("../output/maxent/predictions/com-split/", mthna), pattern = "^avg_cloglog_.*asc", full.names = TRUE)
+  for (cum in 1:length(clogasc_list)){
+    cumasc <- raster(clogasc_list[cum])
+    ascname <- names(cumasc)
+    ascname <- gsub("avg_cloglog_", "", ascname)
+    probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
+    writeRaster(probbin, paste0("../output/maxent/paper_plots/hotspot_mapping/", mthna,  "_binary_0.5_", ascname, ".asc"), overwrite = TRUE)
+     plot(probbin, png(paste0("../output/maxent/paper_plots/hotspot_mapping/", mthna, "_binary_0.5_", ascname, ".png")), overwrite = TRUE)
+       dev.off() # stops automatic saving of the plot to a png
+  }
+}
+
+```
+
+then create an summary map....
+```{r >0.5 prob monthly 2D representation}
+mthord <- c("mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
+
+for (m in 1:length(mthord)){
+  mthna <- mthord[m]
+  binaryprob_list <- list.files(paste0("../output/maxent/paper_plots/hotspot_mapping/"), pattern = paste0(mthna, "*_binary_0.5_.*.asc$"), full.names = TRUE)
+  binstack <- stack(binaryprob_list)
+  stacksum <- sum(binstack, na.rm = TRUE)
+  writeRaster(stacksum, paste0("../output/maxent/paper_plots/hotspot_mapping/", mthna, "_bin_0.5_2d.asc"), overwrite=TRUE)
+  plot(stacksum, png(paste0("../output/maxent/paper_plots/hotspot_mapping/", mthna, "_bin_0.5_2d.png")))
+  dev.off()
+}
+
+```
+
+now create summary maps where values are binary - not counts of cells
+```{r}
+binprob <- function(x){
+  ifelse(x > 0, 1,
+  ifelse(x <= 0, 0, NA))
+}
+
+  clogasc_list <- list.files("../output/maxent/paper_plots/hotspot_mapping", pattern = "*_bin_0.5_2d.asc", full.names = TRUE)
+  for (cum in 1:length(clogasc_list)){
+    cumasc <- raster(clogasc_list[cum])
+    ascname <- names(cumasc)
+    probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
+    writeRaster(probbin, paste0("../output/maxent/paper_plots/hotspot_mapping/", ascname, "_single.asc"), overwrite = TRUE)
+    plot(probbin, png(paste0("../output/maxent/paper_plots/hotspot_mapping/", ascname, "_single.png")), overwrite = TRUE)
+    dev.off() # stops automatic saving of the plot to a png
+  }
+```
+
+then plot the maps
+
+```{r}
+
+ss <- shapefile("../data/env/landp/land-wgs84v2.shp") #made in arcgis
+crs(ss) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0 "
+acrs <- crs(ss)
+mcp <- shapefile("../output/bio/minimum_convex_poly/mcp-wgs84.shp")
+#ss <- raster::intersect(s, mcp)  #trim to mcp
+
+
+mar2d <- raster("../output/maxent/paper_plots/hotspot_mapping/mar_bin_0.5_2d_single.asc")
+apr2d <- raster("../output/maxent/paper_plots/hotspot_mapping/apr_bin_0.5_2d_single.asc")
+may2d <- raster("../output/maxent/paper_plots/hotspot_mapping/may_bin_0.5_2d_single.asc")
+jun2d <- raster("../output/maxent/paper_plots/hotspot_mapping/jun_bin_0.5_2d_single.asc")
+jul2d <- raster("../output/maxent/paper_plots/hotspot_mapping/jul_bin_0.5_2d_single.asc")
+aug2d <- raster("../output/maxent/paper_plots/hotspot_mapping/aug_bin_0.5_2d_single.asc")
+sep2d <- raster("../output/maxent/paper_plots/hotspot_mapping/sep_bin_0.5_2d_single.asc")
+oct2d <- raster("../output/maxent/paper_plots/hotspot_mapping/oct_bin_0.5_2d_single.asc")
+nov2d <- raster("../output/maxent/paper_plots/hotspot_mapping/nov_bin_0.5_2d_single.asc")
+dec2d <- raster("../output/maxent/paper_plots/hotspot_mapping/dec_bin_0.5_2d_single.asc")
+
+#trim to mcp
+mar2d <- raster::mask(mar2d, mcp)
+apr2d <- raster::mask(apr2d, mcp)
+may2d <- raster::mask(may2d, mcp)
+jun2d <- raster::mask(jun2d, mcp)
+jul2d <- raster::mask(jul2d, mcp)
+aug2d <- raster::mask(aug2d, mcp)
+sep2d <- raster::mask(sep2d, mcp)
+oct2d <- raster::mask(oct2d, mcp)
+nov2d <- raster::mask(nov2d, mcp)
+dec2d <- raster::mask(dec2d, mcp)
+
+#add crs
+mar2d@crs <- acrs
+apr2d@crs <- acrs
+may2d@crs <- acrs
+jun2d@crs <- acrs
+jul2d@crs <- acrs
+aug2d@crs <- acrs
+sep2d@crs <- acrs
+oct2d@crs <- acrs
+nov2d@crs <- acrs
+dec2d@crs <- acrs
+
+#ratify to categorical
+mar2d <- ratify(mar2d)
+rat <- levels(mar2d)[[1]]
+rat$suitability <- c("< 0.5", "> 0.5")
+levels(mar2d) <- rat
+apr2d <- ratify(apr2d)
+rat <- levels(apr2d)[[1]]
+rat$suitability <- c("< 0.5", "> 0.5")
+levels(apr2d) <- rat
+may2d <- ratify(may2d)
+rat <- levels(may2d)[[1]]
+rat$suitability <- c("< 0.5", "> 0.5")
+levels(may2d) <- rat
+jun2d <- ratify(jun2d)
+rat <- levels(jun2d)[[1]]
+rat$suitability <- c("< 0.5", "> 0.5")
+levels(jun2d) <- rat
+jul2d <- ratify(jul2d)
+rat <- levels(jul2d)[[1]]
+rat$suitability <- c("< 0.5", "> 0.5")
+levels(jul2d) <- rat
+aug2d <- ratify(aug2d)
+rat <- levels(aug2d)[[1]]
+rat$suitability <- c("< 0.5", "> 0.5")
+levels(aug2d) <- rat
+sep2d <- ratify(sep2d)
+rat <- levels(sep2d)[[1]]
+rat$suitability <- c("< 0.5", "> 0.5")
+levels(sep2d) <- rat
+oct2d <- ratify(oct2d)
+rat <- levels(oct2d)[[1]]
+rat$suitability <- c("< 0.5", "> 0.5")
+levels(oct2d) <- rat
+nov2d <- ratify(nov2d)
+rat <- levels(nov2d)[[1]]
+rat$suitability <- c("< 0.5", "> 0.5")
+levels(nov2d) <- rat
+dec2d <- ratify(dec2d)
+rat <- levels(dec2d)[[1]]
+rat$suitability <- c("< 0.5", "> 0.5")
+levels(dec2d) <- rat
+
+maplst <- list(mar2d, apr2d, may2d, jun2d, jul2d, aug2d, sep2d, oct2d, nov2d, dec2d)
+
+pstack <- stack(maplst)
+
+# my.at <- seq(0, 1, by = 0.1)
+# mapTheme <- infernoTheme(region = rev(inferno(10)))
+
+
+p <- levelplot(pstack, col.regions=c('white', 'red'), ylab = NULL, xlab = NULL, scales=list(draw=FALSE), layout = c(5, 2), names.attr = c("Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"), margin = FALSE) + latticeExtra::layer(sp.polygons(ss, fill = "dark grey", col = "transparent"))+ latticeExtra::layer(sp.polygons(mcp, col = "dark grey"))
+plot(p)
+```
+
+
+```{r}
+require(data.table)
+require(purrr)
+require(lubridate)
+require(tidyverse)
+
+
+
+filenames <- list.files("../output/maxent/paper_plots/prob_by_depth/", pattern = "dis_prob_cells.csv", recursive = TRUE,full.names = TRUE)
+
+all <- map_dfr(filenames, function(x) fread(x) %>% 
+                       mutate(Month=substr(basename(x),1,3))) %>% 
+  mutate(Probability = gsub(">0.9", "0.9 - 1", Probability),
+         Depth = factor(round(Depth,1)),
+         Depth = factor(Depth,ordered = TRUE, levels = rev(levels(Depth))),
+         Month=factor(months(parse_date_time(Month,"%m")),
+                      ordered = TRUE,
+                      levels=months(parse_date_time(1:12,"%m"))))
+
+#create a list of depths so you can set breaks for the x-axis (which is showing as the y-axis...)
+dlst <- unique(all$Depth)
+dlst <- as.character(dlst)
+dlst <- as.numeric(dlst)
+dlst <- sort(dlst)
+
+  ggplot(all) +
+  geom_col(aes(Depth, p_cells, fill = Probability),width=1) +
+  coord_flip()+
+  facet_wrap(~Month,ncol=5)+
+  labs(y = "% Ocean at Depth", x = "Depth (meters)")+
+  scale_fill_viridis(option="magma", discrete = TRUE, direction = -1, guide=guide_legend(nrow=2, byrow = TRUE))+
+  theme_classic()+
+  theme(legend.position = "bottom", axis.text.y = element_text(size=7), strip.background = element_blank()) +
+  scale_x_discrete(breaks = c(dlst[1], dlst[5], dlst[10], dlst[15], dlst[20], dlst[25], dlst[30], dlst[35], dlst[40], dlst[47]))
+
+ggsave("../output/maxent/paper_plots/test.png", dpi = 600)
+```
+
+
+```{r}
+library(sf)
+library(purrr)
+library(raster)
+library(lubridate)
+library(tidyverse)
+
+proj <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"
+
+s <- st_read("../data/env/landp/land-wgs84v2.shp") %>% 
+  st_set_crs(proj)
+
+mcp <- st_read("../output/bio/minimum_convex_poly/mcp-wgs84.shp")
+
+filelist <- list.files("../data/plot2-probmaps/",pattern="avg_cloglog*",recursive = TRUE,include.dirs = TRUE)
+
+x <- stack(file.path("../data/plot2-probmaps/",filelist)) %>% 
+  mask(mcp) 
+
+names(x) <- filelist
+
+df <- x %>% 
+  rasterToPoints() %>% 
+  as.data.frame() %>% 
+  gather(key = "variable", value = "value",-x,-y) %>% 
+  mutate(variable=gsub(".asc","",variable),
+         month=factor(months(parse_date_time(gsub("\\..*$", "",variable),"%m")),
+                      ordered = TRUE,
+                      levels=months(parse_date_time(1:12,"%m"))),
+         depth=as.numeric(gsub("^.*_", "",variable)))
+
+#remi code stops here
+
+df$month <- str_sub(df$variable, start = 16, end = 18)
+
+CapStr <- function(y) {
+  c <- strsplit(y, " ")[[1]]
+  paste(toupper(substring(c, 1,1)), substring(c, 2),
+      sep="", collapse=" ")
+}
+df$month <- sapply(df$month, CapStr)
+
+#remi code starts here
+
+depthlab <- paste(unique(df$depth),"m")[c(1,3,2,4)]
+names(depthlab) <- unique(df$depth)[c(1,3,2,4)]
+
+ggplot(df)+
+  geom_sf(data=mcp,fill='grey')+
+  geom_raster(aes(x,y,fill=value))+
+  geom_sf(data=mcp,fill="transparent")+
+  scale_fill_viridis(option="magma",
+                       direction=-1,
+                       guide=guide_colourbar(barwidth=20))+
+  facet_grid(depth~month,
+             labeller = labeller(depth=depthlab))+
+  theme_classic()+
+  scale_x_continuous(breaks = seq(-70,-50,10))+
+  theme(legend.position = "bottom",
+        axis.title.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.x=element_text(angle=45,vjust=1,hjust=1), strip.background = element_blank())
 ```
 

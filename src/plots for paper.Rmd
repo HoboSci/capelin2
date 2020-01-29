@@ -1086,7 +1086,7 @@ now create a table to see how many cells there are >0.5 in each month
 ```{r count cells >0.5}
 
 binaryprob_list <- list.files("../output/maxent/paper_plots/hotspot_mapping/", pattern = ".*_bin_0.5_2d.asc", full.names = TRUE)
-sum2d <- setNames(data.frame(matrix(ncol = 2, nrow = binl)), c("month", "count"))
+sum2d <- setNames(data.frame(matrix(ncol = 2, nrow = binaryprob_list))), c("month", "count"))
 
 
 for (r in 1:length(binaryprob_list)){

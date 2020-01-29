@@ -673,10 +673,6 @@ dev.off()
 count number of cells that are not NA in each raster layer that are inside the mcp
 
 ```{r}
-# outsidemcp <- shapefile("../data/env/landp/mcpout.shp") #made in arcgis
-# wgsraster <- raster("../output/maxent/predictions/com-split/apr/cloglog_1998_04_0.50576.asc") #just chosen randomly to act as dummy file
-# crs(wgsraster) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0 "
-# outsidemcp <- spTransform(outsidemcp, crs(wgsraster))
 
 clogasc_list <- list.files(paste0("../output/maxent/predictions/com-split/mar"), pattern = "^avg_cloglog_.*.asc", full.names = TRUE) #just choose a random month to calculate cells
 cumst <- data.frame(0, 0)
@@ -701,7 +697,6 @@ write.csv(cumst1, "../output/maxent/paper_plots/cellsperlayer.csv", row.names = 
 first bin the probabilities for cells inside the mcp
 
 ```{r bin probabilities}
-#outsidemcp <- shapefile("../data/env/landp/mcpout.shp") #made in arcgis
 mthord <- c("mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
 
 for (m in 1:length(mthord)){
@@ -716,7 +711,6 @@ for (m in 1:length(mthord)){
   for (cum in 1:length(clogasc_list)){
     cumasc <- raster(clogasc_list[cum])
     ascname <- names(cumasc)
-    #cumasc <- mask(cumasc, outsidemcp, inverse = TRUE)
     probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
     writeRaster(probbin, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_1_avgprob_", ascname, ".asc"), overwrite = TRUE)
     plot(probbin, png(paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_1_avgprob_", ascname, ".png")), overwrite = TRUE)
@@ -733,7 +727,6 @@ for (m in 1:length(mthord)){
   for (cum in 1:length(clogasc_list)){
     cumasc <- raster(clogasc_list[cum])
     ascname <- names(cumasc)
-    #cumasc <- mask(cumasc, outsidemcp, inverse = TRUE)
     probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
     writeRaster(probbin, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_2_avgprob_", ascname, ".asc"), overwrite = TRUE)
     plot(probbin, png(paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_2_avgprob_", ascname, ".png")), overwrite = TRUE)
@@ -748,7 +741,6 @@ for (m in 1:length(mthord)){
   for (cum in 1:length(clogasc_list)){
     cumasc <- raster(clogasc_list[cum])
     ascname <- names(cumasc)
-    #cumasc <- mask(cumasc, outsidemcp, inverse = TRUE)
     probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
     writeRaster(probbin, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_3_avgprob_", ascname, ".asc"), overwrite = TRUE)
     plot(probbin, png(paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_3_avgprob_", ascname, ".png")), overwrite = TRUE)
@@ -764,7 +756,6 @@ for (m in 1:length(mthord)){
   for (cum in 1:length(clogasc_list)){
     cumasc <- raster(clogasc_list[cum])
     ascname <- names(cumasc)
-    #cumasc <- mask(cumasc, outsidemcp, inverse = TRUE)
     probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
     writeRaster(probbin, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_4_avgprob_", ascname, ".asc"), overwrite = TRUE)
     plot(probbin, png(paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_4_avgprob_", ascname, ".png")), overwrite = TRUE)
@@ -781,7 +772,6 @@ for (m in 1:length(mthord)){
   for (cum in 1:length(clogasc_list)){
     cumasc <- raster(clogasc_list[cum])
     ascname <- names(cumasc)
-    #cumasc <- mask(cumasc, outsidemcp, inverse = TRUE)
     probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
     writeRaster(probbin, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_5_avgprob_", ascname, ".asc"), overwrite = TRUE)
     plot(probbin, png(paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_5_avgprob_", ascname, ".png")), overwrite = TRUE)
@@ -972,4 +962,127 @@ for (m in 1:length(mthord)){
 
 ```
 
-GO FROM HERE
+histogram of probability by depth - by proportion
+
+based on Remi's code
+```{r}
+require(data.table)
+require(purrr)
+require(lubridate)
+require(tidyverse)
+
+
+
+filenames <- list.files("../output/maxent/paper_plots/prob_by_depth/", pattern = "dis_prob_cells.csv", recursive = TRUE,full.names = TRUE)
+
+all <- map_dfr(filenames, function(x) fread(x) %>% 
+                       mutate(Month=substr(basename(x),1,3))) %>% 
+  mutate(Probability = gsub(">0.9", "0.9 - 1", Probability),
+         Depth = factor(round(Depth,1)),
+         Depth = factor(Depth,ordered = TRUE, levels = rev(levels(Depth))),
+         Month=factor(months(parse_date_time(Month,"%m")),
+                      ordered = TRUE,
+                      levels=months(parse_date_time(1:12,"%m"))))
+
+#create a list of depths so you can set breaks for the x-axis (which is showing as the y-axis...)
+dlst <- unique(all$Depth)
+dlst <- as.character(dlst)
+dlst <- as.numeric(dlst)
+dlst <- sort(dlst)
+
+#make the plot
+  ggplot(all) +
+  geom_col(aes(Depth, p_cells, fill = Probability),width=1) +
+  coord_flip()+
+  facet_wrap(~Month,ncol=5)+
+  labs(y = "% Ocean at Depth", x = "Depth (meters)")+
+  scale_fill_viridis(option="magma", discrete = TRUE, direction = -1, guide=guide_legend(nrow=2, byrow = TRUE))+
+  theme_classic()+
+  theme(legend.position = "bottom", axis.text.y = element_text(size=7), strip.background = element_blank()) +
+  scale_x_discrete(breaks = c(dlst[1], dlst[5], dlst[10], dlst[15], dlst[20], dlst[25], dlst[30], dlst[35], dlst[40], dlst[47]))
+
+ggsave("../output/maxent/paper_plots/test.png", dpi = 600)
+```
+
+
+
+
+# variable maps
+- temp
+- chl 
+- o2
+- sal
+- 4 different months
+- relationship of variables to each other
+- pick a depth (say the 11.7737 m)
+
+months are mar, jun, sep, dec
+pick 3 diff years say 1998, 2006, 2013
+
+```{r individual maps}
+#aea <- raster("../output/env/aea.tif") #the correct CRS
+s <- shapefile("../data/env/landp/land-wgs84v2.shp") #made in arcgis
+crs(s) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"
+#acrs <- aea@crs
+mcp <- shapefile("../output/bio/minimum_convex_poly/mcp-wgs84.shp")
+#ss <- raster::intersect(s, mcp)  #trim land file to mcp
+
+plotlist <- list()
+
+yrlst <- c("1998", "2006", "2013")
+mthlst <- c("03", "06", "09", "12")
+varlst <- c("temp", "salinity", "o2")
+
+pn <- 1
+for (y in 1:length(yrlst)){
+  yr <- yrlst[y]
+  fdr <- paste0("../data/env/ascii-original/ascii", yr, "/")
+  for (m in 1:length(mthlst)){
+    mt <- mthlst[m]
+    for (v in 1:length(varlst)){
+      var <- varlst[v]
+      ras <- raster(paste0(fdr, yr, "_", mt, "_", var, ".nc_11.7737.asc"))
+      lyrnm <- names(ras)
+      crs(ras) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"
+      #ras <- projectRaster(ras, aea)
+      ras <- raster::mask(ras, mcp)
+      
+      plotlist[[pn]] <- levelplot(ras, margin=FALSE, colorkey=list(space='bottom', axis.line=list(col='black')), par.settings=list(axis.line=list(col='transparent')), scales=list(draw=FALSE), col.regions=colorRampPalette(blue2red(20))) + latticeExtra::layer(sp.polygons(s, fill = "dark grey", col = "transparent") ) #changed ss to s
+      pn <- pn+1
+              
+     # png(paste0("../output/maxent/paper_plots/", lyrnm, ".png"), height = 1024, width = 1024)
+     # print(p)
+     # dev.off()
+    }
+  }
+}
+
+#chl is done seperately as it is surface
+
+yrlst <- c("1998", "2006", "2013")
+mthlst <- c("03", "06", "09", "12")
+varlst <- c("chl")
+
+for (y in 1:length(yrlst)){
+  yr <- yrlst[y]
+  fdr <- paste0("../data/env/ascii-original/ascii", yr, "/")
+  for (m in 1:length(mthlst)){
+    mt <- mthlst[m]
+    for (v in 1:length(varlst)){
+      var <- varlst[v]
+      ras <- raster(paste0(fdr, yr, "_", mt, "_", var, ".nc_0.50576.asc"))
+      lyrnm <- names(ras)
+      crs(ras) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"
+      ras <- raster::mask(ras, mcp)
+      plotlist[[pn]] <- levelplot(ras, margin=FALSE, colorkey=list(space='bottom', axis.line=list(col='black')), par.settings=list(axis.line=list(col='transparent')), scales=list(draw=FALSE), col.regions=colorRampPalette(blue2red(20))) + latticeExtra::layer(sp.polygons(s, fill = "dark grey", col = "transparent"))
+      pn <- pn+1
+
+              
+   #   png(paste0("../output/maxent/paper_plots/", lyrnm, ".png"), height = 1024, width = 1024)
+    #  print(p)
+    #  dev.off()
+    }
+  }
+}
+```
+
