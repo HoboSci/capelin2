@@ -4383,6 +4383,7 @@ df <- x %>%
 
 #remi code stops here
 
+#here i capitalise the months
 df$month <- str_sub(df$variable, start = 16, end = 18)
 
 CapStr <- function(y) {
@@ -4402,15 +4403,273 @@ ggplot(df)+
   geom_raster(aes(x,y,fill=value))+
   geom_sf(data=mcp,fill="transparent")+
   scale_fill_viridis(option="magma",
-                       direction=-1,
-                       guide=guide_colourbar(barwidth=20))+
+                       direction=-1, limits = c(0,1), breaks = c(0, 0.25, 0.5, 0.75, 1),
+                       guide=guide_colourbar(barwidth=0.5, barheight = 15, title = NULL, draw.ulim = FALSE, draw.llim = FALSE))+
   facet_grid(depth~month,
              labeller = labeller(depth=depthlab))+
   theme_classic()+
   scale_x_continuous(breaks = seq(-70,-50,10))+
-  theme(legend.position = "bottom",
+  theme(legend.position = "right",
         axis.title.x=element_blank(),
         axis.title.y=element_blank(),
-        axis.text.x=element_text(angle=45,vjust=1,hjust=1), strip.background = element_blank())
+        axis.text.x=element_text(angle=45,vjust=1,hjust=1), strip.background = element_blank(),
+        strip.text.x = element_text(face = "bold", size = 12),
+        strip.text.y = element_text(face = "bold", size = 12))
+
+ggsave("../output/maxent/paper_plots/test-overview.png", width = 210, height = 297, units = "mm", dpi = 600)
 ```
+
+#variable maps
+```{r}
+
+library(sf)
+library(purrr)
+library(raster)
+library(lubridate)
+library(patchwork)
+library(tidyverse)
+
+CapStr <- function(y) {
+  c <- strsplit(y, " ")[[1]]
+  paste(toupper(substring(c, 1,1)), substring(c, 2),
+      sep="", collapse=" ")
+}
+
+
+proj <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"
+
+mcp <- st_read("../data/plot4-variables/minimum_convex_poly/mcp-wgs84.shp")
+
+s <- st_read("../data/plot4-variables/landp/land-wgs84v2.shp") %>% 
+  st_set_crs(proj) %>% 
+  st_intersection(mcp)
+
+filelist <- list.files("../data/plot4-variables/ascii/ascii1998/",pattern="*.asc",recursive = TRUE)
+
+x <- stack(file.path("../data/plot4-variables/ascii/ascii1998/",filelist)) %>% 
+  mask(mcp) %>% 
+  rasterToPoints() %>% 
+  as.data.frame() %>% 
+  gather(key = "variable", value = "value",-x,-y) %>% 
+  separate(variable,c('year','month','variable','depth'),'_',remove=TRUE) %>% 
+  mutate(month=factor(months(parse_date_time(month,"%m")),
+                      ordered = TRUE,
+                      levels=months(parse_date_time(1:12,"%m"))),
+         year=as.numeric(gsub("X","",year)),
+         monthyear=factor(paste0(month,'\n',year),
+                          ordered = TRUE,
+                          levels=unique(paste0(month,'\n',year))),
+         variable=gsub(".nc","",variable)
+         )
+
+
+vars = c('chl','o2','salinity','temp')
+
+for(v in vars){
+  if(v=='chl'){
+  assign(v,ggplot(x %>% filter(variable==v,month!='September'))+
+           geom_sf(data=s,fill='grey')+
+           geom_raster(aes(x,y,fill=value))+
+           geom_sf(data=mcp,fill="transparent")+
+           scale_fill_viridis(option="viridis", direction = -1 , 
+           #scale_fill_distiller(palette="Spectral", direction=-1)+
+           guide_colourbar(barwidth=0.5, title = "mmol\u207B\u00B3", draw.ulim = FALSE, draw.llim = FALSE))+
+
+           facet_wrap(~monthyear,nrow=4,strip.position = "right")+
+           theme_classic()+
+           scale_x_continuous(breaks = seq(-70,-50,10))+
+           labs(title=sapply(v, CapStr))+ #i added
+
+           theme(legend.position = "bottom",
+                 axis.title.x=element_blank(),
+                 axis.title.y=element_blank(),
+                 axis.text.x=element_text(angle=45,vjust=1,hjust=1),
+                 strip.background = element_blank(),
+                 strip.text = element_blank()))
+  }else if(v=='o2'){
+      assign(v,ggplot(x %>% filter(variable==v,month!='September'))+
+           geom_sf(data=s,fill='grey')+
+           geom_raster(aes(x,y,fill=value))+
+           geom_sf(data=mcp,fill="transparent")+
+           scale_fill_viridis(option="viridis", direction = -1 , 
+           #scale_fill_distiller(palette="Spectral", direction=-1)+
+           guide_colourbar(barwidth=0.5, title = "mmol\u207B\u00B3", draw.ulim = FALSE, draw.llim = FALSE))+
+           labs(title=sapply(v, CapStr))+ #i added
+
+           facet_wrap(~monthyear,nrow=4,strip.position = "right")+
+           theme_classic()+
+           scale_x_continuous(breaks = seq(-70,-50,10))+
+           theme(legend.position = "bottom",
+                 axis.title.x=element_blank(),
+                 axis.title.y=element_blank(),
+                 axis.text.x=element_text(angle=45,vjust=1,hjust=1),
+                 strip.background = element_blank(),
+                 strip.text = element_blank()))
+  }else if(v=='salinity'){
+      assign(v,ggplot(x %>% filter(variable==v,month!='September'))+
+           geom_sf(data=s,fill='grey')+
+           geom_raster(aes(x,y,fill=value))+
+           geom_sf(data=mcp,fill="transparent")+
+           scale_fill_viridis(option="viridis", direction = -1 , 
+           #scale_fill_distiller(palette="Spectral", direction=-1)+
+           guide_colourbar(barwidth=0.5, title = "PSU", draw.ulim = FALSE, draw.llim = FALSE))+
+
+           facet_wrap(~monthyear,nrow=4,strip.position = "right")+
+           labs(title=sapply(v, CapStr))+ #i added
+           theme_classic()+
+           scale_x_continuous(breaks = seq(-70,-50,10))+
+           theme(legend.position = "bottom",
+                 axis.title.x=element_blank(),
+                 axis.title.y=element_blank(),
+                 axis.text.x=element_text(angle=45,vjust=1,hjust=1),
+                 strip.background = element_blank(),
+                 strip.text = element_blank()))
+  }
+  else if(v=='temp'){
+    assign(v,ggplot(x %>% filter(variable==v,month!='September'))+
+             geom_sf(data=s,fill='grey')+
+             geom_raster(aes(x,y,fill=value))+
+             geom_sf(data=mcp,fill="transparent")+
+             scale_fill_viridis(option="viridis", direction = -1, 
+             #scale_fill_distiller(palette="Spectral", direction=-1)+
+             guide_colourbar(barwidth=0.5, title = "Kelvin", draw.ulim = FALSE, draw.llim = FALSE))+
+             facet_wrap(~monthyear,nrow=4,strip.position = "right")+
+             labs(title=sapply(v, CapStr))+ #i added
+             theme_classic()+
+             scale_x_continuous(breaks = seq(-70,-50,10))+
+             theme(legend.position = "bottom",
+                   axis.title.x=element_blank(),
+                   axis.title.y=element_blank(),
+                   axis.text.x=element_text(angle=45,vjust=1,hjust=1), strip.background = element_blank(),
+                   strip.text.y = element_text(face = "bold")))
+  }
+}
+
+chl|o2|salinity|temp
+
+ggsave("../output/maxent/paper_plots/variable_samples.png", height = 210, width = 297, units = "mm", dpi = 600)
+```
+
+```{r}
+library(sf)
+library(purrr)
+library(raster)
+library(lubridate)
+library(patchwork)
+library(tidyverse)
+
+proj <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"
+
+mcp <- st_read("../data/plot4-variables/minimum_convex_poly/mcp-wgs84.shp")
+
+s <- st_read("../data/plot4-variables/landp/land-wgs84v2.shp") %>% 
+  st_set_crs(proj) %>% 
+  st_intersection(mcp)
+
+filelist <- list.files("../data/plot4-variables/ascii/ascii1998/",pattern="*.asc",recursive = TRUE)
+
+x <- stack(file.path("../data/plot4-variables/ascii/ascii1998/",filelist)) %>% 
+  mask(mcp) %>% 
+  rasterToPoints() %>% 
+  as.data.frame() %>% 
+  gather(key = "variable", value = "value",-x,-y) %>% 
+  separate(variable,c('year','month','variable','depth'),'_',remove=TRUE) %>% 
+  mutate(month=factor(months(parse_date_time(month,"%m")),
+                      ordered = TRUE,
+                      levels=months(parse_date_time(1:12,"%m"))),
+         year=as.numeric(gsub("X","",year)),
+         monthyear=factor(paste0(month,'\n',year),
+                          ordered = TRUE,
+                          levels=unique(paste0(month,'\n',year))),
+         variable=gsub(".nc","",variable)
+         )
+vars = c('chl','o2','salinity','temp')
+for(v in vars){
+  assign(v,ggplot(x %>% filter(variable==v,month!='September'))+
+           geom_sf(data=s,fill='grey')+
+           geom_raster(aes(x,y,fill=value))+
+           geom_sf(data=mcp,fill="transparent")+
+scale_fill_viridis(option="viridis", direction = -1, 
+             #scale_fill_distiller(palette="Spectral", direction=-1)+
+             guide_colourbar(barwidth=0.5, title = "Kelvin", draw.ulim = FALSE, draw.llim = FALSE))+
+           facet_wrap(~monthyear,nrow=4,strip.position = "right")+
+           labs(title=v)+
+           theme_classic()+
+           scale_x_continuous(breaks = seq(-70,-50,10))+
+           theme(legend.position = "bottom",
+                 axis.title.x=element_blank(),
+                 axis.title.y=element_blank(),
+                 axis.text.x=element_text(angle=45,vjust=1,hjust=1),
+                 strip.background = element_blank(),
+                 strip.text = element_blank()))
+  if(v=='temp'){
+    assign(v,ggplot(x %>% filter(variable==v,month!='September'))+
+             geom_sf(data=s,fill='grey')+
+             geom_raster(aes(x,y,fill=value))+
+             geom_sf(data=mcp,fill="transparent")+
+scale_fill_viridis(option="viridis", direction = -1, 
+             #scale_fill_distiller(palette="Spectral", direction=-1)+
+             guide_colourbar(barwidth=0.5, title = "Kelvin", draw.ulim = FALSE, draw.llim = FALSE))+
+             facet_wrap(~monthyear,nrow=4,strip.position = "right")+
+             labs(title=v)+
+             theme_classic()+
+             scale_x_continuous(breaks = seq(-70,-50,10))+
+             theme(legend.position = "bottom",
+                   axis.title.x=element_blank(),
+                   axis.title.y=element_blank(),
+                   axis.text.x=element_text(angle=45,vjust=1,hjust=1)))
+  }
+}
+
+chl|o2|salinity|temp
+```
+
+
+
+```{r}
+library(sf)
+library(purrr)
+library(raster)
+library(lubridate)
+library(tidyverse)
+
+proj <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"
+
+mcp <- st_read("../data/plot4-variables/minimum_convex_poly/mcp-wgs84.shp")
+
+s <- st_read("../data/plot3-2d/landp/land-wgs84v2.shp") %>% 
+  st_set_crs(proj) %>% 
+  st_intersection(mcp)
+
+filelist <- list.files("../data/plot3-2d/hotspot-mapping/",include.dirs = TRUE)
+
+x <- stack(file.path("../data/plot3-2d/hotspot-mapping/",filelist)) %>% 
+  mask(mcp) %>% 
+  rasterToPoints() %>% 
+  as.data.frame() %>% 
+  gather(key = "variable", value = "value",-x,-y) %>% 
+  mutate(month=factor(months(parse_date_time(gsub("_.*$", "",variable),"%m")),
+                      ordered = TRUE,
+                      levels=months(parse_date_time(1:12,"%m"))),
+         value=ifelse(value==1,">0.5","<0.5")) 
+
+df <- x %>% 
+  group_by(month) %>% 
+  summarize(total=round(sum(value==">0.5")/n(),2))
+
+ggplot(x)+
+  geom_sf(data=s,fill='grey',colour='transparent')+
+  geom_raster(aes(x,y,fill=value))+
+  scale_fill_manual(values=c('transparent','red'))+
+  geom_sf(data=mcp,fill="transparent")+
+  geom_text(data=df,x=-50,y=67,label=df$total)+
+  facet_wrap(~month,nrow=2)+#,
+  theme_classic()+
+  scale_x_continuous(breaks = seq(-70,-50,10))+
+  theme(legend.position = "none",
+        axis.title.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.x=element_text(angle=45,vjust=1,hjust=1))
+```
+
 

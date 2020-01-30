@@ -1,7 +1,7 @@
   
 ```{r pre-install & load packages, include=FALSE}
 options(java.parameters = "-Xmx2g" )#needs to run before dismo loaded - boosts memory for java to 1g
-packages <- c("dismo", "stringr", "rJava", "raster", "ecospat", "bossMaps", "lattice", "tidyr", "enmSdm", "ggplot2", "plyr", "reshape2")
+packages <- c("dismo", "stringr", "rJava", "raster", "ecospat", "bossMaps", "lattice", "tidyr", "enmSdm", "ggplot2", "plyr", "reshape2", "tidyverse", "patchwork", "purrr")
 source("../src/ipak.R")
 ipak(packages)
 ```
@@ -1004,7 +1004,79 @@ dlst <- sort(dlst)
 ggsave("../output/maxent/paper_plots/test.png", dpi = 600)
 ```
 
+# sample probabily maps 
 
+have moved sample files into a separate folder
+march,  june, sep, dec
+11.7737, 61.1128, 199.79. 628.026
+
+```{r}
+library(sf)
+library(purrr)
+library(raster)
+library(lubridate)
+library(tidyverse)
+
+proj <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"
+
+s <- st_read("../data/env/landp/land-wgs84v2.shp") %>% 
+  st_set_crs(proj)
+
+mcp <- st_read("../output/bio/minimum_convex_poly/mcp-wgs84.shp")
+
+filelist <- list.files("../data/plot2-probmaps/",pattern="avg_cloglog*",recursive = TRUE,include.dirs = TRUE)
+
+x <- stack(file.path("../data/plot2-probmaps/",filelist)) %>% 
+  mask(mcp) 
+
+names(x) <- filelist
+
+df <- x %>% 
+  rasterToPoints() %>% 
+  as.data.frame() %>% 
+  gather(key = "variable", value = "value",-x,-y) %>% 
+  mutate(variable=gsub(".asc","",variable),
+         month=factor(months(parse_date_time(gsub("\\..*$", "",variable),"%m")),
+                      ordered = TRUE,
+                      levels=months(parse_date_time(1:12,"%m"))),
+         depth=as.numeric(gsub("^.*_", "",variable)))
+
+#remi code stops here
+
+df$month <- str_sub(df$variable, start = 16, end = 18)
+
+CapStr <- function(y) {
+  c <- strsplit(y, " ")[[1]]
+  paste(toupper(substring(c, 1,1)), substring(c, 2),
+      sep="", collapse=" ")
+}
+df$month <- sapply(df$month, CapStr)
+
+#remi code starts here
+
+depthlab <- paste(unique(df$depth),"m")[c(1,3,2,4)]
+names(depthlab) <- unique(df$depth)[c(1,3,2,4)]
+
+ggplot(df)+
+  geom_sf(data=mcp,fill='grey')+
+  geom_raster(aes(x,y,fill=value))+
+  geom_sf(data=mcp,fill="transparent")+
+  scale_fill_viridis(option="magma",
+                       direction=-1, limits = c(0,1), breaks = c(0, 0.25, 0.5, 0.75, 1),
+                       guide=guide_colourbar(barwidth=0.5, barheight = 15, title = NULL, draw.ulim = FALSE, draw.llim = FALSE))+
+  facet_grid(depth~month,
+             labeller = labeller(depth=depthlab))+
+  theme_classic()+
+  scale_x_continuous(breaks = seq(-70,-50,10))+
+  theme(legend.position = "right",
+        axis.title.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.x=element_text(angle=45,vjust=1,hjust=1), strip.background = element_blank(),
+        strip.text.x = element_text(face = "bold", size = 12),
+        strip.text.y = element_text(face = "bold", size = 12))
+
+ggsave("../output/maxent/paper_plots/test-overview.png", width = 210, height = 297, units = "mm", dpi = 600)
+```
 
 
 # variable maps
@@ -1018,71 +1090,3 @@ ggsave("../output/maxent/paper_plots/test.png", dpi = 600)
 
 months are mar, jun, sep, dec
 pick 3 diff years say 1998, 2006, 2013
-
-```{r individual maps}
-#aea <- raster("../output/env/aea.tif") #the correct CRS
-s <- shapefile("../data/env/landp/land-wgs84v2.shp") #made in arcgis
-crs(s) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"
-#acrs <- aea@crs
-mcp <- shapefile("../output/bio/minimum_convex_poly/mcp-wgs84.shp")
-#ss <- raster::intersect(s, mcp)  #trim land file to mcp
-
-plotlist <- list()
-
-yrlst <- c("1998", "2006", "2013")
-mthlst <- c("03", "06", "09", "12")
-varlst <- c("temp", "salinity", "o2")
-
-pn <- 1
-for (y in 1:length(yrlst)){
-  yr <- yrlst[y]
-  fdr <- paste0("../data/env/ascii-original/ascii", yr, "/")
-  for (m in 1:length(mthlst)){
-    mt <- mthlst[m]
-    for (v in 1:length(varlst)){
-      var <- varlst[v]
-      ras <- raster(paste0(fdr, yr, "_", mt, "_", var, ".nc_11.7737.asc"))
-      lyrnm <- names(ras)
-      crs(ras) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"
-      #ras <- projectRaster(ras, aea)
-      ras <- raster::mask(ras, mcp)
-      
-      plotlist[[pn]] <- levelplot(ras, margin=FALSE, colorkey=list(space='bottom', axis.line=list(col='black')), par.settings=list(axis.line=list(col='transparent')), scales=list(draw=FALSE), col.regions=colorRampPalette(blue2red(20))) + latticeExtra::layer(sp.polygons(s, fill = "dark grey", col = "transparent") ) #changed ss to s
-      pn <- pn+1
-              
-     # png(paste0("../output/maxent/paper_plots/", lyrnm, ".png"), height = 1024, width = 1024)
-     # print(p)
-     # dev.off()
-    }
-  }
-}
-
-#chl is done seperately as it is surface
-
-yrlst <- c("1998", "2006", "2013")
-mthlst <- c("03", "06", "09", "12")
-varlst <- c("chl")
-
-for (y in 1:length(yrlst)){
-  yr <- yrlst[y]
-  fdr <- paste0("../data/env/ascii-original/ascii", yr, "/")
-  for (m in 1:length(mthlst)){
-    mt <- mthlst[m]
-    for (v in 1:length(varlst)){
-      var <- varlst[v]
-      ras <- raster(paste0(fdr, yr, "_", mt, "_", var, ".nc_0.50576.asc"))
-      lyrnm <- names(ras)
-      crs(ras) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"
-      ras <- raster::mask(ras, mcp)
-      plotlist[[pn]] <- levelplot(ras, margin=FALSE, colorkey=list(space='bottom', axis.line=list(col='black')), par.settings=list(axis.line=list(col='transparent')), scales=list(draw=FALSE), col.regions=colorRampPalette(blue2red(20))) + latticeExtra::layer(sp.polygons(s, fill = "dark grey", col = "transparent"))
-      pn <- pn+1
-
-              
-   #   png(paste0("../output/maxent/paper_plots/", lyrnm, ".png"), height = 1024, width = 1024)
-    #  print(p)
-    #  dev.off()
-    }
-  }
-}
-```
-
