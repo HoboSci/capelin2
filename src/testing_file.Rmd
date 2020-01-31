@@ -4465,21 +4465,22 @@ x <- stack(file.path("../data/plot4-variables/ascii/ascii1998/",filelist)) %>%
 
 vars = c('chl','o2','salinity','temp')
 
+
+
+
 for(v in vars){
   if(v=='chl'){
-  assign(v,ggplot(x %>% filter(variable==v,month!='September'))+
+   assign(v,ggplot(x %>% filter(variable==v,month!='September'))+
            geom_sf(data=s,fill='grey')+
            geom_raster(aes(x,y,fill=value))+
            geom_sf(data=mcp,fill="transparent")+
-           scale_fill_viridis(option="viridis", direction = -1 , 
-           #scale_fill_distiller(palette="Spectral", direction=-1)+
+            scale_fill_viridis(option="viridis", direction = -1, 
+             #scale_fill_distiller(palette="Spectral", direction=-1)+
            guide_colourbar(barwidth=0.5, title = "mmol\u207B\u00B3", draw.ulim = FALSE, draw.llim = FALSE))+
-
+           labs(title= "Chl \u03b1")+ #i added
            facet_wrap(~monthyear,nrow=4,strip.position = "right")+
            theme_classic()+
            scale_x_continuous(breaks = seq(-70,-50,10))+
-           labs(title=sapply(v, CapStr))+ #i added
-
            theme(legend.position = "bottom",
                  axis.title.x=element_blank(),
                  axis.title.y=element_blank(),
@@ -4494,7 +4495,7 @@ for(v in vars){
            scale_fill_viridis(option="viridis", direction = -1 , 
            #scale_fill_distiller(palette="Spectral", direction=-1)+
            guide_colourbar(barwidth=0.5, title = "mmol\u207B\u00B3", draw.ulim = FALSE, draw.llim = FALSE))+
-           labs(title=sapply(v, CapStr))+ #i added
+           labs(title=paste0("Dissolved ", sapply(v, CapStr)))+ #i added
 
            facet_wrap(~monthyear,nrow=4,strip.position = "right")+
            theme_classic()+
@@ -4524,8 +4525,7 @@ for(v in vars){
                  axis.text.x=element_text(angle=45,vjust=1,hjust=1),
                  strip.background = element_blank(),
                  strip.text = element_blank()))
-  }
-  else if(v=='temp'){
+  } else if(v=='temp'){
     assign(v,ggplot(x %>% filter(variable==v,month!='September'))+
              geom_sf(data=s,fill='grey')+
              geom_raster(aes(x,y,fill=value))+
@@ -4547,7 +4547,7 @@ for(v in vars){
 
 chl|o2|salinity|temp
 
-ggsave("../output/maxent/paper_plots/variable_samples.png", height = 210, width = 297, units = "mm", dpi = 600)
+#ggsave("../output/maxent/paper_plots/variable_samples.png", height = 210, width = 297, units = "mm", dpi = 600)
 ```
 
 ```{r}
@@ -4624,7 +4624,7 @@ scale_fill_viridis(option="viridis", direction = -1,
 chl|o2|salinity|temp
 ```
 
-
+#2-d map
 
 ```{r}
 library(sf)
@@ -4669,7 +4669,12 @@ ggplot(x)+
   theme(legend.position = "none",
         axis.title.x=element_blank(),
         axis.title.y=element_blank(),
-        axis.text.x=element_text(angle=45,vjust=1,hjust=1))
+        axis.text.x=element_text(angle=45,vjust=1,hjust=1),
+        strip.background = element_blank(),
+        strip.text.x = element_text(face = "bold"))
+
+ggsave("../output/maxent/paper_plots/two-d.png", height = 210, width = 297, units = "mm", dpi = 600)
+
 ```
 
 
