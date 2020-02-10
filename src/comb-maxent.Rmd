@@ -565,6 +565,30 @@ file.rename(paste0("../output/maxent/predictions/com-split/", mthna, "/avg_clogl
 }
 ```
 
+#binned probability cell count for the whole 3d space per month
+
+```{r}
+library(stringr)
+
+#calculate no of cells in the 3D space
+prob <- read.csv("../output/maxent/paper_plots/prob_by_depth/apr_dis_prob_cells.csv", header = TRUE) #just a randomly chosen dataset
+t2 <- subset(prob, Probability == "0 - 0.09") #could have chosen any probability
+tc <- sum(t2$total_cells) #173623
+
+dislst <- list.files("../output/maxent/paper_plots/prob_by_depth/", pattern = "dis_prob_cells.csv", full.names = TRUE)
+totlst <- list()
+for (m in 1:length(dislst)){
+  pr <- read.csv(dislst[m])
+  mth <- str_sub(dislst[m], start = 44, end = 46)
+  pr2 <- aggregate(pr$Cells, by=list(Category = pr$Probability), FUN = sum)
+  pr2$percent <- (pr2$x/tc)*100
+  pr2$month <- mth
+  write.csv(pr2, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_cellprob_totals.csv"), row.names = FALSE)
+  totlst[[m]] <- pr2
+}
+
+#then i just made a table manually in excel
+```
 
 #plotting
 
@@ -694,173 +718,40 @@ write.csv(cumst1, "../output/maxent/paper_plots/cellsperlayer.csv", row.names = 
 
 ```
 
-first bin the probabilities for cells inside the mcp
 
-```{r bin probabilities}
-mthord <- c("mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
 
-for (m in 1:length(mthord)){
-  mth <- mthord[m]
+
+
+histogram of probability by depth - by proportion
+
+#max kappa thresholds
+
+```{r}
+binprob <- function(x){
+  ifelse(x > 0 & x >= mk, 1,
+  ifelse(x <= 0, 0, NA))
+}
+
+alst <- list.files("../output/maxent/models/test-comb/", pattern = "avgAIC.csv", full.names = TRUE)
+
+for (f in 1:length(alst)){
+  mth <- str_sub(alst[f], start = 35, end = 37)
+  af <- read.csv(alst[f], header = TRUE)
+  af <- tail(af, n = 1)
+  mk <- af$test_maxkap
+  
   clogasc_list <- list.files(paste0("../output/maxent/predictions/com-split/", mth), pattern = "^avg_cloglog.*.asc", full.names = TRUE)
-  
-  binprob <- function(x){
-    ifelse(x > 0 & x < 0.1, 0.1,
-    ifelse(x <= 0, 0, NA))
-  }
-  
   for (cum in 1:length(clogasc_list)){
     cumasc <- raster(clogasc_list[cum])
     ascname <- names(cumasc)
     probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
-    writeRaster(probbin, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_1_avgprob_", ascname, ".asc"), overwrite = TRUE)
-    plot(probbin, png(paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_1_avgprob_", ascname, ".png")), overwrite = TRUE)
-    dev.off() # stops automatic saving of the plot to a png
-  }
-  
-  
-  
-  binprob <- function(x){
-    ifelse(x >= 0.1 & x < 0.2, 0.2,
-    ifelse(x <= 0, 0, NA))
-  }
-  
-  for (cum in 1:length(clogasc_list)){
-    cumasc <- raster(clogasc_list[cum])
-    ascname <- names(cumasc)
-    probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
-    writeRaster(probbin, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_2_avgprob_", ascname, ".asc"), overwrite = TRUE)
-    plot(probbin, png(paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_2_avgprob_", ascname, ".png")), overwrite = TRUE)
-    dev.off() # stops automatic saving of the plot to a png
-  }
-  
-  binprob <- function(x){
-    ifelse(x >= 0.2 & x < 0.3, 0.3,
-    ifelse(x <= 0, 0, NA))
-  }
-  
-  for (cum in 1:length(clogasc_list)){
-    cumasc <- raster(clogasc_list[cum])
-    ascname <- names(cumasc)
-    probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
-    writeRaster(probbin, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_3_avgprob_", ascname, ".asc"), overwrite = TRUE)
-    plot(probbin, png(paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_3_avgprob_", ascname, ".png")), overwrite = TRUE)
-    dev.off() # stops automatic saving of the plot to a png
-  }
-  
-  
-  binprob <- function(x){
-    ifelse(x >= 0.3 & x < 0.4, 0.4,
-    ifelse(x <= 0, 0, NA))
-  }
-  
-  for (cum in 1:length(clogasc_list)){
-    cumasc <- raster(clogasc_list[cum])
-    ascname <- names(cumasc)
-    probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
-    writeRaster(probbin, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_4_avgprob_", ascname, ".asc"), overwrite = TRUE)
-    plot(probbin, png(paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_4_avgprob_", ascname, ".png")), overwrite = TRUE)
-    dev.off() # stops automatic saving of the plot to a png
-  }
-  
-  
-  
-  binprob <- function(x){
-    ifelse(x >= 0.4 & x < 0.5, 0.5,
-    ifelse(x <= 0, 0, NA))
-  }
-  
-  for (cum in 1:length(clogasc_list)){
-    cumasc <- raster(clogasc_list[cum])
-    ascname <- names(cumasc)
-    probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
-    writeRaster(probbin, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_5_avgprob_", ascname, ".asc"), overwrite = TRUE)
-    plot(probbin, png(paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_5_avgprob_", ascname, ".png")), overwrite = TRUE)
-    dev.off() # stops automatic saving of the plot to a png
-  }
-   
-  
-  binprob <- function(x){
-    ifelse(x >= 0.5 & x < 0.6, 0.6,
-    ifelse(x <= 0, 0, NA))
-  }
-  
-  for (cum in 1:length(clogasc_list)){
-    cumasc <- raster(clogasc_list[cum])
-    ascname <- names(cumasc)
-    #cumasc <- mask(cumasc, outsidemcp, inverse = TRUE)
-    probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
-    writeRaster(probbin, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_6_avgprob_", ascname, ".asc"), overwrite = TRUE)
-    plot(probbin, png(paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_6_avgprob_", ascname, ".png")), overwrite = TRUE)
-    dev.off() # stops automatic saving of the plot to a png
-  } 
-  
-  
-  
-  binprob <- function(x){
-    ifelse(x >= 0.6 & x < 0.7, 0.7,
-    ifelse(x <= 0, 0, NA))
-  }
-  
-  for (cum in 1:length(clogasc_list)){
-    cumasc <- raster(clogasc_list[cum])
-    ascname <- names(cumasc)
-    #cumasc <- mask(cumasc, outsidemcp, inverse = TRUE)
-    probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
-    writeRaster(probbin, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_7_avgprob_", ascname, ".asc"), overwrite = TRUE)
-    plot(probbin, png(paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_7_avgprob_", ascname, ".png")), overwrite = TRUE)
-    dev.off() # stops automatic saving of the plot to a png
-  }
-  
-  
-  binprob <- function(x){
-    ifelse(x >= 0.7 & x < 0.8, 0.8,
-    ifelse(x <= 0, 0, NA))
-  }
-  
-  for (cum in 1:length(clogasc_list)){
-    cumasc <- raster(clogasc_list[cum])
-    ascname <- names(cumasc)
-    #cumasc <- mask(cumasc, outsidemcp, inverse = TRUE)
-    probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
-    writeRaster(probbin, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_8_avgprob_", ascname, ".asc"), overwrite = TRUE)
-    plot(probbin, png(paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_8_avgprob_", ascname, ".png")), overwrite = TRUE)
-    dev.off() # stops automatic saving of the plot to a png
-  }
-  
-  
-  binprob <- function(x){
-    ifelse(x >= 0.8 & x < 0.9, 0.9,
-    ifelse(x <= 0, 0, NA))
-  }
-  
-  for (cum in 1:length(clogasc_list)){
-    cumasc <- raster(clogasc_list[cum])
-    ascname <- names(cumasc)
-    #cumasc <- mask(cumasc, outsidemcp, inverse = TRUE)
-    probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
-    writeRaster(probbin, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_9_avgprob_", ascname, ".asc"), overwrite = TRUE)
-    plot(probbin, png(paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_9_avgprob_", ascname, ".png")), overwrite = TRUE)
-    dev.off() # stops automatic saving of the plot to a png
-  }
-  
-  
-  binprob <- function(x){
-    ifelse(x >= 0.9 & x <= 1, 1,
-    ifelse(x <= 0, 0, NA))
-  }
-  
-  for (cum in 1:length(clogasc_list)){
-    cumasc <- raster(clogasc_list[cum])
-    ascname <- names(cumasc)
-   # cumasc <- mask(cumasc, outsidemcp, inverse = TRUE)
-    probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
-    writeRaster(probbin, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_10_avgprob_", ascname, ".asc"), overwrite = TRUE)
-    plot(probbin, png(paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_binned_10_avgprob_", ascname, ".png")), overwrite = TRUE)
+    writeRaster(probbin, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_maxkap_", ascname, ".asc"), overwrite = TRUE)
+    plot(probbin, png(paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_maxkap_", ascname, ".png")), overwrite = TRUE)
     dev.off() # stops automatic saving of the plot to a png
   }
 }
-```
 
+```
 
 get data to plot probability by depth... 
 ```{r}
@@ -879,7 +770,7 @@ for (m in 1:length(mthord)){
     bin <- binlst[b]
     # mth <- "dec"
     # bin <- 1
-  ascdepth <- list.files(paste0("../output/maxent/paper_plots/prob_by_depth"), pattern = paste0("^", mth, "_binned_", bin, "_avg.*asc"), full.names = TRUE)
+  ascdepth <- list.files(paste0("../output/maxent/paper_plots/prob_by_depth"), pattern = paste0("^", mth, "_maxkap.*asc"), full.names = TRUE)
 
   binaryavgstack <- stack(ascdepth)
   stackstathigh <- data.frame(matrix(ncol = 2, nrow = nlayers(binaryavgstack)))
@@ -895,7 +786,7 @@ for (m in 1:length(mthord)){
     stackstathigh$asclayer[lyr] <- ascname
   
   }
-  write.csv(stackstathigh, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_probbin_", bin, "_cellcount_bydepth_avg.csv"), row.names = FALSE)
+  write.csv(stackstathigh, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_maxkap_", bin, "_cellcount_bydepth_avg.csv"), row.names = FALSE)
   }
 }
 
@@ -961,9 +852,6 @@ for (m in 1:length(mthord)){
 }
 
 ```
-
-histogram of probability by depth - by proportion
-
 based on Remi's code
 ```{r}
 require(data.table)
@@ -1131,6 +1019,8 @@ ggplot(x)+
 
 ggsave("../output/maxent/paper_plots/two-d.png", height = 210, width = 297, units = "mm", dpi = 600)
 ```
+
+
 
 # variable maps
 - temp

@@ -4419,6 +4419,7 @@ library(raster)
 library(lubridate)
 library(patchwork)
 library(tidyverse)
+library(viridis) #added by me
 
 CapStr <- function(y) {
   c <- strsplit(y, " ")[[1]]
@@ -4465,7 +4466,7 @@ for(v in vars){
            geom_sf(data=s,fill='grey')+
            geom_raster(aes(x,y,fill=value))+
            geom_sf(data=mcp,fill="transparent")+
-            scale_fill_viridis(option="viridis", direction = -1, 
+            scale_fill_viridis(option="viridis", direction = -1, limits = c(0.03, 4.5), 
              #scale_fill_distiller(palette="Spectral", direction=-1)+
            guide_colourbar(barwidth=0.5, title = "mmol\u207B\u00B3", draw.ulim = FALSE, draw.llim = FALSE))+
            labs(title= "Chl \u03b1")+ #i added
@@ -4483,7 +4484,7 @@ for(v in vars){
            geom_sf(data=s,fill='grey')+
            geom_raster(aes(x,y,fill=value))+
            geom_sf(data=mcp,fill="transparent")+
-           scale_fill_viridis(option="viridis", direction = -1 , 
+           scale_fill_viridis(option="viridis", direction = -1, limits = c(207, 418) , 
            #scale_fill_distiller(palette="Spectral", direction=-1)+
            guide_colourbar(barwidth=0.5, title = "mmol\u207B\u00B3", draw.ulim = FALSE, draw.llim = FALSE))+
            labs(title=paste0("Dissolved ", sapply(v, CapStr)))+ #i added
@@ -4502,7 +4503,7 @@ for(v in vars){
            geom_sf(data=s,fill='grey')+
            geom_raster(aes(x,y,fill=value))+
            geom_sf(data=mcp,fill="transparent")+
-           scale_fill_viridis(option="viridis", direction = -1 , 
+           scale_fill_viridis(option="viridis", direction = -1, limits = c(22, 36), 
            #scale_fill_distiller(palette="Spectral", direction=-1)+
            guide_colourbar(barwidth=0.5, title = "PSU", draw.ulim = FALSE, draw.llim = FALSE))+
 
@@ -4520,8 +4521,9 @@ for(v in vars){
     assign(v,ggplot(x %>% filter(variable==v,month!='September'))+
              geom_sf(data=s,fill='grey')+
              geom_raster(aes(x,y,fill=value))+
-             geom_sf(data=mcp,fill="transparent")+
-             scale_fill_viridis(option="viridis", direction = -1, 
+             geom_sf(data=mcp,fill="transparent")+  
+             scale_fill_manual(col=blue2red(20), 
+             #scale_fill_viridis(option="viridis", direction = -1, limits = c(270, 296),
              #scale_fill_distiller(palette="Spectral", direction=-1)+
              guide_colourbar(barwidth=0.5, title = "Kelvin", draw.ulim = FALSE, draw.llim = FALSE))+
              facet_wrap(~monthyear,nrow=4,strip.position = "right")+
@@ -4672,6 +4674,9 @@ ggsave("../output/maxent/paper_plots/two-d.png", height = 210, width = 297, unit
 
 
 
+
+#2-d map edited for value as remi cunted of the cells in the layer i sent and not with all the layers.
+
 now create a table to see how many cells there are >0.5 in each month
 
 ```{r count cells >0.5}
@@ -4706,7 +4711,6 @@ write.csv(sum2d, "../output/maxent/paper_plots/cell_count_0.5.csv", row.names = 
 
 ```
 
-#2-d map edited for value as remi cunted of the cells in the layer i sent and not with all the layers.
 
 ```{r}
 library(sf)
@@ -4765,3 +4769,123 @@ ggsave("../output/maxent/paper_plots/two-d.png", height = 210, width = 297, unit
 
 ```
 
+#binned probability cell count for the whole 3d space per month
+
+```{r}
+library(stringr)
+
+#calculate no of cells in the 3D space
+prob <- read.csv("../output/maxent/paper_plots/prob_by_depth/apr_dis_prob_cells.csv", header = TRUE) #just a randomly chosen dataset
+t2 <- subset(prob, Probability == "0 - 0.09") #could have chosen any probability
+tc <- sum(t2$total_cells) #173623
+
+dislst <- list.files("../output/maxent/paper_plots/prob_by_depth/", pattern = "dis_prob_cells.csv", full.names = TRUE)
+totlst <- list()
+for (m in 1:length(dislst)){
+  pr <- read.csv(dislst[m])
+  mth <- str_sub(dislst[m], start = 44, end = 46)
+  pr2 <- aggregate(pr$Cells, by=list(Category = pr$Probability), FUN = sum)
+  pr2$percent <- (pr2$x/tc)*100
+  pr2$month <- mth
+  write.csv(pr2, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_cellprob_totals.csv"), row.names = FALSE)
+  totlst[[m]] <- pr2
+}
+
+#then i just made a table manually in excel
+```
+
+#max kappa thresholds
+
+```{r}
+binprob <- function(x){
+  ifelse(x > 0 & x >= mk, 1,
+  ifelse(x <= 0, 0, NA))
+}
+
+alst <- list.files("../output/maxent/models/test-comb/", pattern = "avgAIC.csv", full.names = TRUE)
+
+for (f in 1:length(alst)){
+  mth <- str_sub(alst[f], start = 35, end = 37)
+  af <- read.csv(alst[f], header = TRUE)
+  af <- tail(af, n = 1)
+  mk <- af$test_maxkap
+  
+  clogasc_list <- list.files(paste0("../output/maxent/predictions/com-split/", mth), pattern = "^avg_cloglog.*.asc", full.names = TRUE)
+  for (cum in 1:length(clogasc_list)){
+    cumasc <- raster(clogasc_list[cum])
+    ascname <- names(cumasc)
+    probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
+    writeRaster(probbin, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_maxkap_", ascname, ".asc"), overwrite = TRUE)
+    plot(probbin, png(paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_maxkap_", ascname, ".png")), overwrite = TRUE)
+    dev.off() # stops automatic saving of the plot to a png
+  }
+}
+
+```
+
+
+get data to plot probability by depth... 
+```{r}
+mthord <- c("mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
+
+binprob <- function(x){
+  ifelse(x >0,  1,
+  ifelse(x == -9999, 0, NA))
+}
+
+
+for (m in 1:length(mthord)){
+  mth <- mthord[m]
+  ascdepth <- list.files(paste0("../output/maxent/paper_plots/prob_by_depth"), pattern = paste0("^", mth, "_maxkap.*asc"), full.names = TRUE)
+  binaryavgstack <- stack(ascdepth)
+  stackstathigh <- data.frame(matrix(ncol = 2, nrow = nlayers(binaryavgstack)))
+  stackstathigh[ ,1] <- c(1:47)
+  colnames(stackstathigh) <- c("asclayer", "prob_bin")
+  
+  for (lyr in 1:nlayers(binaryavgstack)){
+    ascname <-  str_sub(ascdepth[lyr], 67, -5)
+    dlay <- binaryavgstack[[lyr]]
+    dlay <- calc(dlay, fun = binprob) #creates raster layer with cell values based on the binprob function
+    lyrsum <- cellStats(dlay, sum)
+    stackstathigh$prob_bin[lyr] <- lyrsum
+    stackstathigh$asclayer[lyr] <- ascname
+  
+  }
+  write.csv(stackstathigh, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_maxkap_cellcount_bydepth_avg.csv"), row.names = FALSE)
+}
+
+
+```
+
+from here sam
+
+```{r}
+mthord <- c("mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
+
+for (m in 1:length(mthord)){
+  mth <- mthord[m]
+  probblst <- list.files(paste0("../output/maxent/paper_plots/prob_by_depth"), pattern = paste0("^", mth, "_probbin_.*.csv"), full.names = TRUE)
+  a <- read.csv(probblst[1])
+  b <- read.csv(probblst[2])
+  c <- read.csv(probblst[3])
+  d <- read.csv(probblst[4])
+  e <- read.csv(probblst[5])
+  f <- read.csv(probblst[6])
+  g <- read.csv(probblst[7])
+  h <- read.csv(probblst[8])
+  i <- read.csv(probblst[9])
+  j <- read.csv(probblst[10])
+  
+  stackstat <- cbind(a, b[ ,2], c[ ,2], d[ ,2], e[ , 2], f[ ,2], g[ ,2], h[ ,2], i[ ,2], j[ ,2])
+  colnames(stackstat) <- c("depth", "0 - 0.09", "0.1 - 0.19", "0.2 - 0.29", "0.3 - 0.39", "0.4 - 0.49", "0.5 - 0.59", "0.6 - 0.69", "0.7 - 0.79", "0.8 - 0.89", ">0.9")
+  stackstat <- melt(stackstat, id = "depth")
+  stackstat <- stackstat[!(stackstat$depth == "1151.99"), ]
+  stackstat <- stackstat[!(stackstat$depth == "1265.86"), ]
+  stackstat <- stackstat[!(stackstat$depth == "1387.38"), ]
+  
+  colnames(stackstat) <- c("Depth", "Probability", "Cells")
+  
+  write.csv(stackstat, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_allprobbin_cellcount_bydepth_avg.csv"), row.names = FALSE)
+}
+
+```
