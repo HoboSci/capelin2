@@ -4796,12 +4796,16 @@ for (m in 1:length(dislst)){
 
 #max kappa thresholds
 
+this creates binary maps based on th#max kappa thresholds
+
+this creates binary maps based on the maxkappa threshold
 ```{r}
 binprob <- function(x){
   ifelse(x > 0 & x >= mk, 1,
   ifelse(x <= 0, 0, NA))
 }
 
+#get the maxkap value
 alst <- list.files("../output/maxent/models/test-comb/", pattern = "avgAIC.csv", full.names = TRUE)
 
 for (f in 1:length(alst)){
@@ -4809,22 +4813,313 @@ for (f in 1:length(alst)){
   af <- read.csv(alst[f], header = TRUE)
   af <- tail(af, n = 1)
   mk <- af$test_maxkap
-  
+
+#create binary maps per depth layer
   clogasc_list <- list.files(paste0("../output/maxent/predictions/com-split/", mth), pattern = "^avg_cloglog.*.asc", full.names = TRUE)
   for (cum in 1:length(clogasc_list)){
     cumasc <- raster(clogasc_list[cum])
     ascname <- names(cumasc)
     probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
-    writeRaster(probbin, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_maxkap_", ascname, ".asc"), overwrite = TRUE)
-    plot(probbin, png(paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_maxkap_", ascname, ".png")), overwrite = TRUE)
+    writeRaster(probbin, paste0("../output/maxent/hotspot_mapping/prob_by_depth/", mth, "_maxkap_", ascname, ".asc"), overwrite = TRUE)
+    plot(probbin, png(paste0("../output/maxent/hotspot_mapping/prob_by_depth/", mth, "_maxkap_", ascname, ".png")), overwrite = TRUE)
     dev.off() # stops automatic saving of the plot to a png
   }
 }
 
+
+
+```
+
+then create an summary map....
+```{r >maxkap prob monthly 2D representation}
+mthord <- c("mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
+
+for (m in 1:length(mthord)){
+  mthna <- mthord[m]
+  binaryprob_list <- list.files(paste0("../output/maxent/paper_plots/hotspot_mapping/"), pattern = paste0(mthna, "*_maxkap_.*.asc$"), full.names = TRUE)
+  binstack <- stack(binaryprob_list)
+  stacksum <- sum(binstack, na.rm = TRUE)
+  writeRaster(stacksum, paste0("../output/maxent/paper_plots/hotspot_mapping/", mthna, "_maxkap_2d.asc"), overwrite=TRUE)
+  plot(stacksum, png(paste0("../output/maxent/paper_plots/hotspot_mapping/", mthna, "_maxkap_2d.png")))
+  dev.off()
+}
+
+```
+
+now create summary maps where values are binary - not counts of cells
+```{r}
+binprob <- function(x){
+  ifelse(x > 0, 1,
+  ifelse(x <= 0, 0, NA))
+}
+
+  clogasc_list <- list.files("../output/maxent/paper_plots/hotspot_mapping", pattern = "*_maxkap_2d.asc", full.names = TRUE)
+  for (cum in 1:length(clogasc_list)){
+    cumasc <- raster(clogasc_list[cum])
+    ascname <- str_sub(clogasc_list[cum], start = 46, end = -8)
+    probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
+    writeRaster(probbin, paste0("../output/maxent/paper_plots/hotspot_mapping/", ascname, "_single.asc"), overwrite = TRUE)
+    plot(probbin, png(paste0("../output/maxent/paper_plots/hotspot_mapping/", ascname, "_single.png")), overwrite = TRUE)
+    dev.off() # stops automatic saving of the plot to a png
+  }
+```
+
+now create a table to see how many cells there are >maxkap in each month (for editing plots)
+
+```{r count cells >maxkap}
+
+binaryprob_list <- list.files("../output/maxent/paper_plots/hotspot_mapping", pattern = ".*_maxkap_2d.asc", full.names = TRUE)
+sum2d <- data.frame(matrix(ncol = 2, nrow = 10))
+sum2d <- setNames(sum2d, c("month", "count"))
+
+
+for (r in 1:length(binaryprob_list)){
+  ras <- raster(binaryprob_list[r])
+  rnm <- names(ras)
+  sum2d$month[r] <- gsub("_maxkap_2d", "", x = rnm)
+  sum2d$count[r] <- cellStats(ras, sum, asSample = TRUE)
+}
+
+#order table from march to december
+mthord <- c("mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
+sum2d <- sum2d[match(mthord, sum2d$month), ]
+
+#get proportion
+tcs <- read.csv("../output/maxent/paper_plots/cellsperlayer.csv", header = TRUE) #file showing how many cells per depth
+#tcs <- tcs[-c(1:3), ] #because the top three rows are deeper than the capelin obs...
+totc <- sum(tcs$no_cells)
+
+for (r in 1:nrow(sum2d)){
+  sum2d$proportion[r] <- (sum2d$count[r]/totc)
+}
+
+write.csv(sum2d, "../output/maxent/paper_plots/cell_count_maxkap.csv", row.names = FALSE)
+
+
 ```
 
 
-get data to plot probability by depth... 
+```{r}
+library(sf)
+library(purrr)
+library(raster)
+library(lubridate)
+library(tidyverse)
+
+proj <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"
+
+mcp <- st_read("../data/plot4-variables/minimum_convex_poly/mcp-wgs84.shp")
+
+s <- st_read("../data/plot3-2d/landp/land-wgs84v2.shp") %>% 
+  st_set_crs(proj) %>% 
+  st_intersection(mcp)
+
+filelist <- list.files("../output/maxent/paper_plots/hotspot_mapping/", pattern = "maxkap_single.asc", include.dirs = TRUE)
+
+x <- stack(file.path("../output/maxent/paper_plots/hotspot_mapping/",filelist)) %>% 
+  mask(mcp) %>% 
+  rasterToPoints() %>% 
+  as.data.frame() %>% 
+  gather(key = "variable", value = "value",-x,-y) %>% 
+  mutate(month=factor(months(parse_date_time(gsub("_.*$", "",variable),"%m")),
+                      ordered = TRUE,
+                      levels=months(parse_date_time(1:12,"%m"))),
+         value=ifelse(value==1,">0.5","<0.5")) 
+
+df <- x %>% 
+  group_by(month) %>% 
+  summarize(total=round(sum(value==">0.5")/n(),2))
+
+#quickest way might be just to inject my csv file with the correct values here....
+df2 <- read.csv("../output/maxent/paper_plots/cell_count_maxkap.csv", header = TRUE)
+df$total <- df2$proportion
+df$total <- format(round(df$total, digits = 2))
+#colnames(df) <- c("month", "cellc", "total")
+
+ggplot(x)+
+  geom_sf(data=s,fill='grey',colour='transparent')+
+  geom_raster(aes(x,y,fill=value))+
+  scale_fill_manual(values=c('transparent','red'))+
+  geom_sf(data=mcp,fill="transparent")+
+  geom_text(data=df,x=-50,y=67,label=df$total)+
+  facet_wrap(~month,nrow=2)+#,
+  theme_classic()+
+  scale_x_continuous(breaks = seq(-70,-50,10))+
+  theme(legend.position = "none",
+        axis.title.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.x=element_text(angle=45,vjust=1,hjust=1),
+        strip.background = element_blank(),
+        strip.text.x = element_text(face = "bold"))
+
+ggsave("../output/maxent/paper_plots/maxkap_2d.png", height = 210, width = 297, units = "mm", dpi = 600)
+
+```
+
+
+e maxkappa threshold
+```{r}
+binprob <- function(x){
+  ifelse(x > 0 & x >= mk, 1,
+  ifelse(x <= 0, 0, NA))
+}
+
+#get the maxkap value
+alst <- list.files("../output/maxent/models/test-comb/", pattern = "avgAIC.csv", full.names = TRUE)
+
+for (f in 1:length(alst)){
+  mth <- str_sub(alst[f], start = 35, end = 37)
+  af <- read.csv(alst[f], header = TRUE)
+  af <- tail(af, n = 1)
+  mk <- af$test_maxkap
+
+#create binary maps per depth layer
+  clogasc_list <- list.files(paste0("../output/maxent/predictions/com-split/", mth), pattern = "^avg_cloglog.*.asc", full.names = TRUE)
+  for (cum in 1:length(clogasc_list)){
+    cumasc <- raster(clogasc_list[cum])
+    ascname <- names(cumasc)
+    probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
+    writeRaster(probbin, paste0("../output/maxent/hotspot_mapping/prob_by_depth/", mth, "_maxkap_", ascname, ".asc"), overwrite = TRUE)
+    plot(probbin, png(paste0("../output/maxent/hotspot_mapping/prob_by_depth/", mth, "_maxkap_", ascname, ".png")), overwrite = TRUE)
+    dev.off() # stops automatic saving of the plot to a png
+  }
+}
+
+
+
+```
+
+then create an summary map....
+```{r >maxkap prob monthly 2D representation}
+mthord <- c("mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
+
+for (m in 1:length(mthord)){
+  mthna <- mthord[m]
+  binaryprob_list <- list.files(paste0("../output/maxent/paper_plots/hotspot_mapping/"), pattern = paste0(mthna, "*_maxkap_.*.asc$"), full.names = TRUE)
+  binstack <- stack(binaryprob_list)
+  stacksum <- sum(binstack, na.rm = TRUE)
+  writeRaster(stacksum, paste0("../output/maxent/paper_plots/hotspot_mapping/", mthna, "_maxkap_2d.asc"), overwrite=TRUE)
+  plot(stacksum, png(paste0("../output/maxent/paper_plots/hotspot_mapping/", mthna, "_maxkap_2d.png")))
+  dev.off()
+}
+
+```
+
+now create summary maps where values are binary - not counts of cells
+```{r}
+binprob <- function(x){
+  ifelse(x > 0, 1,
+  ifelse(x <= 0, 0, NA))
+}
+
+  clogasc_list <- list.files("../output/maxent/paper_plots/hotspot_mapping", pattern = "*_maxkap_2d.asc", full.names = TRUE)
+  for (cum in 1:length(clogasc_list)){
+    cumasc <- raster(clogasc_list[cum])
+    ascname <- str_sub(clogasc_list[cum], start = 46, end = -8)
+    probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
+    writeRaster(probbin, paste0("../output/maxent/paper_plots/hotspot_mapping/", ascname, "_single.asc"), overwrite = TRUE)
+    plot(probbin, png(paste0("../output/maxent/paper_plots/hotspot_mapping/", ascname, "_single.png")), overwrite = TRUE)
+    dev.off() # stops automatic saving of the plot to a png
+  }
+```
+
+now create a table to see how many cells there are >maxkap in each month (for editing plots)
+
+```{r count cells >maxkap}
+
+binaryprob_list <- list.files("../output/maxent/paper_plots/hotspot_mapping", pattern = ".*_maxkap_2d.asc", full.names = TRUE)
+sum2d <- data.frame(matrix(ncol = 2, nrow = 10))
+sum2d <- setNames(sum2d, c("month", "count"))
+
+
+for (r in 1:length(binaryprob_list)){
+  ras <- raster(binaryprob_list[r])
+  rnm <- names(ras)
+  sum2d$month[r] <- gsub("_maxkap_2d", "", x = rnm)
+  sum2d$count[r] <- cellStats(ras, sum, asSample = TRUE)
+}
+
+#order table from march to december
+mthord <- c("mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
+sum2d <- sum2d[match(mthord, sum2d$month), ]
+
+#get proportion
+tcs <- read.csv("../output/maxent/paper_plots/cellsperlayer.csv", header = TRUE) #file showing how many cells per depth
+#tcs <- tcs[-c(1:3), ] #because the top three rows are deeper than the capelin obs...
+totc <- sum(tcs$no_cells)
+
+for (r in 1:nrow(sum2d)){
+  sum2d$proportion[r] <- (sum2d$count[r]/totc)
+}
+
+write.csv(sum2d, "../output/maxent/paper_plots/cell_count_maxkap.csv", row.names = FALSE)
+
+
+```
+
+
+```{r}
+library(sf)
+library(purrr)
+library(raster)
+library(lubridate)
+library(tidyverse)
+
+proj <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"
+
+mcp <- st_read("../data/plot4-variables/minimum_convex_poly/mcp-wgs84.shp")
+
+s <- st_read("../data/plot3-2d/landp/land-wgs84v2.shp") %>% 
+  st_set_crs(proj) %>% 
+  st_intersection(mcp)
+
+filelist <- list.files("../output/maxent/paper_plots/hotspot_mapping/", pattern = "maxkap_single.asc", include.dirs = TRUE)
+
+x <- stack(file.path("../output/maxent/paper_plots/hotspot_mapping/",filelist)) %>% 
+  mask(mcp) %>% 
+  rasterToPoints() %>% 
+  as.data.frame() %>% 
+  gather(key = "variable", value = "value",-x,-y) %>% 
+  mutate(month=factor(months(parse_date_time(gsub("_.*$", "",variable),"%m")),
+                      ordered = TRUE,
+                      levels=months(parse_date_time(1:12,"%m"))),
+         value=ifelse(value==1,">0.5","<0.5")) 
+
+df <- x %>% 
+  group_by(month) %>% 
+  summarize(total=round(sum(value==">0.5")/n(),2))
+
+#quickest way might be just to inject my csv file with the correct values here....
+df2 <- read.csv("../output/maxent/paper_plots/cell_count_maxkap.csv", header = TRUE)
+df$total <- df2$proportion
+df$total <- format(round(df$total, digits = 2))
+#colnames(df) <- c("month", "cellc", "total")
+
+ggplot(x)+
+  geom_raster(aes(x,y,fill=value))+
+  scale_fill_manual(values=c('light yellow','black'))+
+  geom_sf(data=s,fill='grey',colour='transparent')+
+  geom_sf(data=mcp,fill="transparent")+
+  geom_text(data=df,x=-50,y=67,label=df$total)+
+  facet_wrap(~month,nrow=2)+#,
+  theme_classic()+
+  scale_x_continuous(breaks = seq(-70,-50,10))+
+  theme(legend.position = "none",
+        axis.title.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.x=element_text(angle=45,vjust=1,hjust=1),
+        strip.background = element_blank(),
+        strip.text.x = element_text(face = "bold"))
+
+ggsave("../output/maxent/paper_plots/maxkap_2d.png", height = 210, width = 297, units = "mm", dpi = 600)
+
+```
+
+
+----------------------
+
+
+get data to plot maxkap binary by depth... 
 ```{r}
 mthord <- c("mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
 
@@ -4857,35 +5152,104 @@ for (m in 1:length(mthord)){
 
 ```
 
-from here sam
+think about how to get proportions... 
 
-```{r}
-mthord <- c("mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
+```{r percentage cells above and below maxkap}
+mthord <- c("mar",  "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
+cumst1 <- read.csv("../output/maxent/paper_plots/cellsperlayer.csv", header = TRUE)
 
 for (m in 1:length(mthord)){
   mth <- mthord[m]
-  probblst <- list.files(paste0("../output/maxent/paper_plots/prob_by_depth"), pattern = paste0("^", mth, "_probbin_.*.csv"), full.names = TRUE)
-  a <- read.csv(probblst[1])
-  b <- read.csv(probblst[2])
-  c <- read.csv(probblst[3])
-  d <- read.csv(probblst[4])
-  e <- read.csv(probblst[5])
-  f <- read.csv(probblst[6])
-  g <- read.csv(probblst[7])
-  h <- read.csv(probblst[8])
-  i <- read.csv(probblst[9])
-  j <- read.csv(probblst[10])
+  a <- read.csv(paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_maxkap_cellcount_bydepth_avg.csv"), header = TRUE, stringsAsFactors=FALSE)
+  for (r in 1:nrow(a)){
+    # a$Depth[r] <- gsub("b_avg_cloglog_", "", x = a$Depth[r])
+    # d1 <- str_sub(a$Depth[r], end = 4)
+    d1 <- a$asclayer[r]
+	  for (ro in 1:nrow(cumst1)){
+      #d2 <- str_sub(cumst1$depth[ro], end = 4)
+	    d2 <- cumst1$depth[ro]
+      if (d1 == d2){
+          a$total_cells[r] <- cumst1$no_cells[ro]
+      }
+	  }
+    a$p_cells[r] <- (a$prob_bin[r]/a$total_cells[r])*100
+    a$Probability[r] <- 1
+  }
+    #a$asclayer <- as.numeric(a$asclayer)
   
-  stackstat <- cbind(a, b[ ,2], c[ ,2], d[ ,2], e[ , 2], f[ ,2], g[ ,2], h[ ,2], i[ ,2], j[ ,2])
-  colnames(stackstat) <- c("depth", "0 - 0.09", "0.1 - 0.19", "0.2 - 0.29", "0.3 - 0.39", "0.4 - 0.49", "0.5 - 0.59", "0.6 - 0.69", "0.7 - 0.79", "0.8 - 0.89", ">0.9")
-  stackstat <- melt(stackstat, id = "depth")
-  stackstat <- stackstat[!(stackstat$depth == "1151.99"), ]
-  stackstat <- stackstat[!(stackstat$depth == "1265.86"), ]
-  stackstat <- stackstat[!(stackstat$depth == "1387.38"), ]
+  a2 <- as.data.frame(a$asclayer)
+  a2$total_cells <- a$total_cells
+  a2$prob_bin <- a$total_cells - a$prob_bin
+  a2$p_cells <- (a2$prob_bin/a2$total_cells)*100
+  a2$Probability <- 0
+  colnames(a2)[1] <- "asclayer"
   
-  colnames(stackstat) <- c("Depth", "Probability", "Cells")
-  
-  write.csv(stackstat, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_allprobbin_cellcount_bydepth_avg.csv"), row.names = FALSE)
+  b <- rbind(a, a2)
+  colnames(b)[1] <- "Depth"
+
+
+  write.csv(b, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_maxkap_dis_prob_cells.csv"), row.names = FALSE)
 }
 
+
 ```
+
+
+based on Remi's code - maxkappa derrived habitat by depth
+
+
+```{r}
+require(data.table)
+require(purrr)
+require(lubridate)
+require(tidyverse)
+require(viridis)
+
+
+
+filenames <- list.files("../output/maxent/paper_plots/prob_by_depth/", pattern = "_maxkap_dis_prob_cells.csv", recursive = TRUE,full.names = TRUE)
+
+all <- map_dfr(filenames, function(x) fread(x) %>% 
+                       mutate(Month=substr(basename(x),1,3))) %>% 
+  mutate(Depth = factor(round(Depth,1)),
+         Depth = factor(Depth,ordered = TRUE, levels = rev(levels(Depth))),
+         Month=factor(months(parse_date_time(Month,"%m")),
+                      ordered = TRUE,
+                      levels=months(parse_date_time(1:12,"%m"))))
+        
+
+#create a list of depths so you can set breaks for the x-axis (which is showing as the y-axis...)
+dlst <- unique(all$Depth)
+dlst <- as.character(dlst)
+dlst <- as.numeric(dlst)
+dlst <- sort(dlst)
+
+#make probability a factor - sam added this
+all$Probability <- as.factor(all$Probability)
+
+#make the plot
+  ggplot(all) +
+  geom_col(aes(Depth, p_cells, fill = Probability),width=1) +
+  coord_flip()+
+  facet_wrap(~Month,ncol=2)+
+  labs(y = "% Ocean at Depth", x = "Depth (meters)")+
+  scale_fill_manual(aesthetics = "fill", values=c('light yellow','black'))+
+  theme_classic()+
+  theme(legend.position = "bottom", axis.text.y = element_text(size=7), strip.background = element_blank()) +
+  scale_x_discrete(breaks = c(dlst[1], dlst[5], dlst[10], dlst[15], dlst[20], dlst[25], dlst[30], dlst[35], dlst[40], dlst[47]))
+
+ggsave("../output/maxent/paper_plots/maxkap_prob_by_depth.png", width = 210, height = 297, units = "mm", dpi = 600)
+```
+
+
+#get max and min depth layers based on max kappa
+```{r}
+kapd <- list.files("../output/maxent/paper_plots/prob_by_depth/" , pattern = "_maxkap_dis_prob_cells.csv", full.names = TRUE)
+
+test <- read.csv(kapd[1])
+test <- subset(test, Probability == 1) #just keep the presence cells
+test <- test[order(test[, 1]),] #order by depth 
+#now need to find the row in which a value first appears in prob_bin column
+
+```
+
