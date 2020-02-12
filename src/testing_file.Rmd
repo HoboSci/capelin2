@@ -4830,73 +4830,7 @@ for (f in 1:length(alst)){
 
 ```
 
-then create an summary map....
-```{r >maxkap prob monthly 2D representation}
-mthord <- c("mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
 
-for (m in 1:length(mthord)){
-  mthna <- mthord[m]
-  binaryprob_list <- list.files(paste0("../output/maxent/paper_plots/hotspot_mapping/"), pattern = paste0(mthna, "*_maxkap_.*.asc$"), full.names = TRUE)
-  binstack <- stack(binaryprob_list)
-  stacksum <- sum(binstack, na.rm = TRUE)
-  writeRaster(stacksum, paste0("../output/maxent/paper_plots/hotspot_mapping/", mthna, "_maxkap_2d.asc"), overwrite=TRUE)
-  plot(stacksum, png(paste0("../output/maxent/paper_plots/hotspot_mapping/", mthna, "_maxkap_2d.png")))
-  dev.off()
-}
-
-```
-
-now create summary maps where values are binary - not counts of cells
-```{r}
-binprob <- function(x){
-  ifelse(x > 0, 1,
-  ifelse(x <= 0, 0, NA))
-}
-
-  clogasc_list <- list.files("../output/maxent/paper_plots/hotspot_mapping", pattern = "*_maxkap_2d.asc", full.names = TRUE)
-  for (cum in 1:length(clogasc_list)){
-    cumasc <- raster(clogasc_list[cum])
-    ascname <- str_sub(clogasc_list[cum], start = 46, end = -8)
-    probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
-    writeRaster(probbin, paste0("../output/maxent/paper_plots/hotspot_mapping/", ascname, "_single.asc"), overwrite = TRUE)
-    plot(probbin, png(paste0("../output/maxent/paper_plots/hotspot_mapping/", ascname, "_single.png")), overwrite = TRUE)
-    dev.off() # stops automatic saving of the plot to a png
-  }
-```
-
-now create a table to see how many cells there are >maxkap in each month (for editing plots)
-
-```{r count cells >maxkap}
-
-binaryprob_list <- list.files("../output/maxent/paper_plots/hotspot_mapping", pattern = ".*_maxkap_2d.asc", full.names = TRUE)
-sum2d <- data.frame(matrix(ncol = 2, nrow = 10))
-sum2d <- setNames(sum2d, c("month", "count"))
-
-
-for (r in 1:length(binaryprob_list)){
-  ras <- raster(binaryprob_list[r])
-  rnm <- names(ras)
-  sum2d$month[r] <- gsub("_maxkap_2d", "", x = rnm)
-  sum2d$count[r] <- cellStats(ras, sum, asSample = TRUE)
-}
-
-#order table from march to december
-mthord <- c("mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
-sum2d <- sum2d[match(mthord, sum2d$month), ]
-
-#get proportion
-tcs <- read.csv("../output/maxent/paper_plots/cellsperlayer.csv", header = TRUE) #file showing how many cells per depth
-#tcs <- tcs[-c(1:3), ] #because the top three rows are deeper than the capelin obs...
-totc <- sum(tcs$no_cells)
-
-for (r in 1:nrow(sum2d)){
-  sum2d$proportion[r] <- (sum2d$count[r]/totc)
-}
-
-write.csv(sum2d, "../output/maxent/paper_plots/cell_count_maxkap.csv", row.names = FALSE)
-
-
-```
 
 
 ```{r}
@@ -5245,11 +5179,417 @@ ggsave("../output/maxent/paper_plots/maxkap_prob_by_depth.png", width = 210, hei
 #get max and min depth layers based on max kappa
 ```{r}
 kapd <- list.files("../output/maxent/paper_plots/prob_by_depth/" , pattern = "_maxkap_dis_prob_cells.csv", full.names = TRUE)
+kapmmd <- data.frame(mth = character(10), min = numeric(10), max = numeric(10))
+kapmmd$mth <- as.character(kapmmd$mth)
 
-test <- read.csv(kapd[1])
-test <- subset(test, Probability == 1) #just keep the presence cells
-test <- test[order(test[, 1]),] #order by depth 
-#now need to find the row in which a value first appears in prob_bin column
+for(k in 1:length(kapd)){
+  kapmmd$mth[k] <- str_sub(kapd[k], start = 44, end = 46)
+  kd <- read.csv(kapd[k])
+  kd <- subset(kd, Probability == 1) #just keep the presence cells
+  kd <- subset(kd, prob_bin > 0) # get the depths where there are presence cells
+  kd <- kd[order(kd[, 1]),] #order by depth 
+  kapmmd$min[k] <- kd$Depth[1] #minimum depth of presence cell
+  kapmmd$max[k] <- tail(kd$Depth, n = 1) #maximum depth of presence cell
+}
+
+write.csv(kapmmd, "../output/maxent/paper_plots/hotspot_mapping/kappa-min-max-depth.csv")
+```
+
+#get lat long position of most northely, southerly, western, and eastern cell centroid
+
+```{r}
+filelist <- list.files("../output/maxent/paper_plots/hotspot_mapping/", pattern = "maxkap_single.asc", full.names = TRUE)
+lonlat <- data.frame(mth = character(10), west = numeric(10), east = numeric(10), north = numeric(10), south = numeric(10))
+lonlat$mth <- as.character(lonlat$mth)
+
+
+for (k in 1:length(filelist)){
+  ras <- raster(filelist[9])
+  crs(ras) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0" #the projection of the raster
+  lonlat$mth[k] <- str_sub(filelist[k], start = 46, end = 48)
+  cellloc <- rasterToPoints(ras, fun=function(x){x==1}) #make raster to point only for cells with the value of 1 (i.e. presence cells)
+  cellloc <- as.data.frame(cellloc) # x = lon, y = lat
+  cellloc <- cellloc[order(cellloc$x), ] #order dataframe by lon from low (west) to high (east)
+  lonlat$west[k] <- cellloc$x[1] #most western cell centroid
+  lonlat$east[k] <- tail(cellloc$x, n = 1) #most eastern cell centroid
+  cellloc <- cellloc[order(cellloc$y), ] #order dataframe by lat from low (south) to high (north)
+  lonlat$south[k] <- cellloc$y[1] #most southern cell centroid
+  lonlat$north[k] <- tail(cellloc$y, n = 1) #most northern cell centroid
+}
+
+
+
+write.csv(lonlat, "../output/maxent/paper_plots/hotspot_mapping/kappa-nswe.csv")
 
 ```
 
+#get lat long position of most northely, southerly, western, and eastern cell centroid for oct, june, aug, may (to remove northern spots)
+
+```{r}
+filelist <- list.files("../output/maxent/paper_plots/hotspot_mapping/", pattern = "maxkap_single.asc", full.names = TRUE)
+lonlat <- data.frame(mth = character(10), west = numeric(10), east = numeric(10), north = numeric(10), south = numeric(10))
+lonlat$mth <- as.character(lonlat$mth)
+
+
+for (k in 1:length(filelist)){
+  ras <- raster(filelist[k])
+  crs(ras) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0" #the projection of the raster
+  lonlat$mth[k] <- str_sub(filelist[k], start = 46, end = 48)
+  cellloc <- rasterToPoints(ras, fun=function(x){x==1}) #make raster to point only for cells with the value of 1 (i.e. presence cells)
+  cellloc <- as.data.frame(cellloc) # x = lon, y = lat
+  cellloc <- subset(cellloc, y <55) #remove all the northern points
+  cellloc <- cellloc[order(cellloc$y), ] #order dataframe by lat from low (south) to high (north)
+  lonlat$south[k] <- cellloc$y[1] #most southern cell centroid
+  lonlat$north[k] <- tail(cellloc$y, n = 1) #most northern cell centroid
+  cellloc <- cellloc[order(cellloc$x), ] #order dataframe by lon from low (west) to high (east)
+  lonlat$west[k] <- cellloc$x[1] #most western cell centroid
+  lonlat$east[k] <- tail(cellloc$x, n = 1) #most eastern cell centroid
+
+}
+
+write.csv(lonlat, "../output/maxent/paper_plots/hotspot_mapping/kappa-nswe_nonorth.csv")
+
+```
+
+```{r}
+t1 <- distVincentyEllipsoid(c(0,0),c(90,90))
+# on a 'Clarke 1880' ellipsoid
+test <- distVincentyEllipsoid(c(0,0),c(90,90), a=6378249.145, b=6356514.86955, f=1/293.465)
+```
+
+#background point selection plots
+
+```{r}
+test_back_df <- read.csv("../data/env/background_point_check/201406_allbackgroundpoints.csv", header = TRUE)
+```
+
+
+ok now create the first lot of random for 2014_06
+
+```{r}
+testbk10000 <- test_back_df[sample(nrow(test_back_df), 10000), ]  #where 10000 = number of rows to sample (large sample as per maxent)
+testbk20000 <- test_back_df[sample(nrow(test_back_df), 20000), ]  
+testbk50000 <- test_back_df[sample(nrow(test_back_df), 50000), ]  
+testbk100000 <- test_back_df[sample(nrow(test_back_df), 100000), ]  
+testbk190000 <- test_back_df[sample(nrow(test_back_df), 190000), ]  
+```
+
+make long data
+```{r}
+bkpt <- data.frame(no_points = character(370000), variable = character(370000), value = numeric(370000))
+bkpt$variable <- as.character(bkpt$variable)
+bkpt$no_points <- as.character(bkpt$no_points)
+
+bkpt$no_points[1:10000] <- "10,000"
+bkpt$no_points[10001:30000] <- "20,000"
+bkpt$no_points[30001:80000] <- "50,000"
+bkpt$no_points[80001:180000] <- "100,000"
+bkpt$no_points[180001:370000] <- "190,000"
+bkpt$variable <- "temp"
+bkpt$value[1:10000] <- testbk10000$temp_depth
+bkpt$value[10001:30000] <- testbk20000$temp_depth
+bkpt$value[30001:80000] <- testbk50000$temp_depth
+bkpt$value[80001:180000] <- testbk100000$temp_depth
+bkpt$value[180001:370000] <- testbk190000$temp_depth
+
+
+bkpt2 <- data.frame(no_points = numeric(370000), variable = character(370000), value = numeric(370000))
+bkpt2$variable <- as.character(bkpt2$variable)
+bkpt2$no_points[1:10000] <- "10,000"
+bkpt2$no_points[10001:30000] <- "20,000"
+bkpt2$no_points[30001:80000] <- "50,000"
+bkpt2$no_points[80001:180000] <- "100,000"
+bkpt2$no_points[180001:370000] <- "190,000"
+bkpt2$variable <- "salinity"
+bkpt2$value[1:10000] <- testbk10000$salinity_depth
+bkpt2$value[10001:30000] <- testbk20000$salinity_depth
+bkpt2$value[30001:80000] <- testbk50000$salinity_depth
+bkpt2$value[80001:180000] <- testbk100000$salinity_depth
+bkpt2$value[180001:370000] <- testbk190000$salinity_depth
+
+bkpt3 <- data.frame(no_points = numeric(370000), variable = character(370000), value = numeric(370000))
+bkpt3$variable <- as.character(bkpt3$variable)
+bkpt3$no_points[1:10000] <- "10,000"
+bkpt3$no_points[10001:30000] <- "20,000"
+bkpt3$no_points[30001:80000] <- "50,000"
+bkpt3$no_points[80001:180000] <- "100,000"
+bkpt3$no_points[180001:370000] <- "190,000"
+bkpt3$variable <- "o2"
+bkpt3$value[1:10000] <- testbk10000$o2_depth
+bkpt3$value[10001:30000] <- testbk20000$o2_depth
+bkpt3$value[30001:80000] <- testbk50000$o2_depth
+bkpt3$value[80001:180000] <- testbk100000$o2_depth
+bkpt3$value[180001:370000] <- testbk190000$o2_depth
+
+bkpt4 <- data.frame(no_points = numeric(370000), variable = character(370000), value = numeric(370000))
+bkpt4$variable <- as.character(bkpt4$variable)
+bkpt4$no_points[1:10000] <- "10,000"
+bkpt4$no_points[10001:30000] <- "20,000"
+bkpt4$no_points[30001:80000] <- "50,000"
+bkpt4$no_points[80001:180000] <- "100,000"
+bkpt4$no_points[180001:370000] <- "190,000"
+bkpt4$variable <- "chl"
+bkpt4$value[1:10000] <- testbk10000$chl_surface
+bkpt4$value[10001:30000] <- testbk20000$chl_surface
+bkpt4$value[30001:80000] <- testbk50000$chl_surface
+bkpt4$value[80001:180000] <- testbk100000$chl_surface
+bkpt4$value[180001:370000] <- testbk190000$chl_surface
+
+
+bk <- rbind(bkpt, bkpt2, bkpt3, bkpt4)
+bk$no_points <- as.factor(bk$no_points)
+```
+
+```{r}
+ggplot(bk, aes(x = value)) +
+    stat_density(aes(group = no_points, color = no_points),position="identity",geom="line") +
+  facet_wrap(~variable,ncol=2)
+  
+```
+
+problem here is that i don't want the axis shared
+
+fiddle with the dataset again
+```{r}
+t <- subset(bk, variable == "temp")
+t$no_points <- factor(t$no_points, levels = c("10,000", "20,000", "50,000", "100,000", "190,000"))
+s <- subset(bk, variable == "salinity")
+s$no_points <- factor(s$no_points, levels = c("10,000", "20,000", "50,000", "100,000", "190,000"))
+o <- subset(bk, variable == "o2")
+o$no_points <- factor(o$no_points, levels = c("10,000", "20,000", "50,000", "100,000", "190,000"))
+c <- subset(bk, variable == "chl")
+c$no_points <- factor(c$no_points, levels = c("10,000", "20,000", "50,000", "100,000", "190,000"))
+
+```
+
+plot
+```{r}
+p1 <- ggplot(t, aes(x = value)) + stat_density(aes(group = no_points, color = no_points),position="identity",geom="line", size=0.75) +theme_classic(base_size = 18) + labs(x = "Temperature (Kelvin)", y = "Density") + guides(color = guide_legend(title = "No Points"))
+p2 <- ggplot(s, aes(x = value)) + stat_density(aes(group = no_points, color = no_points),position="identity",geom="line", size=0.75) + theme_classic(base_size = 18) + labs (x = "Salinity (PSU)", y = "Density") + guides(color = guide_legend(title = "No Points"))
+p3 <- ggplot(o, aes(x = value)) + stat_density(aes(group = no_points, color = no_points),position="identity",geom="line", size=0.75) +theme_classic(base_size = 18) + labs (x = "Dissolved Oxygen (mmol\u207B\u00B3)", y = "Density") + guides(color = guide_legend(title = "No Points"))
+p4 <- ggplot(c, aes(x = value)) + stat_density(aes(group = no_points, color = no_points),position="identity",geom="line", size=0.75) + theme_classic(base_size = 18) + labs (x = "Chlorophyll \u03b1  (mmol\u207B\u00B3)", y = "Density") + guides(color = guide_legend(title = "No Points"))
+
+p <- ggarrange(p1, p2, p3, p4, ncol = 2, nrow = 2, common.legend = TRUE, legend = "bottom")
+
+ggsave("../output/maxent/paper_plots/bkpt_201406.png", width = 210, height = 297, units = "mm", dpi = 600)
+
+```
+
+200710
+
+```{r}
+test_back_df <- read.csv("../data/env/background_point_check/200710_allbackgroundpoints.csv", header = TRUE)
+```
+
+
+ok now create the first lot of random for 200710
+
+```{r}
+testbk10000 <- test_back_df[sample(nrow(test_back_df), 10000), ]  #where 10000 = number of rows to sample (large sample as per maxent)
+testbk20000 <- test_back_df[sample(nrow(test_back_df), 20000), ]  
+testbk50000 <- test_back_df[sample(nrow(test_back_df), 50000), ]  
+testbk100000 <- test_back_df[sample(nrow(test_back_df), 100000), ]  
+testbk190000 <- test_back_df[sample(nrow(test_back_df), 190000), ]  
+```
+
+make long data
+```{r}
+bkpt <- data.frame(no_points = character(370000), variable = character(370000), value = numeric(370000))
+bkpt$variable <- as.character(bkpt$variable)
+bkpt$no_points <- as.character(bkpt$no_points)
+
+bkpt$no_points[1:10000] <- "10,000"
+bkpt$no_points[10001:30000] <- "20,000"
+bkpt$no_points[30001:80000] <- "50,000"
+bkpt$no_points[80001:180000] <- "100,000"
+bkpt$no_points[180001:370000] <- "190,000"
+bkpt$variable <- "temp"
+bkpt$value[1:10000] <- testbk10000$temp_depth
+bkpt$value[10001:30000] <- testbk20000$temp_depth
+bkpt$value[30001:80000] <- testbk50000$temp_depth
+bkpt$value[80001:180000] <- testbk100000$temp_depth
+bkpt$value[180001:370000] <- testbk190000$temp_depth
+
+
+bkpt2 <- data.frame(no_points = numeric(370000), variable = character(370000), value = numeric(370000))
+bkpt2$variable <- as.character(bkpt2$variable)
+bkpt2$no_points[1:10000] <- "10,000"
+bkpt2$no_points[10001:30000] <- "20,000"
+bkpt2$no_points[30001:80000] <- "50,000"
+bkpt2$no_points[80001:180000] <- "100,000"
+bkpt2$no_points[180001:370000] <- "190,000"
+bkpt2$variable <- "salinity"
+bkpt2$value[1:10000] <- testbk10000$salinity_depth
+bkpt2$value[10001:30000] <- testbk20000$salinity_depth
+bkpt2$value[30001:80000] <- testbk50000$salinity_depth
+bkpt2$value[80001:180000] <- testbk100000$salinity_depth
+bkpt2$value[180001:370000] <- testbk190000$salinity_depth
+
+bkpt3 <- data.frame(no_points = numeric(370000), variable = character(370000), value = numeric(370000))
+bkpt3$variable <- as.character(bkpt3$variable)
+bkpt3$no_points[1:10000] <- "10,000"
+bkpt3$no_points[10001:30000] <- "20,000"
+bkpt3$no_points[30001:80000] <- "50,000"
+bkpt3$no_points[80001:180000] <- "100,000"
+bkpt3$no_points[180001:370000] <- "190,000"
+bkpt3$variable <- "o2"
+bkpt3$value[1:10000] <- testbk10000$o2_depth
+bkpt3$value[10001:30000] <- testbk20000$o2_depth
+bkpt3$value[30001:80000] <- testbk50000$o2_depth
+bkpt3$value[80001:180000] <- testbk100000$o2_depth
+bkpt3$value[180001:370000] <- testbk190000$o2_depth
+
+bkpt4 <- data.frame(no_points = numeric(370000), variable = character(370000), value = numeric(370000))
+bkpt4$variable <- as.character(bkpt4$variable)
+bkpt4$no_points[1:10000] <- "10,000"
+bkpt4$no_points[10001:30000] <- "20,000"
+bkpt4$no_points[30001:80000] <- "50,000"
+bkpt4$no_points[80001:180000] <- "100,000"
+bkpt4$no_points[180001:370000] <- "190,000"
+bkpt4$variable <- "chl"
+bkpt4$value[1:10000] <- testbk10000$chl_surface
+bkpt4$value[10001:30000] <- testbk20000$chl_surface
+bkpt4$value[30001:80000] <- testbk50000$chl_surface
+bkpt4$value[80001:180000] <- testbk100000$chl_surface
+bkpt4$value[180001:370000] <- testbk190000$chl_surface
+
+
+bk <- rbind(bkpt, bkpt2, bkpt3, bkpt4)
+bk$no_points <- as.factor(bk$no_points)
+```
+
+
+fiddle with the dataset again
+```{r}
+t <- subset(bk, variable == "temp")
+t$no_points <- factor(t$no_points, levels = c("10,000", "20,000", "50,000", "100,000", "190,000"))
+s <- subset(bk, variable == "salinity")
+s$no_points <- factor(s$no_points, levels = c("10,000", "20,000", "50,000", "100,000", "190,000"))
+o <- subset(bk, variable == "o2")
+o$no_points <- factor(o$no_points, levels = c("10,000", "20,000", "50,000", "100,000", "190,000"))
+c <- subset(bk, variable == "chl")
+c$no_points <- factor(c$no_points, levels = c("10,000", "20,000", "50,000", "100,000", "190,000"))
+
+```
+
+plot
+```{r}
+p1 <- ggplot(t, aes(x = value)) + stat_density(aes(group = no_points, color = no_points),position="identity",geom="line", size=0.75) +theme_classic(base_size = 18) + labs(x = "Temperature (Kelvin)", y = "Density") + guides(color = guide_legend(title = "No Points"))
+p2 <- ggplot(s, aes(x = value)) + stat_density(aes(group = no_points, color = no_points),position="identity",geom="line", size=0.75) + theme_classic(base_size = 18) + labs (x = "Salinity (PSU)", y = "Density") + guides(color = guide_legend(title = "No Points"))
+p3 <- ggplot(o, aes(x = value)) + stat_density(aes(group = no_points, color = no_points),position="identity",geom="line", size=0.75) +theme_classic(base_size = 18) + labs (x = "Dissolved Oxygen (mmol\u207B\u00B3)", y = "Density") + guides(color = guide_legend(title = "No Points"))
+p4 <- ggplot(c, aes(x = value)) + stat_density(aes(group = no_points, color = no_points),position="identity",geom="line", size=0.75) + theme_classic(base_size = 18) + labs (x = "Chlorophyll \u03b1  (mmol\u207B\u00B3)", y = "Density") + guides(color = guide_legend(title = "No Points"))
+
+p <- ggarrange(p1, p2, p3, p4, ncol = 2, nrow = 2, common.legend = TRUE, legend = "bottom")
+
+ggsave("../output/maxent/paper_plots/bkpt_200710.png", width = 210, height = 297, units = "mm", dpi = 600)
+
+```
+199902
+
+```{r}
+test_back_df <- read.csv("../data/env/background_point_check/199902_allbackgroundpoints.csv", header = TRUE)
+```
+
+
+ok now create the first lot of random for 200710
+
+```{r}
+testbk10000 <- test_back_df[sample(nrow(test_back_df), 10000), ]  #where 10000 = number of rows to sample (large sample as per maxent)
+testbk20000 <- test_back_df[sample(nrow(test_back_df), 20000), ]  
+testbk50000 <- test_back_df[sample(nrow(test_back_df), 50000), ]  
+testbk100000 <- test_back_df[sample(nrow(test_back_df), 100000), ]  
+testbk190000 <- test_back_df[sample(nrow(test_back_df), 190000), ]  
+```
+
+make long data
+```{r}
+bkpt <- data.frame(no_points = character(370000), variable = character(370000), value = numeric(370000))
+bkpt$variable <- as.character(bkpt$variable)
+bkpt$no_points <- as.character(bkpt$no_points)
+
+bkpt$no_points[1:10000] <- "10,000"
+bkpt$no_points[10001:30000] <- "20,000"
+bkpt$no_points[30001:80000] <- "50,000"
+bkpt$no_points[80001:180000] <- "100,000"
+bkpt$no_points[180001:370000] <- "190,000"
+bkpt$variable <- "temp"
+bkpt$value[1:10000] <- testbk10000$temp_depth
+bkpt$value[10001:30000] <- testbk20000$temp_depth
+bkpt$value[30001:80000] <- testbk50000$temp_depth
+bkpt$value[80001:180000] <- testbk100000$temp_depth
+bkpt$value[180001:370000] <- testbk190000$temp_depth
+
+
+bkpt2 <- data.frame(no_points = numeric(370000), variable = character(370000), value = numeric(370000))
+bkpt2$variable <- as.character(bkpt2$variable)
+bkpt2$no_points[1:10000] <- "10,000"
+bkpt2$no_points[10001:30000] <- "20,000"
+bkpt2$no_points[30001:80000] <- "50,000"
+bkpt2$no_points[80001:180000] <- "100,000"
+bkpt2$no_points[180001:370000] <- "190,000"
+bkpt2$variable <- "salinity"
+bkpt2$value[1:10000] <- testbk10000$salinity_depth
+bkpt2$value[10001:30000] <- testbk20000$salinity_depth
+bkpt2$value[30001:80000] <- testbk50000$salinity_depth
+bkpt2$value[80001:180000] <- testbk100000$salinity_depth
+bkpt2$value[180001:370000] <- testbk190000$salinity_depth
+
+bkpt3 <- data.frame(no_points = numeric(370000), variable = character(370000), value = numeric(370000))
+bkpt3$variable <- as.character(bkpt3$variable)
+bkpt3$no_points[1:10000] <- "10,000"
+bkpt3$no_points[10001:30000] <- "20,000"
+bkpt3$no_points[30001:80000] <- "50,000"
+bkpt3$no_points[80001:180000] <- "100,000"
+bkpt3$no_points[180001:370000] <- "190,000"
+bkpt3$variable <- "o2"
+bkpt3$value[1:10000] <- testbk10000$o2_depth
+bkpt3$value[10001:30000] <- testbk20000$o2_depth
+bkpt3$value[30001:80000] <- testbk50000$o2_depth
+bkpt3$value[80001:180000] <- testbk100000$o2_depth
+bkpt3$value[180001:370000] <- testbk190000$o2_depth
+
+bkpt4 <- data.frame(no_points = numeric(370000), variable = character(370000), value = numeric(370000))
+bkpt4$variable <- as.character(bkpt4$variable)
+bkpt4$no_points[1:10000] <- "10,000"
+bkpt4$no_points[10001:30000] <- "20,000"
+bkpt4$no_points[30001:80000] <- "50,000"
+bkpt4$no_points[80001:180000] <- "100,000"
+bkpt4$no_points[180001:370000] <- "190,000"
+bkpt4$variable <- "chl"
+bkpt4$value[1:10000] <- testbk10000$chl_surface
+bkpt4$value[10001:30000] <- testbk20000$chl_surface
+bkpt4$value[30001:80000] <- testbk50000$chl_surface
+bkpt4$value[80001:180000] <- testbk100000$chl_surface
+bkpt4$value[180001:370000] <- testbk190000$chl_surface
+
+
+bk <- rbind(bkpt, bkpt2, bkpt3, bkpt4)
+bk$no_points <- as.factor(bk$no_points)
+```
+
+
+fiddle with the dataset again
+```{r}
+t <- subset(bk, variable == "temp")
+t$no_points <- factor(t$no_points, levels = c("10,000", "20,000", "50,000", "100,000", "190,000"))
+s <- subset(bk, variable == "salinity")
+s$no_points <- factor(s$no_points, levels = c("10,000", "20,000", "50,000", "100,000", "190,000"))
+o <- subset(bk, variable == "o2")
+o$no_points <- factor(o$no_points, levels = c("10,000", "20,000", "50,000", "100,000", "190,000"))
+c <- subset(bk, variable == "chl")
+c$no_points <- factor(c$no_points, levels = c("10,000", "20,000", "50,000", "100,000", "190,000"))
+
+```
+
+plot
+```{r}
+p1 <- ggplot(t, aes(x = value)) + stat_density(aes(group = no_points, color = no_points),position="identity",geom="line", size=0.75) +theme_classic(base_size = 18) + labs(x = "Temperature (Kelvin)", y = "Density") + guides(color = guide_legend(title = "No Points"))
+p2 <- ggplot(s, aes(x = value)) + stat_density(aes(group = no_points, color = no_points),position="identity",geom="line", size=0.75) + theme_classic(base_size = 18) + labs (x = "Salinity (PSU)", y = "Density") + guides(color = guide_legend(title = "No Points"))
+p3 <- ggplot(o, aes(x = value)) + stat_density(aes(group = no_points, color = no_points),position="identity",geom="line", size=0.75) +theme_classic(base_size = 18) + labs (x = "Dissolved Oxygen (mmol\u207B\u00B3)", y = "Density") + guides(color = guide_legend(title = "No Points"))
+p4 <- ggplot(c, aes(x = value)) + stat_density(aes(group = no_points, color = no_points),position="identity",geom="line", size=0.75) + theme_classic(base_size = 18) + labs (x = "Chlorophyll \u03b1  (mmol\u207B\u00B3)", y = "Density") + guides(color = guide_legend(title = "No Points"))
+
+p <- ggarrange(p1, p2, p3, p4, ncol = 2, nrow = 2, common.legend = TRUE, legend = "bottom")
+
+ggsave("../output/maxent/paper_plots/bkpt_199902.png", width = 210, height = 297, units = "mm", dpi = 600)
+
+```
