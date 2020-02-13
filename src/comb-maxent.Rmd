@@ -1,7 +1,7 @@
   
 ```{r pre-install & load packages, include=FALSE}
 options(java.parameters = "-Xmx2g" )#needs to run before dismo loaded - boosts memory for java to 1g
-packages <- c("dismo", "stringr", "rJava", "raster", "ecospat", "bossMaps", "lattice", "tidyr", "enmSdm", "ggplot2", "plyr", "reshape2", "tidyverse", "patchwork", "purrr")
+packages <- c("dismo", "stringr", "rJava", "raster", "ecospat", "bossMaps", "lattice", "tidyr", "enmSdm", "ggplot2", "plyr", "reshape2", "tidyverse", "patchwork", "purrr", "Hmisc")
 source("../src/ipak.R")
 ipak(packages)
 ```
@@ -646,6 +646,8 @@ permu <- perm[match(mthord, perm$Month), ] #reorder based on mthord
 # jackk <- jack[match(mthord, jack$Month), ] #reorder based on mthord
 
 # rename the months so they are capitalised
+
+
 permu$Month <- capitalize(permu$Month)
 # jackk$Month <- capitalize(jackk$Month)
 
@@ -680,6 +682,7 @@ write.csv(permu, "../output/maxent/models/test-comb/permutation_avg.csv", row.na
 now make the plot
 
 ```{r permulation plot}
+library(cowplot)
 permu <- read.csv("../output/maxent/models/test-comb/permutation_avg.csv")
 
 mthna <- c("Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
