@@ -5593,3 +5593,51 @@ p <- ggarrange(p1, p2, p3, p4, ncol = 2, nrow = 2, common.legend = TRUE, legend 
 ggsave("../output/maxent/paper_plots/bkpt_199902.png", width = 210, height = 297, units = "mm", dpi = 600)
 
 ```
+
+#layer join images
+
+```{r}
+proj <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"
+s <- shapefile("../data/plot4-variables/landp/land-wgs84v2.shp")
+crs(s) <- proj
+
+temp9 <- raster("../data/env/asciitrim/ascii2004/2004_07_temp.nc_9.82275.asc")
+crs(temp9) <- proj
+temp221 <- raster("../data/env/asciitrim/ascii2004/2004_07_temp.nc_221.141.asc")
+crs(temp221) <- proj
+temp508 <- raster("../data/env/asciitrim/ascii2004/2004_07_temp.nc_508.64.asc")
+crs(temp508) <- proj
+
+ts <- stack(temp9, temp221, temp508)
+
+levelplot(ts, layout = c(1, 3), scales=list(draw=FALSE), xlab = NULL, ylab = NULL, names.attr = c("", "", ""), colorkey=FALSE, margin = FALSE, par.setting = viridisTheme)
+dev.copy(png, (paste0("../output/maxent/paper_plots/temp-example.png")), width = 1080,height = 1920)
+dev.off() # stops automatic saving of the plot to a png))
+
+salinity9 <- raster("../data/env/asciitrim/ascii2004/2004_07_salinity.nc_9.82275.asc")
+crs(salinity9) <- proj
+salinity221 <- raster("../data/env/asciitrim/ascii2004/2004_07_salinity.nc_221.141.asc")
+crs(salinity221) <- proj
+salinity508 <- raster("../data/env/asciitrim/ascii2004/2004_07_salinity.nc_508.64.asc")
+crs(salinity508) <- proj
+
+ts <- stack(salinity9, salinity221, salinity508)
+
+levelplot(ts, layout = c(1, 3), scales=list(draw=FALSE), xlab = NULL, ylab = NULL, names.attr = c("", "", ""), colorkey=FALSE, margin = FALSE, par.setting = viridisTheme)
+dev.copy(png, (paste0("../output/maxent/paper_plots/salinity-example.png")), width = 1080,height = 1920)
+dev.off() # stops automatic saving of the plot to a png))
+          
+```
+
+```{r}
+ras <- raster("../output/maxent/paper_plots/bent_illus/tempmerge.asc")
+levelplot(ras, scales=list(draw=FALSE), xlab = NULL, ylab = NULL, names.attr = c(""), colorkey=FALSE, margin = FALSE, par.setting = viridisTheme)
+dev.copy(png, (paste0("../output/maxent/paper_plots/bent_illus/temp-concat.png")), width = 1080,height = 1920)
+dev.off() # stops automatic saving of the plot to a png))
+
+ras <- raster("../output/maxent/paper_plots/bent_illus/salmerge.asc")
+levelplot(ras, scales=list(draw=FALSE), xlab = NULL, ylab = NULL, names.attr = c(""), colorkey=FALSE, margin = FALSE, par.setting = viridisTheme)
+dev.copy(png, (paste0("../output/maxent/paper_plots/bent_illus/sal-concat.png")), width = 1080,height = 1920)
+dev.off() # stops automatic saving of the plot to a png))
+```
+
