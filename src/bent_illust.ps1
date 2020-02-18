@@ -6,9 +6,9 @@
 #temp
 #salinity
 
-$source="C:\Users\bunny\Documents\GitHub\Chapter_1\output\maxent\paper_plots\bent_illus\sal" #location of starting directory
+$source="C:\Users\bunny\Documents\GitHub\Chapter_1\output\maxent\paper_plots\bent_illus\pred" #location of starting directory
 $dest = "C:\cygwin64\home\bunny\ASCII"; #location where files will be copied to
-$filter = "salinity" #  start 0
+$filter = "cloglog" #  start 0
 
 
 #empty the destimation folder
