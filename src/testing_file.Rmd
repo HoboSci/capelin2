@@ -66,15 +66,6 @@ fviz_cluster(km.res, data = pres,
              ggtheme = theme_minimal())
 ```
 
-```{r}
-library("cluster")
-pam.res <- pam(pres, 6)
-# Visualize
-fviz_cluster(pam.res)
-```
-
-
-
 
 ```{r}
 library(rworldmap)
@@ -5671,3 +5662,403 @@ dev.copy(png, (paste0("../output/maxent/paper_plots/bent_illus/pred-example.png"
 dev.off() # stops automatic saving of the plot to a png))
 ```
 
+#table 2 made as a plot
+
+gather all the percentages in a single file
+```{r}
+flst <- list.files("./output/maxent/paper_plots/prob_by_depth/", pattern = "_cellprob_totals.csv", full.names = TRUE)
+ptables <- lapply(flst, read.csv, header = TRUE)
+pall <- do.call(rbind, ptables)
+pall$month <- capitalize(pall$month)
+
+ggplot(data = pall, aes(x = month, y = percent, fill = Category)) + geom_bar(stat = "identity")
+```
+
+# find mean bottom depth of study region
+
+```{r}
+bathyrast <- raster("./data/env/bathymetric_glorys.asc") 
+plot(bathyrast)
+```
+need to reclassify cells outside the mcp to NA 
+```{r}
+outsidemcp <- shapefile("./data/env/landp/outside-mcp-wgs84.shp") 
+ascdirs <- list.dirs("./data/env/ascii", full.names = FALSE, recursive = FALSE) 
+
+ras<- bathyrast
+ras[outsidemcp] <- 500000
+ras[ras == 500000] <- NA
+writeRaster(ras, "./data/env/bathy_trimmed.asc", overwrite=TRUE)
+cellStats(ras, stat = "mean", na.rm = TRUE) #1046.574
+summary(ras) #313.5291
+```
+
+find the number of folds in each month with a TSS <0.6
+```{r}
+flst <- list.files("./output/maxent/models/test-comb", pattern = "avgAIC.csv", full.names = TRUE, recursive = FALSE)
+df <- data.frame(month=character(10), nfolds=numeric(10), stringsAsFactors = FALSE)
+
+for (f in 1:length(flst)){
+  af <- read.csv(flst[f])
+  af <- head(af, -1)
+  mth <- (sapply(strsplit(flst[f], "/"), "[[", 6)) 
+  df$month[f] <- stringr::str_sub(mth, end = 3)
+  df$'x<0.6'[f] <- sum(af$tss <= 0.6)
+  df$nfolds[f] <- nrow(af)
+}
+write.csv(df, "./output/maxent/models/test-comb/tssfoldcount.csv", row.names = FALSE)
+```
+
+
+
+boxplots of depth of samples relatvie to the bottom depth
+```{r}
+presback <- read.csv("./output/bio/presab_nafo_yr.csv", header = TRUE) 
+pres <- subset(presback, occurrence == 1)
+pres <- subset(pres, select = c(month, bottom_depth_glorys, depth_layer))
+pres$depthdiff <- pres$bottom_depth_glorys - pres$depth_layer
+pres <- subset(pres, month >2)
+pres$month <- as.factor(pres$month)
+
+ggplot(pres, aes(x = month, y = depth_layer)) + geom_boxplot() + scale_y_reverse() + labs(y = "sampling depth")
+
+ggplot(pres, aes(x = month, y = depthdiff)) + geom_boxplot() + labs(y = "sampling depth relative to sea floor (0)")
+
+```
+
+
+
+#historgams of probability by depth
+
+This is figure 4
+
+count number of cells that are not NA in each raster layer that are inside the mcp
+
+```{r}
+
+clogasc_list <- list.files(paste0("../output/maxent/predictions/com-split/mar"), pattern = "^avg_cloglog_.*.asc", full.names = TRUE) #just choose a random month to calculate cells
+cumst <- data.frame(0, 0)
+colnames(cumst) <- c("depth", "no_cells")
+for (cum in 1:length(clogasc_list)){
+  cumasc <- raster(clogasc_list[cum])
+  ascname <- names(cumasc)
+  cumst[cum, 1] <- str_sub(ascname, 13)
+  #cumasc2 <- raster::mask(cumasc, outsidemcp, inverse = TRUE)
+  ccnt <- freq(cumasc, useNA='no')
+  ccnt <- sum(ccnt[ ,2])
+  cumst[cum, 2] <- ccnt
+}
+
+cumst$depth <- as.numeric(cumst$depth)
+cumst1 <- cumst[order(cumst$no_cells), ]
+
+write.csv(cumst1, "../output/maxent/paper_plots/cellsperlayer.csv", row.names = FALSE)
+
+```
+
+get data to plot probability by depth... 
+```{r}
+mthord <- c("mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
+binlst <- c(1:10)
+
+binprob <- function(x){
+  ifelse(x >0,  1,
+  ifelse(x == -9999, 0, NA))
+}
+
+
+for (m in 1:length(mthord)){
+  for (b in 1:length(binlst)){
+    mth <- mthord[m]
+    bin <- binlst[b]
+    # mth <- "dec"
+    # bin <- 1
+  ascdepth <- list.files(paste0("../output/maxent/paper_plots/prob_by_depth"), pattern = paste0("^", mth, "_maxkap.*asc"), full.names = TRUE)
+
+  binaryavgstack <- stack(ascdepth)
+  stackstathigh <- data.frame(matrix(ncol = 2, nrow = nlayers(binaryavgstack)))
+  stackstathigh[ ,1] <- c(1:47)
+  colnames(stackstathigh) <- c("asclayer", "prob_bin")
+  
+  for (lyr in 1:nlayers(binaryavgstack)){
+    ascname <-  str_sub(ascdepth[lyr], 77, -5)
+    dlay <- binaryavgstack[[lyr]]
+    dlay <- calc(dlay, fun = binprob) #creates raster layer with cell values based on the binprob function
+    lyrsum <- cellStats(dlay, sum)
+    stackstathigh$prob_bin[lyr] <- lyrsum
+    stackstathigh$asclayer[lyr] <- ascname
+  
+  }
+  write.csv(stackstathigh, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_maxkap_", bin, "_cellcount_bydepth_avg.csv"), row.names = FALSE)
+  }
+}
+
+```
+
+
+```{r}
+mthord <- c("mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
+
+for (m in 1:length(mthord)){
+  mth <- mthord[m]
+  probblst <- list.files(paste0("../output/maxent/paper_plots/prob_by_depth"), pattern = paste0("^", mth, "_probbin_.*.csv"), full.names = TRUE)
+  a <- read.csv(probblst[1])
+  b <- read.csv(probblst[2])
+  c <- read.csv(probblst[3])
+  d <- read.csv(probblst[4])
+  e <- read.csv(probblst[5])
+  f <- read.csv(probblst[6])
+  g <- read.csv(probblst[7])
+  h <- read.csv(probblst[8])
+  i <- read.csv(probblst[9])
+  j <- read.csv(probblst[10])
+  
+  stackstat <- cbind(a, b[ ,2], c[ ,2], d[ ,2], e[ , 2], f[ ,2], g[ ,2], h[ ,2], i[ ,2], j[ ,2])
+  colnames(stackstat) <- c("depth", "0 - 0.09", "0.1 - 0.19", "0.2 - 0.29", "0.3 - 0.39", "0.4 - 0.49", "0.5 - 0.59", "0.6 - 0.69", "0.7 - 0.79", "0.8 - 0.89", ">0.9")
+  stackstat <- melt(stackstat, id = "depth")
+  stackstat <- stackstat[!(stackstat$depth == "1151.99"), ]
+  stackstat <- stackstat[!(stackstat$depth == "1265.86"), ]
+  stackstat <- stackstat[!(stackstat$depth == "1387.38"), ]
+  
+  colnames(stackstat) <- c("Depth", "Probability", "Cells")
+  
+  write.csv(stackstat, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_allprobbin_cellcount_bydepth_avg.csv"), row.names = FALSE)
+}
+
+```
+
+Get proprotions
+```{r}
+mthord <- c("mar",  "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
+cumst1 <- read.csv("../output/maxent/paper_plots/cellsperlayer.csv", header = TRUE)
+
+for (m in 1:length(mthord)){
+  mth <- mthord[m]
+  a <- read.csv(paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_allprobbin_cellcount_bydepth_avg.csv"), header = TRUE, stringsAsFactors=FALSE)
+  for (r in 1:nrow(a)){
+    # a$Depth[r] <- gsub("b_avg_cloglog_", "", x = a$Depth[r])
+    # d1 <- str_sub(a$Depth[r], end = 4)
+    d1 <- a$Depth[r]
+	  for (ro in 1:nrow(cumst1)){
+      #d2 <- str_sub(cumst1$depth[ro], end = 4)
+	    d2 <- cumst1$depth[ro]
+      if (d1 == d2){
+          a$total_cells[r] <- cumst1$no_cells[ro]
+      }
+	  }
+    a$p_cells[r] <- (a$Cells[r]/a$total_cells[r])*100
+  }
+    a$Depth <- as.numeric(a$Depth)
+
+  write.csv(a, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_dis_prob_cells.csv"), row.names = FALSE)
+}
+
+```
+
+plot - Code base provided by Rémi Daigle (https://remidaigle.wordpress.com/)
+
+313.5291
+```{r}
+require(data.table)
+require(purrr)
+require(lubridate)
+require(tidyverse)
+require(viridis)
+
+
+
+filenames <- list.files("./output/maxent/paper_plots/prob_by_depth/", pattern = "dis_prob_cells.csv", recursive = TRUE,full.names = TRUE)
+filenames <- filenames[ !grepl("maxkap", filenames) ] #remove all the maxkap files
+
+
+all <- map_dfr(filenames, function(x) fread(x) %>% 
+                       mutate(Month=substr(basename(x),1,3))) %>% 
+  mutate(Probability = gsub(">0.9", "0.9 - 1", Probability),
+         Depth = factor(round(Depth,1)),
+         Depth = factor(Depth,ordered = TRUE, levels = rev(levels(Depth))),
+         Month=factor(months(parse_date_time(Month,"%m")),
+                      ordered = TRUE,
+                      levels=months(parse_date_time(1:12,"%m"))))
+#create a list of depths so you can set breaks for the x-axis (which is showing as the y-axis...)
+dlst <- unique(all$Depth)
+dlst <- as.character(dlst)
+dlst <- as.numeric(dlst)
+dlst <- sort(dlst)
+#make the plot
+  ggplot(all) +
+  geom_col(aes(Depth, p_cells, fill = Probability),width=1) + 
+  coord_flip()+
+  facet_wrap(~Month,ncol=2)+
+  labs(y = "% Ocean at Depth", x = "Depth (meters)")+
+  scale_fill_viridis(option="magma", discrete = TRUE, direction = -1, guide=guide_legend(nrow=2, byrow = TRUE)) +
+  theme_classic()+
+  theme(legend.position = "bottom", axis.text.y = element_text(size=7), strip.background = element_blank()) +
+  scale_x_discrete(breaks = c(dlst[1], dlst[5], dlst[10], dlst[15], dlst[20], dlst[25], dlst[30], dlst[35], dlst[40], dlst[47])) + geom_vline(xintercept=12.5, linetype = 2, col = "light grey") # this is approximate
+  
+ggsave("./output/maxent/paper_plots/prob_by_depth_line.png", width = 210, height = 297, units = "mm", dpi = 600)
+```
+
+
+get data to plot maxkap binary by depth plot (Figure 6)
+
+
+Get proportions... 
+
+```{r percentage cells above and below maxkap}
+mthord <- c("mar",  "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
+cumst1 <- read.csv("../output/maxent/paper_plots/cellsperlayer.csv", header = TRUE)
+
+for (m in 1:length(mthord)){
+  mth <- mthord[m]
+  a <- read.csv(paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_maxkap_cellcount_bydepth_avg.csv"), header = TRUE, stringsAsFactors=FALSE)
+  for (r in 1:nrow(a)){
+    # a$Depth[r] <- gsub("b_avg_cloglog_", "", x = a$Depth[r])
+    # d1 <- str_sub(a$Depth[r], end = 4)
+    d1 <- a$asclayer[r]
+	  for (ro in 1:nrow(cumst1)){
+      #d2 <- str_sub(cumst1$depth[ro], end = 4)
+	    d2 <- cumst1$depth[ro]
+      if (d1 == d2){
+          a$total_cells[r] <- cumst1$no_cells[ro]
+      }
+	  }
+    a$p_cells[r] <- (a$prob_bin[r]/a$total_cells[r])*100
+    a$Probability[r] <- 1
+  }
+    #a$asclayer <- as.numeric(a$asclayer)
+  
+  a2 <- as.data.frame(a$asclayer)
+  a2$total_cells <- a$total_cells
+  a2$prob_bin <- a$total_cells - a$prob_bin
+  a2$p_cells <- (a2$prob_bin/a2$total_cells)*100
+  a2$Probability <- 0
+  colnames(a2)[1] <- "asclayer"
+  
+  b <- rbind(a, a2)
+  colnames(b)[1] <- "Depth"
+
+
+  write.csv(b, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_maxkap_dis_prob_cells.csv"), row.names = FALSE)
+}
+
+
+```
+
+
+plot - Code base provided by Rémi Daigle (https://remidaigle.wordpress.com/)
+This is Figure 6
+
+```{r maxkappa habitat by depth}
+
+filenames <- list.files("./output/maxent/paper_plots/prob_by_depth/", pattern = "_maxkap_dis_prob_cells.csv", recursive = TRUE,full.names = TRUE)
+
+all <- map_dfr(filenames, function(x) fread(x) %>% 
+                       mutate(Month=substr(basename(x),1,3))) %>% 
+  mutate(Depth = factor(round(Depth,1)),
+         Depth = factor(Depth,ordered = TRUE, levels = rev(levels(Depth))),
+         Month=factor(months(parse_date_time(Month,"%m")),
+                      ordered = TRUE,
+                      levels=months(parse_date_time(1:12,"%m"))))
+        
+
+#create a list of depths so you can set breaks for the x-axis (which is showing as the y-axis...)
+dlst <- unique(all$Depth)
+dlst <- as.character(dlst)
+dlst <- as.numeric(dlst)
+dlst <- sort(dlst)
+
+#make probability a factor - sam added this
+all$Probability <- as.factor(all$Probability)
+
+#make the plot
+  ggplot(all) +
+  geom_col(aes(Depth, p_cells, fill = Probability),width=1) +
+  coord_flip()+
+  facet_wrap(~Month,ncol=2)+
+  labs(y = "% Ocean at Depth", x = "Depth (meters)")+
+  scale_fill_manual(aesthetics = "fill", values=c('light yellow','black'), name = "Presence")+
+  theme_classic()+
+  theme(legend.position = "bottom", axis.text.y = element_text(size=7), strip.background = element_blank()) +
+  scale_x_discrete(breaks = c(dlst[1], dlst[5], dlst[10], dlst[15], dlst[20], dlst[25], dlst[30], dlst[35], dlst[40], dlst[47])) +
+    geom_vline(xintercept=12.5, linetype = 2, col = "light grey") # this is approximate
+
+ggsave("./output/maxent/paper_plots/maxkap_prob_by_depth_line.png", width = 210, height = 297, units = "mm", dpi = 600)
+```
+
+
+This is Figure 3
+
+Code base provided by Rémi Daigle (https://remidaigle.wordpress.com/)
+
+have moved sample files into a separate folder
+march,  june, sep, dec
+11.7737, 61.1128, 199.79. 628.026
+
+```{r}
+library(sf)
+library(purrr)
+library(raster)
+library(lubridate)
+library(tidyverse)
+
+proj <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"
+
+s <- st_read("./data/env/landp/land-wgs84v2.shp") %>% 
+  st_set_crs(proj)
+
+mcp <- st_read("./output/bio/minimum_convex_poly/mcp-wgs84.shp")
+
+filelist <- list.files("./data/plot2-probmaps/",pattern="avg_cloglog*",recursive = TRUE,include.dirs = TRUE)
+
+x <- stack(file.path("./data/plot2-probmaps/",filelist)) %>% 
+  mask(mcp) 
+
+names(x) <- filelist
+
+df <- x %>% 
+  rasterToPoints() %>% 
+  as.data.frame() %>% 
+  gather(key = "variable", value = "value",-x,-y) %>% 
+  mutate(variable=gsub(".asc","",variable),
+         month=factor(months(parse_date_time(gsub("\\..*$", "",variable),"%m")),
+                      ordered = TRUE,
+                      levels=months(parse_date_time(1:12,"%m"))),
+         depth=as.numeric(gsub("^.*_", "",variable)))
+
+#remi code stops here
+
+df$month <- str_sub(df$variable, start = 16, end = 18)
+
+CapStr <- function(y) {
+  c <- strsplit(y, " ")[[1]]
+  paste(toupper(substring(c, 1,1)), substring(c, 2),
+      sep="", collapse=" ")
+}
+df$month <- sapply(df$month, CapStr)
+df$month_f = factor(df$month, levels=c('Mar','Jun','Sep','Dec'))
+
+#remi code starts here
+
+depthlab <- paste(unique(df$depth),"m")[c(1,3,2,4)]
+names(depthlab) <- unique(df$depth)[c(1,3,2,4)]
+
+ggplot(df)+
+  geom_sf(data=mcp,fill='grey')+
+  geom_raster(aes(x,y,fill=value))+
+  geom_sf(data=mcp,fill="transparent")+
+  scale_fill_viridis(option="magma",
+                       direction=-1, limits = c(0,1), breaks = c(0, 0.25, 0.5, 0.75, 1),
+                       guide=guide_colourbar(barwidth=0.5, barheight = 15, title = NULL, draw.ulim = FALSE, draw.llim = FALSE))+
+  facet_grid(depth~month_f,
+             labeller = labeller(depth=depthlab))+
+  theme_classic()+
+  scale_x_continuous(breaks = seq(-70,-50,10))+
+  theme(legend.position = "right",
+        axis.title.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.x=element_text(angle=45,vjust=1,hjust=1), strip.background = element_blank(),
+        strip.text.x = element_text(face = "bold", size = 12),
+        strip.text.y = element_text(face = "bold", size = 12))
+
+ggsave("./output/maxent/paper_plots/prob-overview_swap.png", width = 210, height = 297, units = "mm", dpi = 600)
+```

@@ -1,63 +1,37 @@
+---
+title: "maxent model plus plot creation"
+author: "Samantha Andrews"
+output:
+  html_document:
+    df_print: paged
+  html_notebook: default
+  pdf_document: default
+---
+
+# Overview
+A note to anyone who might happen to stumble across this... I am a beginner in R and have had no exposure to similar languages. I don't know what I'm doing. The code herein is unlikely to be elegant and there area probably more efficient ways of running the code.
+
+Built with 'r getRversion()'..
+
+# Package dependencies
+You can install and load them using the following code which uses a function called [ipak](https://gist.github.com/stevenworthington/3178163). Note this function checks to see if the packages are installed first before loading.
 
 ```{r pre-install & load packages, include=FALSE}
-options(java.parameters = "-Xmx2g" )#needs to run before dismo loaded - boosts memory for java to 1g
-packages <- c("dismo", "stringr", "rJava", "raster", "ecospat", "bossMaps", "lattice", "tidyr", "enmSdm", "ggplot2", "plyr", "reshape2", "tidyverse", "patchwork", "purrr", "Hmisc")
+options(java.parameters = "-Xmx3g")#needs to run before dismo loaded - boosts memory for java to 3g
+packages <- c("dismo", "stringr", "rJava", "raster", "ecospat", "bossMaps", "lattice", "enmSdm", "ggplot2", "plyr", "reshape2", "tidyverse", "patchwork", "purrr", "Hmisc", "cowplot", "sf", "lubridate")
 source("../src/ipak.R")
 ipak(packages)
 ```
 
-#need to reclassify cells outside the mcp to NA for predictions
-```{r}
-outsidemcp <- shapefile("../data/env/landp/outside-mcp-wgs84.shp") #made in arcgis - in aea
 
-ascdirs <- list.dirs("../data/env/ascii-original", full.names = FALSE, recursive = FALSE)
-
-for (ad in 1:length(ascdirs)){
-  timeslice <- ascdirs[ad]
-  ascfiles <- list.files(paste0("../data/env/ascii-original/", timeslice), pattern = "\\.asc$", full.names = TRUE)
-  for (file in 1:length(ascfiles)){
-    ras<- raster(ascfiles[file])
-    crs(ras) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0 "
-    ascname <- str_sub(ascfiles[file], start = 38)
-    ras[outsidemcp] <- 500000
-    ras[ras == 500000] <- NA
-    writeRaster(ras, paste0("../data/env/asciitrim/", ascdirs[ad], "/", ascname), overwrite=TRUE)
-  }
-}
-
-
-
-```
-
-load the presence-background dataset
-("../output/bio/presab_nafo_yr.csv")
-
-select month
-```{r month of interest -change}
-mthna <- "dec"
-mthno <- "12"
-```
+load the presence-background dataset 
 
 ```{r load pres-background dataset}
-presback <- read.csv("../output/bio/presab_nafo_yr.csv", header = TRUE)
-colnames(presback)
+presback <- read.csv("../output/bio/presab_nafo_yr.csv", header = TRUE) # this file is available in the Figshare project
 ```
 
-remove all rows with the year 2015 (due to low number of samples)
-```{r}
-presback <- subset(presback, year!="2015")
-```
-
-
-this dataset contains a lot of columns you don't need for the maxent models. Remove them here
-
-```{r remove unnecessary columns}
-presback <- subset(presback, select = -c(cell_id, id, decimalLatitude, decimalLongitude, datecollected, institutioncode, individualcount, depth, resname, originalscientificname, collectioncode, day, nafo_zone, gear, longitude_meters, latitude_meters, total_cell_obs_xy, total_cell_obs_xyt, bottom_depth, XXtotal_cell_obs_xyzt, temp_celsius_depth, temp_celsius_surface, longitude_meters.1, latitude_meters.1, bottom_depth_glorys, longitude_meters.2, latitude_meters.2, cell_id_3d, total_cell_obs_xyzt, cell_id_xyzt))
-colnames(presback)
-```
-
-monthly model data selection and prep
 For each monthly model, subset the data to the month you want, and the variables you want (Based on spearmans and VIF)
+Ex: edit this list for variables used in each month (or simply replace with a single list if, as in this case, months have the same variables)
 
 ```{r}
 marvar <- c("occurrence", "year", "temp_depth", "salinity_depth", "o2_depth", "chl_surface", "nao_sample", "nao_prev", "nao_winter", "amo_sample", "amo_winter")
@@ -85,12 +59,109 @@ note will need to reajust background points too as some years may no longer have
 
 ```{r remove na vals}
 prback <- na.omit(prback)
-presyrs <-  subset(prback, occurrence == 1) #this is to get years with complete presence data
+presyrs <-  subset(prback, occurrence == 1) #this is to get years with complete presence data 
 presyrs <- unique(presyrs$year) #make a vector of unique years
 prback <- prback[prback$year %in% presyrs, ] #keep only the data for which there is precence years
 
 ```
 
+```{r train and test inc AIC for reg val}
+presyrs <-  #this is to get years with complete presence data 
+  
+
+modelmonth <- cbind(paste0(mthna ,unique(prback$year)))
+aicetc <- read.csv("../data/env/AICcCalculations.csv", header = TRUE) #pre-created csv file
+betavallist <- cbind(aicetc$regularization)
+
+for (year in 1:nrow(modelmonth)){
+  timeslice <- modelmonth[year] #testing timeslice
+  yr <- str_sub(timeslice, -4) #the year being used for testing
+  train <- subset(prback, year != yr) #training data is all years but testing
+  trainpa <- train$occurrence #creates a vector of presence/background ID (1/0)
+  test <-  subset(prback, year == yr) #creates the testing dataset
+  testp <- subset(test, occurrence == "1") #splits the testing dataset into presences
+  testp <- subset(testp, select = -c(year, occurrence)) #don't need year and occurrence for modelling
+  testb <- subset(test, occurrence == "0") #splits the testing dataset into background
+  testb <- subset(testb, select = -c(year, occurrence)) #don't need year and occurrence for modelling
+  train  <- subset(train, select = -c(year, occurrence)) #don't need year and occurrence for modelling
+  
+  for (h in 1:nrow(betavallist)){
+    betaval <-  betavallist[h]
+    mod <- maxent(x = train, p = trainpa, path = paste0("../output/maxent/models/", timeslice), args=c('plots=FALSE', "maximumiterations=5000", "responsecurves=TRUE", "jackknife=TRUE", "threads=8", "addsamplestobackground=TRUE", paste0("betamultiplier=", betavallist[h])))
+
+    #now based on glover-kapfer pdf with excel manual + https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/10-1171.1... + adaptation for        getting testAUC.. horrible code
+
+    #count number of non-zero coefficients, excluding the final four rows
+    coefile <- read.csv(paste0("../output/maxent/models/", timeslice, "/species.lambdas"), header = FALSE, stringsAsFactors=FALSE)
+    coefile <- head(coefile, -4)
+    coefile2 <- subset(coefile, V2 > 0 | V2 < 0)
+    nocoeff <- nrow(coefile2)
+    bick <- sum(as.numeric(coefile2[, 2])) #dodgy 
+    bic <- (bick*log(sum(trainpa == 1)) - 2*11) #dodgy
+    
+    #no presences used in model (less those used for testing)
+    maxresults <- read.csv(paste0("../output/maxent/models/", timeslice, "/maxentResults.csv"), header = TRUE)
+    notrainingpoints <- maxresults$X.Training.samples
+    testauc <- maxresults$Test.AUC
+    trainauc <- maxresults$Training.AUC
+    
+    #natural log
+    samplepred <- read.csv(paste0("../output/maxent/models/", timeslice, "/species_samplePredictions.csv"), header = TRUE)
+    samplepred$nat_log <- log(samplepred$Raw.prediction)
+    sumsamplepred <- sum(samplepred$nat_log)
+  
+  
+   #test auc scores and other lovely things you might want to include e.g.
+    ev <- evaluate(p = testp, a= testb, model = mod)
+    evauc <- ev@auc
+    evcor <- ev@cor
+    evpcor <- ev@pcor
+    evnp <- ev@np
+    evna <- ev@na
+    evmaxtprtnr <- threshold(ev, 'spec_sens')
+    evmaxkap <- threshold(ev, 'kappa')
+    evno_omission <- threshold(ev, 'no_omission')
+    evprevalence <- threshold(ev, 'prevalence')
+    evequal_sens_spec <- threshold(ev, 'equal_sens_spec')
+    evsensitivity <- threshold(ev, 'sensitivity')
+    
+    for (i in 1:nrow(aicetc)){
+    if(aicetc$regularization[i] == betaval){
+      aicetc$train_AUC[i] <- trainauc
+      aicetc$no_trainng_points[i] <- notrainingpoints
+      aicetc$coefficients[i] <- nocoeff
+      aicetc$sum.of.logs[i] <- sumsamplepred
+      aicetc$test_AUC[i] <- evauc
+      aicetc$test_evcor[i] <- evcor
+      aicetc$test_evpcor[i] <- evpcor
+      aicetc$test_nopresence[i] <- evnp
+      aicetc$test_nobackground[i] <- evna
+      aicetc$test_maxsumsenspec[i] <- evmaxtprtnr
+      aicetc$test_maxkap[i] <- evmaxkap
+      aicetc$test_no_omission[i] <- evno_omission
+      aicetc$test_prevalence[i] <- evprevalence
+      aicetc$test_equal_sens_spec[i] <- evequal_sens_spec
+      aicetc$test_sensitivity[i] <- evsensitivity
+      aicetc$test_bic[i] <- bic #not sure this is correct...
+      aicetc$beta[i] <- betaval
+      aicetc$mpa_0.9_cum[i] <- ecospat.mpa(samplepred$Cumulative.prediction, perc = 0.9) #90%
+      
+    aicetc$AIC[i] <- ((2*aicetc$coefficients[i])-(2*aicetc$sum.of.logs[i]))
+    aicetc$AICc[i] <- (-2*(aicetc$sum.of.logs[i])+((2*aicetc$coefficients[i])*(aicetc$no_trainng_points[i]/(aicetc$no_trainng_points[i] - aicetc$coefficients[i]-1))))
+    }
+   }
+  }
+  
+
+write.csv(aicetc, paste0("../output/maxent/models/", timeslice, "/AICforMaxentReg.csv"), row.names = FALSE)
+
+}  
+  
+
+```
+
+AICc selection
+select the models you want for each year and run those models again (primarily based on lowest AICc but check test AUC and other things too)
 
 
 ```{r final models plus predict}
@@ -230,30 +301,30 @@ unlayer <- read.csv(paste0("../data/env/test-comb/asc_layerlist", mthna, ".csv")
     write.csv(stackdep, paste0("../output/maxent/models/test-comb/", timeslice, "/stackdepthlist_", yr, ".csv"), row.names = FALSE)
 
 
-
+    
   for (td in 1:nrow(unlayer_yr)){
       temp_depth <- raster(unlayer_yr$temp_depth[td])
-      crs(temp_depth) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"
+      crs(temp_depth) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0" 
       names(temp_depth) <- "temp_depth"
       #temp_depth <- projectRaster(temp_depth, aea)
       chl_surface <- raster(unlayer_yr$chl_surface[td])
-      crs(chl_surface) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"
+      crs(chl_surface) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0" 
       names(chl_surface) <- "chl_surface"
       #chl_depth <- projectRaster(chl_depth, aea)
       o2_depth <- raster(unlayer_yr$o2_depth[td])
-      crs(o2_depth) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"
+      crs(o2_depth) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0" 
       names(o2_depth) <- "o2_depth"
       #o2_depth <- projectRaster(o2_depth, aea)
       salinity_depth <- raster(unlayer_yr$salinity_depth[td])
-      crs(salinity_depth) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"
+      crs(salinity_depth) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0" 
       names(salinity_depth) <- "salinity_depth"
       #salinity_depth <- projectRaster(salinity_depth, aea)
       nao_sample <- raster(unlayer_yr$nao_sample[td])
-      crs(nao_sample) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"
+      crs(nao_sample) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0" 
       names(nao_sample) <- "nao_sample"
       #nao_sample <- projectRaster(nao_sample, aea)
       nao_prev <- raster(unlayer_yr$nao_prev[td])
-      crs(nao_prev) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"
+      crs(nao_prev) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0" 
       names(nao_prev) <- "nao_prev"
       #nao_prev <- projectRaster(nao_prev, aea)
       nao_winter <- raster(unlayer_yr$nao_winter[td])
@@ -261,7 +332,7 @@ unlayer <- read.csv(paste0("../data/env/test-comb/asc_layerlist", mthna, ".csv")
       names(nao_winter) <- "nao_winter"
       #nao_winter <- projectRaster(nao_winter, aea)
       amo_sample <- raster(unlayer_yr$amo_sample[td])
-      crs(amo_sample) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"
+      crs(amo_sample) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0" 
       names(amo_sample) <- "amo_sample"
       #amo_sample <- projectRaster(amo_sample, aea)
       amo_winter <- raster(unlayer_yr$amo_winter[td])
@@ -273,20 +344,18 @@ unlayer <- read.csv(paste0("../data/env/test-comb/asc_layerlist", mthna, ".csv")
 
 
       #stackSave(test,unlayer_yr$stackname[td])
-      pred <- predict(mod, stack, file = paste0("../output/maxent/predictions/test-comb/", mthna, "/", "cloglog_", stackn, ".asc"), overwrite=TRUE, args=c('outputformat=cloglog'))
-      # predraw <- predict(mod, stack, file = paste0("../output/maxent/predictions/test-comb/", mthna, "/", "raw_", stackn, ".asc"), overwrite=TRUE, args=c('outputformat=raw'))
+      pred <- predict(mod, stack, file = paste0("../output/maxent/predictions/test-comb/", mthna, "/", "cloglog_", stackn, ".asc"), overwrite=TRUE, args=c('outputformat=cloglog')) 
+      # predraw <- predict(mod, stack, file = paste0("../output/maxent/predictions/test-comb/", mthna, "/", "raw_", stackn, ".asc"), overwrite=TRUE, args=c('outputformat=raw')) 
       prplot <- plot(pred, png(paste0("../output/maxent/predictions/test-comb/", mthna, "/", "cloglog_", stackn, ".png")))
       dev.off() # stops automatic saving of the plot to a png
   }
 }
 ```
 
-all layers need to be spit in bash + poweshell
-- pre-split.ps1
-- separate.sh
-- aftersplit.ps1
+
 
 # average the maxent results
+did this after splitting layers back into their individual depths as per Bentlage 2013 https://doi.org/10.1111/geb.12049
 
 ```{r avg maxentReg}
 monthlist <- c("mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec") # a list of months to order by
@@ -294,13 +363,13 @@ monthlist <- c("mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "d
 
 for (mth in 1:length(monthlist)){
     mthna <- monthlist[mth]
-    modlist <- list.dirs("../output/maxent/models/test-comb", full.names = FALSE, recursive = FALSE)
+    modlist <- list.dirs("../output/maxent/models/test-comb", full.names = FALSE, recursive = FALSE) 
     modlist <- modlist[ grepl(mthna, modlist) ]
     aiclst <- list()
     maxrlst <- list()
     for (i in 1:length(modlist)){
       timeslice <- modlist[i]
-      yr <- str_sub(timeslice, -4) #the year
+      yr <- str_sub(timeslice, -4) #the year 
       if(yr == 1998){
         aic1998 <- read.csv(paste0("../output/maxent/models/test-comb/", timeslice, "/AICforMaxentReg.csv"), header = TRUE)
         aiclst[[i]] <- aic1998
@@ -390,16 +459,16 @@ for (mth in 1:length(monthlist)){
     }
   aic <- do.call(rbind, aiclst)
   maxr <- do.call(rbind, maxrlst)
-
+  
   aicm <- colMeans(aic)
   aicm$mod <- "avg"
   avgAIC <- rbind(aic, aicm)
-
+  
   maxr$Species <- 1
   maxrm <- colMeans(maxr)
   maxrm$Species <- "avg"
   maxrm <- rbind(maxr, maxrm)
-
+  
   write.csv(avgAIC, paste0("../output/maxent/models/test-comb/", mthna, "avgAIC.csv"), row.names = FALSE)
   write.csv(maxrm, paste0("../output/maxent/models/test-comb/", mthna, "avgmaxentresults.csv"), row.names = FALSE)
 }
@@ -435,7 +504,7 @@ write.csv(aicsum, "../output/maxent/models/test-comb/aicsummary.csv", row.names 
 
 ```
 
-# average the ascii layers
+# average the ascii layers 
 need a montly layer for each month-depth
 
 first need to rebuild a list of stackdepths as this does not work in the code above (due to change in ascii formatting - code above is old)
@@ -476,9 +545,9 @@ for (m in 1:length(monthlist)){
   depthlayers <- data.frame(cbind(unique(stdep$ascdepths)))
   names(depthlayers)[names(depthlayers) == "cbind.unique.stdep.ascdepths.."] <- "depth"
   depthlayers$depth <- as.character(depthlayers$depth)
-
+  
   colno <- 1
-
+  
   for (d in 1:nrow(depthlayers)){
     dep <- depthlayers$depth[d]
     for (a in 1:length(clogasc_list)){
@@ -503,6 +572,7 @@ modlist <- p[ grepl(mthna, p) ]
 print(length(modlist)) #need this to modify code below
 print(modlist) #need this to modify code below
 
+#the following cde was manually edited for each month
 
 for (x in 1:nrow(depthlayers)){
   asclay <- depthlayers[x, ]
@@ -528,9 +598,9 @@ for (x in 1:nrow(depthlayers)){
   #asclay$V18 <- as.character(asclay$V18) #yr 16
   #asclay$V19 <- as.character(asclay$V19) #yr 17
 
-
+  
   asclaydep <- asclay$V2
-
+  
   asc1 <- raster(asclay$V3) #1
   asc2 <- raster(asclay$V4)
   asc3 <- raster(asclay$V5) #3
@@ -553,11 +623,11 @@ for (x in 1:nrow(depthlayers)){
   stkasc <- stack(asc1, asc2, asc3, asc4, asc5, asc6, asc7, asc8, asc9, asc10, asc11, asc12, asc13, asc14) #, asc15) #, asc16) #, asc2015)   asc1998, asc1999, asc2000, asc2001, asc2002, asc2003, asc2009
 
   avg <- mean(stkasc, na.rm = TRUE)
-
+  
   writeRaster(avg, paste0("../output/maxent/predictions/com-split/", mthna, "/avg_cloglog_", asclaydep, ".asc"), overwrite=TRUE)
-  avgplot <- plot(avg, png(paste0("../output/maxent/predictions/com-split/", mthna, "/avg_cloglog_", asclaydep, ".png")))
+  avgplot <- plot(avg, png(paste0("../output/maxent/predictions/com-split/", mthna, "/avg_cloglog_", asclaydep, ".png"))) 
   dev.off()
-
+  
 file.rename(paste0("../output/maxent/predictions/com-split/", mthna, "/avg_cloglog_000120.asc"), paste0("../output/maxent/predictions/com-split", mthna, "/avg_cloglog_120.asc"))
 file.rename(paste0("../output/maxent/predictions/com-split/", mthna, "/avg_cloglog_000120.png"), paste0("../output/maxent/predictions/com-split/", mthna, "/avg_cloglog_120.png"))
 file.rename(paste0("../output/maxent/predictions/com-split/", mthna, "/avg_cloglog_041.18.asc"), paste0("../output/maxent/predictions/com-split/", mthna, "/avg_cloglog_41.18.asc"))
@@ -568,7 +638,6 @@ file.rename(paste0("../output/maxent/predictions/com-split/", mthna, "/avg_clogl
 #binned probability cell count for the whole 3d space per month
 
 ```{r}
-library(stringr)
 
 #calculate no of cells in the 3D space
 prob <- read.csv("../output/maxent/paper_plots/prob_by_depth/apr_dis_prob_cells.csv", header = TRUE) #just a randomly chosen dataset
@@ -590,34 +659,20 @@ for (m in 1:length(dislst)){
 #then i just made a table manually in excel
 ```
 
-#plotting
-
-need some additional packages installed
-```{r pre-install & load packages, include=FALSE}
-packages <- c("stringr", "reshape2", "ggplot2", "Hmisc", "viridis", "raster", "RColorBrewer", "cowplot", "rasterVis")
-source("../src/ipak.R")
-ipak(packages)
-```
-
 
 # stacked permutation importance plot
-
-note if you change mind and want jackknife then the code is in the older plots for papers rmd
-
-first need to make the data plot-ready
+This is Figure 2
 
 ```{r create permutation & jack data}
 maxr_lst <- list.files("../output/maxent/models/test-comb/", pattern = "maxentresults.csv", full.names = TRUE)
 perm <- data.frame(matrix(ncol = 10, nrow = length(maxr_lst)))
 colnames(perm) <- c("Month", "amo_sample", "amo_winter", "chl_surface", "nao_prev", "nao_sample", "nao_winter", "o2_depth", "salinity_depth", "temp_depth")
-# jack <- data.frame(matrix(ncol = 10, nrow = length(maxr_lst)))
-# colnames(jack) <- c("Month", "amo_sample", "amo_winter", "chl_surface", "nao_prev", "nao_sample", "nao_winter", "o2_depth", "salinity_depth", "temp_depth")
+
 
 for (m in 1:length(maxr_lst)){
   maxr <- read.csv(maxr_lst[m])
   mth <- str_sub(maxr_lst[m], start = 35, end = 37) #selects the month from the filename
   perm$Month[m] <- mth
-  # jack$Month[m] <- mth
   maxt <- tail(maxr, 1)
   perm$amo_sample[m] <- maxt$amo_sample.permutation.importance
   perm$amo_winter[m] <- maxt$amo_winter.permutation.importance
@@ -629,27 +684,15 @@ for (m in 1:length(maxr_lst)){
   perm$salinity_depth[m] <- maxt$salinity_depth.permutation.importance
   perm$temp_depth[m] <- maxt$temp_depth.permutation.importance
 
-  # jack$amo_sample[m] <- maxt$Training.gain.without.amo_sample
-  # jack$amo_winter[m] <- maxt$Training.gain.without.amo_winter
-  # jack$chl_surface[m] <- maxt$Training.gain.without.chl_surface
-  # jack$nao_prev[m] <- maxt$Training.gain.without.nao_prev
-  # jack$nao_sample[m] <- maxt$Training.gain.without.nao_sample
-  # jack$nao_winter[m] <- maxt$Training.gain.without.nao_winter
-  # jack$o2_depth[m] <- maxt$Training.gain.without.o2_depth
-  # jack$salinity_depth[m] <- maxt$Training.gain.without.salinity_depth
-  # jack$temp_depth[m] <- maxt$Training.gain.without.temp_depth
 }
 
 
 mthord <- c("mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec") # a list of months to order by
 permu <- perm[match(mthord, perm$Month), ] #reorder based on mthord
-# jackk <- jack[match(mthord, jack$Month), ] #reorder based on mthord
 
 # rename the months so they are capitalised
-
-
 permu$Month <- capitalize(permu$Month)
-# jackk$Month <- capitalize(jackk$Month)
+
 
 
 # rename the col names so they are capitalised and shortened
@@ -663,239 +706,31 @@ colnames(permu)[colnames(permu)=="o2_depth"] <- "O2_Depth"
 colnames(permu)[colnames(permu)=="salinity_depth"] <- "Salinity_Depth"
 colnames(permu)[colnames(permu)=="temp_depth"] <- "Temp_Depth"
 
-# colnames(jackk)[colnames(jackk)=="amo_sample"] <- "AMO_Sample"
-# colnames(jackk)[colnames(jackk)=="amo_winter"] <- "AMO_Winter"
-# colnames(jackk)[colnames(jackk)=="chl_surface"] <- "Chl_Surface"
-# colnames(jackk)[colnames(jackk)=="nao_prev"] <- "NAO_Prev"
-# colnames(jackk)[colnames(jackk)=="nao_sample"] <- "NAO_Sample"
-# colnames(jackk)[colnames(jackk)=="nao_winter"] <- "NAO_Winter"
-# colnames(jackk)[colnames(jackk)=="o2_depth"] <- "O2_Depth"
-# colnames(jackk)[colnames(jackk)=="salinity_depth"] <- "Salinity_Depth"
-# colnames(jackk)[colnames(jackk)=="temp_depth"] <- "Temp_Depth"
 
 
 write.csv(permu, "../output/maxent/models/test-comb/permutation_avg.csv", row.names = FALSE)
-# write.csv(jackk, "../output/maxent/models/test-comb/jack_avg.csv", row.names = FALSE)
 
 ```
 
 now make the plot
-
 ```{r permulation plot}
-library(cowplot)
 permu <- read.csv("../output/maxent/models/test-comb/permutation_avg.csv")
 
 mthna <- c("Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
 
-permelt <- melt(permu, id = "Month") #need to melt the data into this format for ggplot
-permelt$variable <- factor(permelt$variable, levels = c("AMO_Sample", "AMO_Winter", "NAO_Sample", "NAO_Prev", "NAO_Winter", "Chl_Surface", "O2_Depth", "Salinity_Depth", "Temp_Depth")) #reorder the variables
-perpl <- ggplot(data = permelt, aes(x = Month, y = value, fill = variable)) + geom_bar(stat = "identity") +  scale_fill_viridis_d(direction = 1, labels = c("AMO Sample", "AMO Winter", "NAO Sample", "NAO Prev", "NAO Winter", "Chl Surface", "O2 Depth", "Salinity Depth", "Temp Depth")) + theme_half_open(12) + scale_x_discrete(limits = mthna) + labs(y = "Permutation Importance (%)")
+perm2 <- melt(permu, id = "Month") #need to melt the data into this format for ggplot
+perm2$variable <- factor(perm2$variable, levels = c("AMO_Sample", "AMO_Winter", "NAO_Sample", "NAO_Prev", "NAO_Winter", "Chl_Surface", "O2_Depth", "Salinity_Depth", "Temp_Depth")) #reorder the variables
+perpl <- ggplot(data = perm2, aes(x = Month, y = value, fill = variable)) + geom_bar(stat = "identity") +  scale_fill_viridis_d(direction = 1, labels = c("AMO Sample", "AMO Winter", "NAO Sample", "NAO Prev", "NAO Winter", "Chl Surface", "O2 Depth", "Salinity Depth", "Temp Depth")) + theme_half_open(12) + scale_x_discrete(limits = mthna) + labs(y = "Permutation Importance (%)")
 png("../output/maxent/paper_plots/permutation_plot.png")
 print(perpl)
 dev.off()
 ```
 
-#historgams of probability by depth
+# sample probabily maps 
 
-count number of cells that are not NA in each raster layer that are inside the mcp
+This is Figure 3
 
-```{r}
-
-clogasc_list <- list.files(paste0("../output/maxent/predictions/com-split/mar"), pattern = "^avg_cloglog_.*.asc", full.names = TRUE) #just choose a random month to calculate cells
-cumst <- data.frame(0, 0)
-colnames(cumst) <- c("depth", "no_cells")
-for (cum in 1:length(clogasc_list)){
-  cumasc <- raster(clogasc_list[cum])
-  ascname <- names(cumasc)
-  cumst[cum, 1] <- str_sub(ascname, 13)
-  #cumasc2 <- raster::mask(cumasc, outsidemcp, inverse = TRUE)
-  ccnt <- freq(cumasc, useNA='no')
-  ccnt <- sum(ccnt[ ,2])
-  cumst[cum, 2] <- ccnt
-}
-
-cumst$depth <- as.numeric(cumst$depth)
-cumst1 <- cumst[order(cumst$no_cells), ]
-
-write.csv(cumst1, "../output/maxent/paper_plots/cellsperlayer.csv", row.names = FALSE)
-
-```
-
-
-
-
-
-histogram of probability by depth - by proportion
-
-#max kappa thresholds
-
-```{r}
-binprob <- function(x){
-  ifelse(x > 0 & x >= mk, 1,
-  ifelse(x <= 0, 0, NA))
-}
-
-alst <- list.files("../output/maxent/models/test-comb/", pattern = "avgAIC.csv", full.names = TRUE)
-
-for (f in 1:length(alst)){
-  mth <- str_sub(alst[f], start = 35, end = 37)
-  af <- read.csv(alst[f], header = TRUE)
-  af <- tail(af, n = 1)
-  mk <- af$test_maxkap
-
-  clogasc_list <- list.files(paste0("../output/maxent/predictions/com-split/", mth), pattern = "^avg_cloglog.*.asc", full.names = TRUE)
-  for (cum in 1:length(clogasc_list)){
-    cumasc <- raster(clogasc_list[cum])
-    ascname <- names(cumasc)
-    probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
-    writeRaster(probbin, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_maxkap_", ascname, ".asc"), overwrite = TRUE)
-    plot(probbin, png(paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_maxkap_", ascname, ".png")), overwrite = TRUE)
-    dev.off() # stops automatic saving of the plot to a png
-  }
-}
-
-```
-
-get data to plot probability by depth...
-```{r}
-mthord <- c("mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
-binlst <- c(1:10)
-
-binprob <- function(x){
-  ifelse(x >0,  1,
-  ifelse(x == -9999, 0, NA))
-}
-
-
-for (m in 1:length(mthord)){
-  for (b in 1:length(binlst)){
-    mth <- mthord[m]
-    bin <- binlst[b]
-    # mth <- "dec"
-    # bin <- 1
-  ascdepth <- list.files(paste0("../output/maxent/paper_plots/prob_by_depth"), pattern = paste0("^", mth, "_maxkap.*asc"), full.names = TRUE)
-
-  binaryavgstack <- stack(ascdepth)
-  stackstathigh <- data.frame(matrix(ncol = 2, nrow = nlayers(binaryavgstack)))
-  stackstathigh[ ,1] <- c(1:47)
-  colnames(stackstathigh) <- c("asclayer", "prob_bin")
-
-  for (lyr in 1:nlayers(binaryavgstack)){
-    ascname <-  str_sub(ascdepth[lyr], 77, -5)
-    dlay <- binaryavgstack[[lyr]]
-    dlay <- calc(dlay, fun = binprob) #creates raster layer with cell values based on the binprob function
-    lyrsum <- cellStats(dlay, sum)
-    stackstathigh$prob_bin[lyr] <- lyrsum
-    stackstathigh$asclayer[lyr] <- ascname
-
-  }
-  write.csv(stackstathigh, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_maxkap_", bin, "_cellcount_bydepth_avg.csv"), row.names = FALSE)
-  }
-}
-
-```
-
-
-```{r}
-mthord <- c("mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
-
-for (m in 1:length(mthord)){
-  mth <- mthord[m]
-  probblst <- list.files(paste0("../output/maxent/paper_plots/prob_by_depth"), pattern = paste0("^", mth, "_probbin_.*.csv"), full.names = TRUE)
-  a <- read.csv(probblst[1])
-  b <- read.csv(probblst[2])
-  c <- read.csv(probblst[3])
-  d <- read.csv(probblst[4])
-  e <- read.csv(probblst[5])
-  f <- read.csv(probblst[6])
-  g <- read.csv(probblst[7])
-  h <- read.csv(probblst[8])
-  i <- read.csv(probblst[9])
-  j <- read.csv(probblst[10])
-
-  stackstat <- cbind(a, b[ ,2], c[ ,2], d[ ,2], e[ , 2], f[ ,2], g[ ,2], h[ ,2], i[ ,2], j[ ,2])
-  colnames(stackstat) <- c("depth", "0 - 0.09", "0.1 - 0.19", "0.2 - 0.29", "0.3 - 0.39", "0.4 - 0.49", "0.5 - 0.59", "0.6 - 0.69", "0.7 - 0.79", "0.8 - 0.89", ">0.9")
-  stackstat <- melt(stackstat, id = "depth")
-  stackstat <- stackstat[!(stackstat$depth == "1151.99"), ]
-  stackstat <- stackstat[!(stackstat$depth == "1265.86"), ]
-  stackstat <- stackstat[!(stackstat$depth == "1387.38"), ]
-
-  colnames(stackstat) <- c("Depth", "Probability", "Cells")
-
-  write.csv(stackstat, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_allprobbin_cellcount_bydepth_avg.csv"), row.names = FALSE)
-}
-
-```
-
-think about how to get proportions...
-
-```{r}
-mthord <- c("mar",  "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
-cumst1 <- read.csv("../output/maxent/paper_plots/cellsperlayer.csv", header = TRUE)
-
-for (m in 1:length(mthord)){
-  mth <- mthord[m]
-  a <- read.csv(paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_allprobbin_cellcount_bydepth_avg.csv"), header = TRUE, stringsAsFactors=FALSE)
-  for (r in 1:nrow(a)){
-    # a$Depth[r] <- gsub("b_avg_cloglog_", "", x = a$Depth[r])
-    # d1 <- str_sub(a$Depth[r], end = 4)
-    d1 <- a$Depth[r]
-	  for (ro in 1:nrow(cumst1)){
-      #d2 <- str_sub(cumst1$depth[ro], end = 4)
-	    d2 <- cumst1$depth[ro]
-      if (d1 == d2){
-          a$total_cells[r] <- cumst1$no_cells[ro]
-      }
-	  }
-    a$p_cells[r] <- (a$Cells[r]/a$total_cells[r])*100
-  }
-    a$Depth <- as.numeric(a$Depth)
-
-  write.csv(a, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_dis_prob_cells.csv"), row.names = FALSE)
-}
-
-```
-based on Remi's code
-```{r}
-require(data.table)
-require(purrr)
-require(lubridate)
-require(tidyverse)
-
-
-
-filenames <- list.files("../output/maxent/paper_plots/prob_by_depth/", pattern = "dis_prob_cells.csv", recursive = TRUE,full.names = TRUE)
-filenames <- filenames[ !grepl("maxkap", filenames) ] #remove all the maxkap files
-
-
-all <- map_dfr(filenames, function(x) fread(x) %>%
-                       mutate(Month=substr(basename(x),1,3))) %>%
-  mutate(Probability = gsub(">0.9", "0.9 - 1", Probability),
-         Depth = factor(round(Depth,1)),
-         Depth = factor(Depth,ordered = TRUE, levels = rev(levels(Depth))),
-         Month=factor(months(parse_date_time(Month,"%m")),
-                      ordered = TRUE,
-                      levels=months(parse_date_time(1:12,"%m"))))
-#create a list of depths so you can set breaks for the x-axis (which is showing as the y-axis...)
-dlst <- unique(all$Depth)
-dlst <- as.character(dlst)
-dlst <- as.numeric(dlst)
-dlst <- sort(dlst)
-#make the plot
-  ggplot(all) +
-  geom_col(aes(Depth, p_cells, fill = Probability),width=1) +
-  coord_flip()+
-  facet_wrap(~Month,ncol=2)+
-  labs(y = "% Ocean at Depth", x = "Depth (meters)")+
-  scale_fill_viridis(option="magma", discrete = TRUE, direction = -1, guide=guide_legend(nrow=2, byrow = TRUE))+
-  theme_classic()+
-  theme(legend.position = "bottom", axis.text.y = element_text(size=7), strip.background = element_blank()) +
-  scale_x_discrete(breaks = c(dlst[1], dlst[5], dlst[10], dlst[15], dlst[20], dlst[25], dlst[30], dlst[35], dlst[40], dlst[47]))
-
-ggsave("../output/maxent/paper_plots/prob_by_depth.png", width = 210, height = 297, units = "mm", dpi = 600)
-```
-
-# sample probabily maps
+Code base provided by Rémi Daigle (https://remidaigle.wordpress.com/)
 
 have moved sample files into a separate folder
 march,  june, sep, dec
@@ -910,22 +745,22 @@ library(tidyverse)
 
 proj <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"
 
-s <- st_read("../data/env/landp/land-wgs84v2.shp") %>%
+s <- st_read("../data/env/landp/land-wgs84v2.shp") %>% 
   st_set_crs(proj)
 
 mcp <- st_read("../output/bio/minimum_convex_poly/mcp-wgs84.shp")
 
 filelist <- list.files("../data/plot2-probmaps/",pattern="avg_cloglog*",recursive = TRUE,include.dirs = TRUE)
 
-x <- stack(file.path("../data/plot2-probmaps/",filelist)) %>%
-  mask(mcp)
+x <- stack(file.path("../data/plot2-probmaps/",filelist)) %>% 
+  mask(mcp) 
 
 names(x) <- filelist
 
-df <- x %>%
-  rasterToPoints() %>%
-  as.data.frame() %>%
-  gather(key = "variable", value = "value",-x,-y) %>%
+df <- x %>% 
+  rasterToPoints() %>% 
+  as.data.frame() %>% 
+  gather(key = "variable", value = "value",-x,-y) %>% 
   mutate(variable=gsub(".asc","",variable),
          month=factor(months(parse_date_time(gsub("\\..*$", "",variable),"%m")),
                       ordered = TRUE,
@@ -966,10 +801,209 @@ ggplot(df)+
         strip.text.x = element_text(face = "bold", size = 12),
         strip.text.y = element_text(face = "bold", size = 12))
 
-ggsave("../output/maxent/paper_plots/test-overview.png", width = 210, height = 297, units = "mm", dpi = 600)
+ggsave("../output/maxent/paper_plots/prob-overview.png", width = 210, height = 297, units = "mm", dpi = 600)
 ```
 
+
+#historgams of probability by depth
+
+This is figure 4
+
+count number of cells that are not NA in each raster layer that are inside the mcp
+
+```{r}
+
+clogasc_list <- list.files(paste0("../output/maxent/predictions/com-split/mar"), pattern = "^avg_cloglog_.*.asc", full.names = TRUE) #just choose a random month to calculate cells
+cumst <- data.frame(0, 0)
+colnames(cumst) <- c("depth", "no_cells")
+for (cum in 1:length(clogasc_list)){
+  cumasc <- raster(clogasc_list[cum])
+  ascname <- names(cumasc)
+  cumst[cum, 1] <- str_sub(ascname, 13)
+  #cumasc2 <- raster::mask(cumasc, outsidemcp, inverse = TRUE)
+  ccnt <- freq(cumasc, useNA='no')
+  ccnt <- sum(ccnt[ ,2])
+  cumst[cum, 2] <- ccnt
+}
+
+cumst$depth <- as.numeric(cumst$depth)
+cumst1 <- cumst[order(cumst$no_cells), ]
+
+write.csv(cumst1, "../output/maxent/paper_plots/cellsperlayer.csv", row.names = FALSE)
+
+```
+
+get data to plot probability by depth... 
+```{r}
+mthord <- c("mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
+binlst <- c(1:10)
+
+binprob <- function(x){
+  ifelse(x >0,  1,
+  ifelse(x == -9999, 0, NA))
+}
+
+
+for (m in 1:length(mthord)){
+  for (b in 1:length(binlst)){
+    mth <- mthord[m]
+    bin <- binlst[b]
+    # mth <- "dec"
+    # bin <- 1
+  ascdepth <- list.files(paste0("../output/maxent/paper_plots/prob_by_depth"), pattern = paste0("^", mth, "_maxkap.*asc"), full.names = TRUE)
+
+  binaryavgstack <- stack(ascdepth)
+  stackstathigh <- data.frame(matrix(ncol = 2, nrow = nlayers(binaryavgstack)))
+  stackstathigh[ ,1] <- c(1:47)
+  colnames(stackstathigh) <- c("asclayer", "prob_bin")
+  
+  for (lyr in 1:nlayers(binaryavgstack)){
+    ascname <-  str_sub(ascdepth[lyr], 77, -5)
+    dlay <- binaryavgstack[[lyr]]
+    dlay <- calc(dlay, fun = binprob) #creates raster layer with cell values based on the binprob function
+    lyrsum <- cellStats(dlay, sum)
+    stackstathigh$prob_bin[lyr] <- lyrsum
+    stackstathigh$asclayer[lyr] <- ascname
+  
+  }
+  write.csv(stackstathigh, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_maxkap_", bin, "_cellcount_bydepth_avg.csv"), row.names = FALSE)
+  }
+}
+
+```
+
+
+```{r}
+mthord <- c("mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
+
+for (m in 1:length(mthord)){
+  mth <- mthord[m]
+  probblst <- list.files(paste0("../output/maxent/paper_plots/prob_by_depth"), pattern = paste0("^", mth, "_probbin_.*.csv"), full.names = TRUE)
+  a <- read.csv(probblst[1])
+  b <- read.csv(probblst[2])
+  c <- read.csv(probblst[3])
+  d <- read.csv(probblst[4])
+  e <- read.csv(probblst[5])
+  f <- read.csv(probblst[6])
+  g <- read.csv(probblst[7])
+  h <- read.csv(probblst[8])
+  i <- read.csv(probblst[9])
+  j <- read.csv(probblst[10])
+  
+  stackstat <- cbind(a, b[ ,2], c[ ,2], d[ ,2], e[ , 2], f[ ,2], g[ ,2], h[ ,2], i[ ,2], j[ ,2])
+  colnames(stackstat) <- c("depth", "0 - 0.09", "0.1 - 0.19", "0.2 - 0.29", "0.3 - 0.39", "0.4 - 0.49", "0.5 - 0.59", "0.6 - 0.69", "0.7 - 0.79", "0.8 - 0.89", ">0.9")
+  stackstat <- melt(stackstat, id = "depth")
+  stackstat <- stackstat[!(stackstat$depth == "1151.99"), ]
+  stackstat <- stackstat[!(stackstat$depth == "1265.86"), ]
+  stackstat <- stackstat[!(stackstat$depth == "1387.38"), ]
+  
+  colnames(stackstat) <- c("Depth", "Probability", "Cells")
+  
+  write.csv(stackstat, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_allprobbin_cellcount_bydepth_avg.csv"), row.names = FALSE)
+}
+
+```
+
+Get proprotions
+```{r}
+mthord <- c("mar",  "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
+cumst1 <- read.csv("../output/maxent/paper_plots/cellsperlayer.csv", header = TRUE)
+
+for (m in 1:length(mthord)){
+  mth <- mthord[m]
+  a <- read.csv(paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_allprobbin_cellcount_bydepth_avg.csv"), header = TRUE, stringsAsFactors=FALSE)
+  for (r in 1:nrow(a)){
+    # a$Depth[r] <- gsub("b_avg_cloglog_", "", x = a$Depth[r])
+    # d1 <- str_sub(a$Depth[r], end = 4)
+    d1 <- a$Depth[r]
+	  for (ro in 1:nrow(cumst1)){
+      #d2 <- str_sub(cumst1$depth[ro], end = 4)
+	    d2 <- cumst1$depth[ro]
+      if (d1 == d2){
+          a$total_cells[r] <- cumst1$no_cells[ro]
+      }
+	  }
+    a$p_cells[r] <- (a$Cells[r]/a$total_cells[r])*100
+  }
+    a$Depth <- as.numeric(a$Depth)
+
+  write.csv(a, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_dis_prob_cells.csv"), row.names = FALSE)
+}
+
+```
+
+plot - Code base provided by Rémi Daigle (https://remidaigle.wordpress.com/)
+
+```{r}
+require(data.table)
+require(purrr)
+require(lubridate)
+require(tidyverse)
+
+
+
+filenames <- list.files("../output/maxent/paper_plots/prob_by_depth/", pattern = "dis_prob_cells.csv", recursive = TRUE,full.names = TRUE)
+filenames <- filenames[ !grepl("maxkap", filenames) ] #remove all the maxkap files
+
+
+all <- map_dfr(filenames, function(x) fread(x) %>% 
+                       mutate(Month=substr(basename(x),1,3))) %>% 
+  mutate(Probability = gsub(">0.9", "0.9 - 1", Probability),
+         Depth = factor(round(Depth,1)),
+         Depth = factor(Depth,ordered = TRUE, levels = rev(levels(Depth))),
+         Month=factor(months(parse_date_time(Month,"%m")),
+                      ordered = TRUE,
+                      levels=months(parse_date_time(1:12,"%m"))))
+#create a list of depths so you can set breaks for the x-axis (which is showing as the y-axis...)
+dlst <- unique(all$Depth)
+dlst <- as.character(dlst)
+dlst <- as.numeric(dlst)
+dlst <- sort(dlst)
+#make the plot
+  ggplot(all) +
+  geom_col(aes(Depth, p_cells, fill = Probability),width=1) +
+  coord_flip()+
+  facet_wrap(~Month,ncol=2)+
+  labs(y = "% Ocean at Depth", x = "Depth (meters)")+
+  scale_fill_viridis(option="magma", discrete = TRUE, direction = -1, guide=guide_legend(nrow=2, byrow = TRUE))+
+  theme_classic()+
+  theme(legend.position = "bottom", axis.text.y = element_text(size=7), strip.background = element_blank()) +
+  scale_x_discrete(breaks = c(dlst[1], dlst[5], dlst[10], dlst[15], dlst[20], dlst[25], dlst[30], dlst[35], dlst[40], dlst[47]))
+  
+ggsave("../output/maxent/paper_plots/prob_by_depth.png", width = 210, height = 297, units = "mm", dpi = 600)
+```
+
+
 #2d maps - max kappa thresholds
+
+Get max kappa thresholds
+
+```{r}
+binprob <- function(x){
+  ifelse(x > 0 & x >= mk, 1,
+  ifelse(x <= 0, 0, NA))
+}
+
+alst <- list.files("../output/maxent/models/test-comb/", pattern = "avgAIC.csv", full.names = TRUE)
+
+for (f in 1:length(alst)){
+  mth <- str_sub(alst[f], start = 35, end = 37)
+  af <- read.csv(alst[f], header = TRUE)
+  af <- tail(af, n = 1)
+  mk <- af$test_maxkap
+  
+  clogasc_list <- list.files(paste0("../output/maxent/predictions/com-split/", mth), pattern = "^avg_cloglog.*.asc", full.names = TRUE)
+  for (cum in 1:length(clogasc_list)){
+    cumasc <- raster(clogasc_list[cum])
+    ascname <- names(cumasc)
+    probbin <- calc(cumasc, fun = binprob) #creates raster layer with cell values based on the binprob function
+    writeRaster(probbin, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_maxkap_", ascname, ".asc"), overwrite = TRUE)
+    plot(probbin, png(paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_maxkap_", ascname, ".png")), overwrite = TRUE)
+    dev.off() # stops automatic saving of the plot to a png
+  }
+}
+
+```
 
 this creates binary maps for each layer based on the maxkappa threshold
 ```{r}
@@ -1071,6 +1105,8 @@ write.csv(sum2d, "../output/maxent/paper_plots/cell_count_maxkap.csv", row.names
 
 ```
 
+plot - Code base provided by Rémi Daigle (https://remidaigle.wordpress.com/)
+This is Figure 5
 
 ```{r plot maxkap 2d}
 library(sf)
@@ -1083,24 +1119,24 @@ proj <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"
 
 mcp <- st_read("../data/plot4-variables/minimum_convex_poly/mcp-wgs84.shp")
 
-s <- st_read("../data/plot3-2d/landp/land-wgs84v2.shp") %>%
-  st_set_crs(proj) %>%
+s <- st_read("../data/plot3-2d/landp/land-wgs84v2.shp") %>% 
+  st_set_crs(proj) %>% 
   st_intersection(mcp)
 
 filelist <- list.files("../output/maxent/paper_plots/hotspot_mapping/", pattern = "maxkap_single.asc", include.dirs = TRUE)
 
-x <- stack(file.path("../output/maxent/paper_plots/hotspot_mapping/",filelist)) %>%
-  mask(mcp) %>%
-  rasterToPoints() %>%
-  as.data.frame() %>%
-  gather(key = "variable", value = "value",-x,-y) %>%
+x <- stack(file.path("../output/maxent/paper_plots/hotspot_mapping/",filelist)) %>% 
+  mask(mcp) %>% 
+  rasterToPoints() %>% 
+  as.data.frame() %>% 
+  gather(key = "variable", value = "value",-x,-y) %>% 
   mutate(month=factor(months(parse_date_time(gsub("_.*$", "",variable),"%m")),
                       ordered = TRUE,
                       levels=months(parse_date_time(1:12,"%m"))),
-         value=ifelse(value==1,">0.5","<0.5"))
+         value=ifelse(value==1,">0.5","<0.5")) 
 
-df <- x %>%
-  group_by(month) %>%
+df <- x %>% 
+  group_by(month) %>% 
   summarize(total=round(sum(value==">0.5")/n(),2))
 
 #quickest way might be just to inject my csv file with the correct values here....
@@ -1130,40 +1166,11 @@ ggsave("../output/maxent/paper_plots/maxkap_2d.png", height = 210, width = 297, 
 
 ```
 
-get data to plot maxkap binary by depth...
-```{r maxkap by depth}
-mthord <- c("mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
 
-binprob <- function(x){
-  ifelse(x >0,  1,
-  ifelse(x == -9999, 0, NA))
-}
+get data to plot maxkap binary by depth plot (Figure 6)
 
 
-for (m in 1:length(mthord)){
-  mth <- mthord[m]
-  ascdepth <- list.files(paste0("../output/maxent/paper_plots/prob_by_depth"), pattern = paste0("^", mth, "_maxkap.*asc"), full.names = TRUE)
-  binaryavgstack <- stack(ascdepth)
-  stackstathigh <- data.frame(matrix(ncol = 2, nrow = nlayers(binaryavgstack)))
-  stackstathigh[ ,1] <- c(1:47)
-  colnames(stackstathigh) <- c("asclayer", "prob_bin")
-
-  for (lyr in 1:nlayers(binaryavgstack)){
-    ascname <-  str_sub(ascdepth[lyr], 67, -5)
-    dlay <- binaryavgstack[[lyr]]
-    dlay <- calc(dlay, fun = binprob) #creates raster layer with cell values based on the binprob function
-    lyrsum <- cellStats(dlay, sum)
-    stackstathigh$prob_bin[lyr] <- lyrsum
-    stackstathigh$asclayer[lyr] <- ascname
-
-  }
-  write.csv(stackstathigh, paste0("../output/maxent/paper_plots/prob_by_depth/", mth, "_maxkap_cellcount_bydepth_avg.csv"), row.names = FALSE)
-}
-
-
-```
-
-think about how to get proportions...
+Get proportions... 
 
 ```{r percentage cells above and below maxkap}
 mthord <- c("mar",  "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
@@ -1187,14 +1194,14 @@ for (m in 1:length(mthord)){
     a$Probability[r] <- 1
   }
     #a$asclayer <- as.numeric(a$asclayer)
-
+  
   a2 <- as.data.frame(a$asclayer)
   a2$total_cells <- a$total_cells
   a2$prob_bin <- a$total_cells - a$prob_bin
   a2$p_cells <- (a2$prob_bin/a2$total_cells)*100
   a2$Probability <- 0
   colnames(a2)[1] <- "asclayer"
-
+  
   b <- rbind(a, a2)
   colnames(b)[1] <- "Depth"
 
@@ -1206,7 +1213,9 @@ for (m in 1:length(mthord)){
 ```
 
 
-based on Remi's code - maxkappa derrived habitat by depth
+plot - Code base provided by Rémi Daigle (https://remidaigle.wordpress.com/)
+This is Figure 6
+
 ```{r maxkappa habitat by depth}
 require(data.table)
 require(purrr)
@@ -1218,14 +1227,14 @@ require(viridis)
 
 filenames <- list.files("../output/maxent/paper_plots/prob_by_depth/", pattern = "_maxkap_dis_prob_cells.csv", recursive = TRUE,full.names = TRUE)
 
-all <- map_dfr(filenames, function(x) fread(x) %>%
-                       mutate(Month=substr(basename(x),1,3))) %>%
+all <- map_dfr(filenames, function(x) fread(x) %>% 
+                       mutate(Month=substr(basename(x),1,3))) %>% 
   mutate(Depth = factor(round(Depth,1)),
          Depth = factor(Depth,ordered = TRUE, levels = rev(levels(Depth))),
          Month=factor(months(parse_date_time(Month,"%m")),
                       ordered = TRUE,
                       levels=months(parse_date_time(1:12,"%m"))))
-
+        
 
 #create a list of depths so you can set breaks for the x-axis (which is showing as the y-axis...)
 dlst <- unique(all$Depth)
@@ -1251,7 +1260,9 @@ ggsave("../output/maxent/paper_plots/maxkap_prob_by_depth.png", width = 210, hei
 ```
 
 
-#get max and min depth layers based on max kappa
+#stats reported in the manuscript
+
+get max and min depth layers based on max kappa
 ```{r maxkap min max depth}
 kapd <- list.files("../output/maxent/paper_plots/prob_by_depth/" , pattern = "_maxkap_dis_prob_cells.csv", full.names = TRUE)
 kapmmd <- data.frame(mth = character(10), min = numeric(10), max = numeric(10), range = numeric(10))
@@ -1262,7 +1273,7 @@ for(k in 1:length(kapd)){
   kd <- read.csv(kapd[k])
   kd <- subset(kd, Probability == 1) #just keep the presence cells
   kd <- subset(kd, prob_bin > 0) # get the depths where there are presence cells
-  kd <- kd[order(kd[, 1]),] #order by depth
+  kd <- kd[order(kd[, 1]),] #order by depth 
   kapmmd$min[k] <- kd$Depth[1] #minimum depth of presence cell
   kapmmd$max[k] <- tail(kd$Depth, n = 1) #maximum depth of presence cell
 }
@@ -1271,8 +1282,7 @@ kapmmd$range <- kapmmd$max - kapmmd$min #get depth range
 write.csv(kapmmd, "../output/maxent/paper_plots/hotspot_mapping/kappa-min-max-depth.csv")
 ```
 
-#get lat long position of most northely, southerly, western, and eastern cell centroid (max kap)
-
+get lat long position of most northely, southerly, western, and eastern cell centroid (max kap)
 ```{r maxkap cell centroid}
 filelist <- list.files("../output/maxent/paper_plots/hotspot_mapping/", pattern = "maxkap_single.asc", full.names = TRUE)
 lonlat <- data.frame(mth = character(10), west = numeric(10), east = numeric(10), north = numeric(10), south = numeric(10))
@@ -1296,8 +1306,7 @@ write.csv(lonlat, "../output/maxent/paper_plots/hotspot_mapping/kappa-nswe.csv")
 
 ```
 
-#get lat long position of most northely, southerly, western, and eastern cell centroid for oct, june, aug, may (to remove northern spots)
-
+get lat long position of most northely, southerly, western, and eastern cell centroid for oct, june, aug, may (to remove northern spots)
 ```{r}
 filelist <- list.files("../output/maxent/paper_plots/hotspot_mapping/", pattern = "maxkap_single.asc", full.names = TRUE)
 lonlat <- data.frame(mth = character(10), west = numeric(10), east = numeric(10), north = numeric(10), south = numeric(10))
@@ -1324,432 +1333,3 @@ write.csv(lonlat, "../output/maxent/paper_plots/hotspot_mapping/kappa-nswe_nonor
 
 ```
 
-#background point selection plots
-
-```{r}
-test_back_df <- read.csv("../data/env/background_point_check/201406_allbackgroundpoints.csv", header = TRUE)
-```
-
-
-ok now create the first lot of random for 2014_06
-
-```{r}
-testbk10000 <- test_back_df[sample(nrow(test_back_df), 10000), ]  #where 10000 = number of rows to sample (large sample as per maxent)
-testbk20000 <- test_back_df[sample(nrow(test_back_df), 20000), ]  
-testbk50000 <- test_back_df[sample(nrow(test_back_df), 50000), ]  
-testbk100000 <- test_back_df[sample(nrow(test_back_df), 100000), ]  
-testbk190000 <- test_back_df[sample(nrow(test_back_df), 190000), ]  
-```
-
-make long data
-```{r}
-bkpt <- data.frame(no_points = character(370000), variable = character(370000), value = numeric(370000))
-bkpt$variable <- as.character(bkpt$variable)
-bkpt$no_points <- as.character(bkpt$no_points)
-
-bkpt$no_points[1:10000] <- "10,000"
-bkpt$no_points[10001:30000] <- "20,000"
-bkpt$no_points[30001:80000] <- "50,000"
-bkpt$no_points[80001:180000] <- "100,000"
-bkpt$no_points[180001:370000] <- "190,000"
-bkpt$variable <- "temp"
-bkpt$value[1:10000] <- testbk10000$temp_depth
-bkpt$value[10001:30000] <- testbk20000$temp_depth
-bkpt$value[30001:80000] <- testbk50000$temp_depth
-bkpt$value[80001:180000] <- testbk100000$temp_depth
-bkpt$value[180001:370000] <- testbk190000$temp_depth
-
-
-bkpt2 <- data.frame(no_points = numeric(370000), variable = character(370000), value = numeric(370000))
-bkpt2$variable <- as.character(bkpt2$variable)
-bkpt2$no_points[1:10000] <- "10,000"
-bkpt2$no_points[10001:30000] <- "20,000"
-bkpt2$no_points[30001:80000] <- "50,000"
-bkpt2$no_points[80001:180000] <- "100,000"
-bkpt2$no_points[180001:370000] <- "190,000"
-bkpt2$variable <- "salinity"
-bkpt2$value[1:10000] <- testbk10000$salinity_depth
-bkpt2$value[10001:30000] <- testbk20000$salinity_depth
-bkpt2$value[30001:80000] <- testbk50000$salinity_depth
-bkpt2$value[80001:180000] <- testbk100000$salinity_depth
-bkpt2$value[180001:370000] <- testbk190000$salinity_depth
-
-bkpt3 <- data.frame(no_points = numeric(370000), variable = character(370000), value = numeric(370000))
-bkpt3$variable <- as.character(bkpt3$variable)
-bkpt3$no_points[1:10000] <- "10,000"
-bkpt3$no_points[10001:30000] <- "20,000"
-bkpt3$no_points[30001:80000] <- "50,000"
-bkpt3$no_points[80001:180000] <- "100,000"
-bkpt3$no_points[180001:370000] <- "190,000"
-bkpt3$variable <- "o2"
-bkpt3$value[1:10000] <- testbk10000$o2_depth
-bkpt3$value[10001:30000] <- testbk20000$o2_depth
-bkpt3$value[30001:80000] <- testbk50000$o2_depth
-bkpt3$value[80001:180000] <- testbk100000$o2_depth
-bkpt3$value[180001:370000] <- testbk190000$o2_depth
-
-bkpt4 <- data.frame(no_points = numeric(370000), variable = character(370000), value = numeric(370000))
-bkpt4$variable <- as.character(bkpt4$variable)
-bkpt4$no_points[1:10000] <- "10,000"
-bkpt4$no_points[10001:30000] <- "20,000"
-bkpt4$no_points[30001:80000] <- "50,000"
-bkpt4$no_points[80001:180000] <- "100,000"
-bkpt4$no_points[180001:370000] <- "190,000"
-bkpt4$variable <- "chl"
-bkpt4$value[1:10000] <- testbk10000$chl_surface
-bkpt4$value[10001:30000] <- testbk20000$chl_surface
-bkpt4$value[30001:80000] <- testbk50000$chl_surface
-bkpt4$value[80001:180000] <- testbk100000$chl_surface
-bkpt4$value[180001:370000] <- testbk190000$chl_surface
-
-
-bk <- rbind(bkpt, bkpt2, bkpt3, bkpt4)
-bk$no_points <- as.factor(bk$no_points)
-```
-
-```{r}
-ggplot(bk, aes(x = value)) +
-    stat_density(aes(group = no_points, color = no_points),position="identity",geom="line") +
-  facet_wrap(~variable,ncol=2)
-
-```
-
-problem here is that i don't want the axis shared
-
-fiddle with the dataset again
-```{r}
-t <- subset(bk, variable == "temp")
-t$no_points <- factor(t$no_points, levels = c("10,000", "20,000", "50,000", "100,000", "190,000"))
-s <- subset(bk, variable == "salinity")
-s$no_points <- factor(s$no_points, levels = c("10,000", "20,000", "50,000", "100,000", "190,000"))
-o <- subset(bk, variable == "o2")
-o$no_points <- factor(o$no_points, levels = c("10,000", "20,000", "50,000", "100,000", "190,000"))
-c <- subset(bk, variable == "chl")
-c$no_points <- factor(c$no_points, levels = c("10,000", "20,000", "50,000", "100,000", "190,000"))
-
-```
-
-plot
-```{r}
-p1 <- ggplot(t, aes(x = value)) + stat_density(aes(group = no_points, color = no_points),position="identity",geom="line", size=0.75) +theme_classic(base_size = 18) + labs(x = "Temperature (Kelvin)", y = "Density") + guides(color = guide_legend(title = "No Points"))
-p2 <- ggplot(s, aes(x = value)) + stat_density(aes(group = no_points, color = no_points),position="identity",geom="line", size=0.75) + theme_classic(base_size = 18) + labs (x = "Salinity (PSU)", y = "Density") + guides(color = guide_legend(title = "No Points"))
-p3 <- ggplot(o, aes(x = value)) + stat_density(aes(group = no_points, color = no_points),position="identity",geom="line", size=0.75) +theme_classic(base_size = 18) + labs (x = "Dissolved Oxygen (mmol\u207B\u00B3)", y = "Density") + guides(color = guide_legend(title = "No Points"))
-p4 <- ggplot(c, aes(x = value)) + stat_density(aes(group = no_points, color = no_points),position="identity",geom="line", size=0.75) + theme_classic(base_size = 18) + labs (x = "Chlorophyll \u03b1  (mmol\u207B\u00B3)", y = "Density") + guides(color = guide_legend(title = "No Points"))
-
-p <- ggarrange(p1, p2, p3, p4, ncol = 2, nrow = 2, common.legend = TRUE, legend = "bottom")
-
-ggsave("../output/maxent/paper_plots/bkpt_201406.png", width = 210, height = 297, units = "mm", dpi = 600)
-
-```
-
-200710
-
-```{r}
-test_back_df <- read.csv("../data/env/background_point_check/200710_allbackgroundpoints.csv", header = TRUE)
-```
-
-
-ok now create the first lot of random for 200710
-
-```{r}
-testbk10000 <- test_back_df[sample(nrow(test_back_df), 10000), ]  #where 10000 = number of rows to sample (large sample as per maxent)
-testbk20000 <- test_back_df[sample(nrow(test_back_df), 20000), ]  
-testbk50000 <- test_back_df[sample(nrow(test_back_df), 50000), ]  
-testbk100000 <- test_back_df[sample(nrow(test_back_df), 100000), ]  
-testbk190000 <- test_back_df[sample(nrow(test_back_df), 190000), ]  
-```
-
-make long data
-```{r}
-bkpt <- data.frame(no_points = character(370000), variable = character(370000), value = numeric(370000))
-bkpt$variable <- as.character(bkpt$variable)
-bkpt$no_points <- as.character(bkpt$no_points)
-
-bkpt$no_points[1:10000] <- "10,000"
-bkpt$no_points[10001:30000] <- "20,000"
-bkpt$no_points[30001:80000] <- "50,000"
-bkpt$no_points[80001:180000] <- "100,000"
-bkpt$no_points[180001:370000] <- "190,000"
-bkpt$variable <- "temp"
-bkpt$value[1:10000] <- testbk10000$temp_depth
-bkpt$value[10001:30000] <- testbk20000$temp_depth
-bkpt$value[30001:80000] <- testbk50000$temp_depth
-bkpt$value[80001:180000] <- testbk100000$temp_depth
-bkpt$value[180001:370000] <- testbk190000$temp_depth
-
-
-bkpt2 <- data.frame(no_points = numeric(370000), variable = character(370000), value = numeric(370000))
-bkpt2$variable <- as.character(bkpt2$variable)
-bkpt2$no_points[1:10000] <- "10,000"
-bkpt2$no_points[10001:30000] <- "20,000"
-bkpt2$no_points[30001:80000] <- "50,000"
-bkpt2$no_points[80001:180000] <- "100,000"
-bkpt2$no_points[180001:370000] <- "190,000"
-bkpt2$variable <- "salinity"
-bkpt2$value[1:10000] <- testbk10000$salinity_depth
-bkpt2$value[10001:30000] <- testbk20000$salinity_depth
-bkpt2$value[30001:80000] <- testbk50000$salinity_depth
-bkpt2$value[80001:180000] <- testbk100000$salinity_depth
-bkpt2$value[180001:370000] <- testbk190000$salinity_depth
-
-bkpt3 <- data.frame(no_points = numeric(370000), variable = character(370000), value = numeric(370000))
-bkpt3$variable <- as.character(bkpt3$variable)
-bkpt3$no_points[1:10000] <- "10,000"
-bkpt3$no_points[10001:30000] <- "20,000"
-bkpt3$no_points[30001:80000] <- "50,000"
-bkpt3$no_points[80001:180000] <- "100,000"
-bkpt3$no_points[180001:370000] <- "190,000"
-bkpt3$variable <- "o2"
-bkpt3$value[1:10000] <- testbk10000$o2_depth
-bkpt3$value[10001:30000] <- testbk20000$o2_depth
-bkpt3$value[30001:80000] <- testbk50000$o2_depth
-bkpt3$value[80001:180000] <- testbk100000$o2_depth
-bkpt3$value[180001:370000] <- testbk190000$o2_depth
-
-bkpt4 <- data.frame(no_points = numeric(370000), variable = character(370000), value = numeric(370000))
-bkpt4$variable <- as.character(bkpt4$variable)
-bkpt4$no_points[1:10000] <- "10,000"
-bkpt4$no_points[10001:30000] <- "20,000"
-bkpt4$no_points[30001:80000] <- "50,000"
-bkpt4$no_points[80001:180000] <- "100,000"
-bkpt4$no_points[180001:370000] <- "190,000"
-bkpt4$variable <- "chl"
-bkpt4$value[1:10000] <- testbk10000$chl_surface
-bkpt4$value[10001:30000] <- testbk20000$chl_surface
-bkpt4$value[30001:80000] <- testbk50000$chl_surface
-bkpt4$value[80001:180000] <- testbk100000$chl_surface
-bkpt4$value[180001:370000] <- testbk190000$chl_surface
-
-
-bk <- rbind(bkpt, bkpt2, bkpt3, bkpt4)
-bk$no_points <- as.factor(bk$no_points)
-```
-
-
-fiddle with the dataset again
-```{r}
-t <- subset(bk, variable == "temp")
-t$no_points <- factor(t$no_points, levels = c("10,000", "20,000", "50,000", "100,000", "190,000"))
-s <- subset(bk, variable == "salinity")
-s$no_points <- factor(s$no_points, levels = c("10,000", "20,000", "50,000", "100,000", "190,000"))
-o <- subset(bk, variable == "o2")
-o$no_points <- factor(o$no_points, levels = c("10,000", "20,000", "50,000", "100,000", "190,000"))
-c <- subset(bk, variable == "chl")
-c$no_points <- factor(c$no_points, levels = c("10,000", "20,000", "50,000", "100,000", "190,000"))
-
-```
-
-plot
-```{r}
-p1 <- ggplot(t, aes(x = value)) + stat_density(aes(group = no_points, color = no_points),position="identity",geom="line", size=0.75) +theme_classic(base_size = 18) + labs(x = "Temperature (Kelvin)", y = "Density") + guides(color = guide_legend(title = "No Points"))
-p2 <- ggplot(s, aes(x = value)) + stat_density(aes(group = no_points, color = no_points),position="identity",geom="line", size=0.75) + theme_classic(base_size = 18) + labs (x = "Salinity (PSU)", y = "Density") + guides(color = guide_legend(title = "No Points"))
-p3 <- ggplot(o, aes(x = value)) + stat_density(aes(group = no_points, color = no_points),position="identity",geom="line", size=0.75) +theme_classic(base_size = 18) + labs (x = "Dissolved Oxygen (mmol\u207B\u00B3)", y = "Density") + guides(color = guide_legend(title = "No Points"))
-p4 <- ggplot(c, aes(x = value)) + stat_density(aes(group = no_points, color = no_points),position="identity",geom="line", size=0.75) + theme_classic(base_size = 18) + labs (x = "Chlorophyll \u03b1  (mmol\u207B\u00B3)", y = "Density") + guides(color = guide_legend(title = "No Points"))
-
-p <- ggarrange(p1, p2, p3, p4, ncol = 2, nrow = 2, common.legend = TRUE, legend = "bottom")
-
-ggsave("../output/maxent/paper_plots/bkpt_200710.png", width = 210, height = 297, units = "mm", dpi = 600)
-
-```
-199902
-
-```{r}
-test_back_df <- read.csv("../data/env/background_point_check/199902_allbackgroundpoints.csv", header = TRUE)
-```
-
-
-ok now create the first lot of random for 200710
-
-```{r}
-testbk10000 <- test_back_df[sample(nrow(test_back_df), 10000), ]  #where 10000 = number of rows to sample (large sample as per maxent)
-testbk20000 <- test_back_df[sample(nrow(test_back_df), 20000), ]  
-testbk50000 <- test_back_df[sample(nrow(test_back_df), 50000), ]  
-testbk100000 <- test_back_df[sample(nrow(test_back_df), 100000), ]  
-testbk190000 <- test_back_df[sample(nrow(test_back_df), 190000), ]  
-```
-
-make long data
-```{r}
-bkpt <- data.frame(no_points = character(370000), variable = character(370000), value = numeric(370000))
-bkpt$variable <- as.character(bkpt$variable)
-bkpt$no_points <- as.character(bkpt$no_points)
-
-bkpt$no_points[1:10000] <- "10,000"
-bkpt$no_points[10001:30000] <- "20,000"
-bkpt$no_points[30001:80000] <- "50,000"
-bkpt$no_points[80001:180000] <- "100,000"
-bkpt$no_points[180001:370000] <- "190,000"
-bkpt$variable <- "temp"
-bkpt$value[1:10000] <- testbk10000$temp_depth
-bkpt$value[10001:30000] <- testbk20000$temp_depth
-bkpt$value[30001:80000] <- testbk50000$temp_depth
-bkpt$value[80001:180000] <- testbk100000$temp_depth
-bkpt$value[180001:370000] <- testbk190000$temp_depth
-
-
-bkpt2 <- data.frame(no_points = numeric(370000), variable = character(370000), value = numeric(370000))
-bkpt2$variable <- as.character(bkpt2$variable)
-bkpt2$no_points[1:10000] <- "10,000"
-bkpt2$no_points[10001:30000] <- "20,000"
-bkpt2$no_points[30001:80000] <- "50,000"
-bkpt2$no_points[80001:180000] <- "100,000"
-bkpt2$no_points[180001:370000] <- "190,000"
-bkpt2$variable <- "salinity"
-bkpt2$value[1:10000] <- testbk10000$salinity_depth
-bkpt2$value[10001:30000] <- testbk20000$salinity_depth
-bkpt2$value[30001:80000] <- testbk50000$salinity_depth
-bkpt2$value[80001:180000] <- testbk100000$salinity_depth
-bkpt2$value[180001:370000] <- testbk190000$salinity_depth
-
-bkpt3 <- data.frame(no_points = numeric(370000), variable = character(370000), value = numeric(370000))
-bkpt3$variable <- as.character(bkpt3$variable)
-bkpt3$no_points[1:10000] <- "10,000"
-bkpt3$no_points[10001:30000] <- "20,000"
-bkpt3$no_points[30001:80000] <- "50,000"
-bkpt3$no_points[80001:180000] <- "100,000"
-bkpt3$no_points[180001:370000] <- "190,000"
-bkpt3$variable <- "o2"
-bkpt3$value[1:10000] <- testbk10000$o2_depth
-bkpt3$value[10001:30000] <- testbk20000$o2_depth
-bkpt3$value[30001:80000] <- testbk50000$o2_depth
-bkpt3$value[80001:180000] <- testbk100000$o2_depth
-bkpt3$value[180001:370000] <- testbk190000$o2_depth
-
-bkpt4 <- data.frame(no_points = numeric(370000), variable = character(370000), value = numeric(370000))
-bkpt4$variable <- as.character(bkpt4$variable)
-bkpt4$no_points[1:10000] <- "10,000"
-bkpt4$no_points[10001:30000] <- "20,000"
-bkpt4$no_points[30001:80000] <- "50,000"
-bkpt4$no_points[80001:180000] <- "100,000"
-bkpt4$no_points[180001:370000] <- "190,000"
-bkpt4$variable <- "chl"
-bkpt4$value[1:10000] <- testbk10000$chl_surface
-bkpt4$value[10001:30000] <- testbk20000$chl_surface
-bkpt4$value[30001:80000] <- testbk50000$chl_surface
-bkpt4$value[80001:180000] <- testbk100000$chl_surface
-bkpt4$value[180001:370000] <- testbk190000$chl_surface
-
-
-bk <- rbind(bkpt, bkpt2, bkpt3, bkpt4)
-bk$no_points <- as.factor(bk$no_points)
-```
-
-
-fiddle with the dataset again
-```{r}
-t <- subset(bk, variable == "temp")
-t$no_points <- factor(t$no_points, levels = c("10,000", "20,000", "50,000", "100,000", "190,000"))
-s <- subset(bk, variable == "salinity")
-s$no_points <- factor(s$no_points, levels = c("10,000", "20,000", "50,000", "100,000", "190,000"))
-o <- subset(bk, variable == "o2")
-o$no_points <- factor(o$no_points, levels = c("10,000", "20,000", "50,000", "100,000", "190,000"))
-c <- subset(bk, variable == "chl")
-c$no_points <- factor(c$no_points, levels = c("10,000", "20,000", "50,000", "100,000", "190,000"))
-
-```
-
-plot
-```{r}
-p1 <- ggplot(t, aes(x = value)) + stat_density(aes(group = no_points, color = no_points),position="identity",geom="line", size=0.75) +theme_classic(base_size = 18) + labs(x = "Temperature (Kelvin)", y = "Density") + guides(color = guide_legend(title = "No Points"))
-p2 <- ggplot(s, aes(x = value)) + stat_density(aes(group = no_points, color = no_points),position="identity",geom="line", size=0.75) + theme_classic(base_size = 18) + labs (x = "Salinity (PSU)", y = "Density") + guides(color = guide_legend(title = "No Points"))
-p3 <- ggplot(o, aes(x = value)) + stat_density(aes(group = no_points, color = no_points),position="identity",geom="line", size=0.75) +theme_classic(base_size = 18) + labs (x = "Dissolved Oxygen (mmol\u207B\u00B3)", y = "Density") + guides(color = guide_legend(title = "No Points"))
-p4 <- ggplot(c, aes(x = value)) + stat_density(aes(group = no_points, color = no_points),position="identity",geom="line", size=0.75) + theme_classic(base_size = 18) + labs (x = "Chlorophyll \u03b1  (mmol\u207B\u00B3)", y = "Density") + guides(color = guide_legend(title = "No Points"))
-
-p <- ggarrange(p1, p2, p3, p4, ncol = 2, nrow = 2, common.legend = TRUE, legend = "bottom")
-
-ggsave("../output/maxent/paper_plots/bkpt_199902.png", width = 210, height = 297, units = "mm", dpi = 600)
-
-```
-
-
-#plot for prediction method in appendix
-
-```{r}
-library(raster)
-library(rasterVis)
-library(viridis)
-```
-
-
-```{r plot sample depths}
-proj <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"
-crs(s) <- proj
-
-temp9 <- raster("../data/env/asciitrim/ascii2004/2004_07_temp.nc_9.82275.asc")
-crs(temp9) <- proj
-temp221 <- raster("../data/env/asciitrim/ascii2004/2004_07_temp.nc_221.141.asc")
-crs(temp221) <- proj
-temp508 <- raster("../data/env/asciitrim/ascii2004/2004_07_temp.nc_508.64.asc")
-crs(temp508) <- proj
-
-ts <- stack(temp9, temp221, temp508)
-
-levelplot(ts, layout = c(1, 3), scales=list(draw=FALSE), xlab = NULL, ylab = NULL, names.attr = c("", "", ""), colorkey=FALSE, margin = FALSE, par.setting = viridisTheme)
-dev.copy(png, (paste0("../output/maxent/paper_plots/bent_illus/temp-example.png")), width = 1080,height = 1920)
-dev.off() # stops automatic saving of the plot to a png))
-
-salinity9 <- raster("../data/env/asciitrim/ascii2004/2004_07_salinity.nc_9.82275.asc")
-crs(salinity9) <- proj
-salinity221 <- raster("../data/env/asciitrim/ascii2004/2004_07_salinity.nc_221.141.asc")
-crs(salinity221) <- proj
-salinity508 <- raster("../data/env/asciitrim/ascii2004/2004_07_salinity.nc_508.64.asc")
-crs(salinity508) <- proj
-
-ts <- stack(salinity9, salinity221, salinity508)
-
-levelplot(ts, layout = c(1, 3), scales=list(draw=FALSE), xlab = NULL, ylab = NULL, names.attr = c("", "", ""), colorkey=FALSE, margin = FALSE, par.setting = viridisTheme)
-dev.copy(png, (paste0("../output/maxent/paper_plots/bent_illus/salinity-example.png")), width = 1080,height = 1920)
-dev.off() # stops automatic saving of the plot to a png))
-
-```
-
-```{r plot env concat}
-ras <- raster("../output/maxent/paper_plots/bent_illus/tempmerge.asc")
-levelplot(ras, scales=list(draw=FALSE), xlab = NULL, ylab = NULL, names.attr = c(""), colorkey=FALSE, margin = FALSE, par.setting = viridisTheme)
-dev.copy(png, (paste0("../output/maxent/paper_plots/bent_illus/temp-concat.png")), width = 1080,height = 1920)
-dev.off() # stops automatic saving of the plot to a png))
-
-ras <- raster("../output/maxent/paper_plots/bent_illus/salmerge.asc")
-levelplot(ras, scales=list(draw=FALSE), xlab = NULL, ylab = NULL, names.attr = c(""), colorkey=FALSE, margin = FALSE, par.setting = viridisTheme)
-dev.copy(png, (paste0("../output/maxent/paper_plots/bent_illus/sal-concat.png")), width = 1080,height = 1920)
-dev.off() # stops automatic saving of the plot to a png))
-```
-
-```{r plot concat predictions}
-ras <- raster("../output/maxent/paper_plots/bent_illus/predmerge.asc")
-levelplot(ras, scales=list(draw=FALSE), xlab = NULL, ylab = NULL, names.attr = c(""), colorkey=FALSE, margin = FALSE, par.setting = magmaTheme)
-dev.copy(png, (paste0("../output/maxent/paper_plots/bent_illus/pred-concat.png")), width = 1080,height = 1920)
-dev.off() # stops automatic saving of the plot to a png))
-```
-
-```{r plot split predictions}
-proj <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"
-
-pred9 <- raster("../output/maxent/paper_plots/bent_illus/pred/cloglog_2004_07_9.82275.asc")
-crs(pred9) <- proj
-pred221 <- raster("../output/maxent/paper_plots/bent_illus/pred/cloglog_2004_07_221.141.asc")
-crs(pred221) <- proj
-pred508 <- raster("../output/maxent/paper_plots/bent_illus/pred/cloglog_2004_07_508.64.asc")
-crs(pred508) <- proj
-
-ts <- stack(pred9, pred221, pred508)
-
-levelplot(ts, layout = c(1, 3), scales=list(draw=FALSE), xlab = NULL, ylab = NULL, names.attr = c("", "", ""), colorkey=FALSE, margin = FALSE, par.setting = magmaTheme)
-dev.copy(png, (paste0("../output/maxent/paper_plots/bent_illus/pred-example.png")), width = 1080,height = 1920)
-dev.off() # stops automatic saving of the plot to a png))
-```
-
-
-
-
-# variable maps
-- temp
-- chl
-- o2
-- sal
-- 4 different months
-- relationship of variables to each other
-- pick a depth (say the 11.7737 m)
-
-months are mar, jun, sep, dec
-pick 3 diff years say 1998, 2006, 2013

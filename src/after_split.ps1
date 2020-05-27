@@ -6,10 +6,10 @@ $dest = "C:\cygwin64\home\bunny\output"; #location where files will be copied to
 $filter = ".asc" 
 
 $sourceout="C:\cygwin64\home\bunny\output" #location of starting directory
-$destsplit = "C:\Users\bunny\Documents\GitHub\Chapter_1\output\maxent\predictions\com-split\may"; #location where files will be copied to #CHANGE HERE
+$destsplit = "C:\Users\bunny\Documents\GitHub\capelin-variation\output\maxent\predictions\apr_naowint_pos\splitfiles"; #location where files will be copied to #CHANGE HERE
 $filtercom = ".asc" 
 
-$yearmonth = "cloglog_2003_05_" #CHANGE ME
+$yearmonth = "bin_apr_naowint_pos_" #CHANGE ME
 
 
 
